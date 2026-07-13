@@ -1,0 +1,17 @@
+#  flutter pub add flutter_native_splash
+
+flutter_native_splash:
+  background_image: assets/images/splash_bg.png
+  background_image_dark: assets/images/splash_bg.png
+  #4x photo
+  android_12:
+    image: assets/images/splash_icon.png
+    color: "#202020"
+    #App icon without an icon background should be 1152×1152 pixels, and fit within a circle 768 pixels in diameter.
+    #App icon with an icon background should be 960×960 pixels, and fit within a circle 640 pixels in diameter.
+    color_dark: "#202020"
+    image_dark: assets/images/splash_icon.png
+    branding: assets/images/splash_branding.png
+    #The branding image dimensions must be 800x320 px.
+  web: false
+  #  dart run flutter_native_splash:create --path=flutter_native_splash.yaml
