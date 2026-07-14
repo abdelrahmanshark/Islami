@@ -41,7 +41,7 @@ class _QuranScreenState extends State<QuranScreen> {
           children: [
             Image.asset(AppAssets.header),
             SuraSearchBar(onChanged: onSearch),
-            SSizedBox(height: 8),
+            SizedBox(height: 8),
             Text("Most Recently Searched", style: AppStyles.whiteBold16),
             SizedBox(height: 8),
             SizedBox(
