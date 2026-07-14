@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/most_recently.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_bar.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
@@ -8,10 +9,18 @@ import 'package:islami/utils/app_styles.dart';
 import '../../../../utils/app_assets.dart';
 import '../../../../utils/app_colors.dart';
 
-class QuranScreen extends StatelessWidget {
+class QuranScreen extends StatefulWidget {
   QuranScreen({super.key});
 
+  @override
+  State<QuranScreen> createState() => _QuranScreenState();
+}
+
+class _QuranScreenState extends State<QuranScreen> {
+  List<int> filterSearch = List.generate(114, (index) => index);
+
   late double width;
+
   late double height;
 
   @override
@@ -31,7 +40,7 @@ class QuranScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Image.asset(AppAssets.header),
-            SuraSearchBar(),
+            SuraSearchBar(onChanged: onSearch),
             SizedBox(height: 8),
             Text("Most Recently Searched", style: AppStyles.whiteBold16),
             SizedBox(height: 8),
@@ -46,6 +55,8 @@ class QuranScreen extends StatelessWidget {
               ),
             ),
             Text("Suras List", style: AppStyles.whiteBold16),
+            filterSearch.isEmpty ? Text(
+              "Sorry we couldnt find the sura", style: AppStyles.whiteBold20,) :
             Expanded(
               child: ListView.separated(
                 padding: EdgeInsetsGeometry.symmetric(vertical: 10),
@@ -53,10 +64,10 @@ class QuranScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.of(context).pushNamed(
                       AppRoutes.soraDetailsRouteName,
-                      arguments: index,
+                      arguments: filterSearch[index],
                     );
                   },
-                  child: SuraBar(index: index),
+                  child: SuraBar(index: filterSearch[index]),
                 ),
                 separatorBuilder: (BuildContext context, int index) =>
                     Container(
@@ -68,12 +79,32 @@ class QuranScreen extends StatelessWidget {
                       width: double.infinity,
                       color: AppColors.whiteColor,
                     ),
-                itemCount: 114,
+                itemCount: filterSearch.length,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void onSearch(String newText) {
+    List<int> SuraResSearch = [];
+    for (int i = 0; i < QuranResources.englishQuranSuras.length; i++) {
+      if (QuranResources.englishQuranSuras[i].toUpperCase().contains(
+          newText.toUpperCase())) {
+        SuraResSearch.add(i);
+      };
+      for (int i = 0; i < QuranResources.arabicQuranSuras.length; i++) {
+        if (QuranResources.arabicQuranSuras[i].contains(newText)) {
+          SuraResSearch.add(i);
+        }
+      }
+    }
+    setState(() {
+      filterSearch = SuraResSearch;
+    });
+
+
   }
 }
