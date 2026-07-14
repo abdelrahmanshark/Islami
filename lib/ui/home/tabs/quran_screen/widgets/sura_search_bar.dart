@@ -5,12 +5,18 @@ import '../../../../../utils/app_assets.dart';
 import '../../../../../utils/app_colors.dart';
 import '../../../../../utils/app_styles.dart';
 
-class SuraSearchBar extends StatelessWidget {
-  const SuraSearchBar({super.key});
+typedef OnChanged = void Function(String newText);
 
+class SuraSearchBar extends StatelessWidget {
+  SuraSearchBar({super.key, required this.onChanged});
+
+  OnChanged onChanged;
   @override
   Widget build(BuildContext context) {
     return TextField(
+      onChanged: (newText) {
+        onChanged(newText);
+      },
       style: AppStyles.primaryBold20,
       cursorColor: AppColors.primaryColor,
       decoration: InputDecoration(
