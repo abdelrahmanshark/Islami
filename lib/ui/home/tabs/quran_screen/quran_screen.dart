@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/providers/most_recent_provider.dart';
 import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/most_recently.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_bar.dart';
@@ -6,6 +7,7 @@ import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:islami/utils/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../utils/app_assets.dart';
 import '../../../../utils/app_colors.dart';
@@ -20,25 +22,23 @@ class _QuranScreenState extends State<QuranScreen> {
   List<int> filterSearch = List.generate(114, (index) => index);
   late double width;
   late double height;
-  List<int> mostRecentSuras = [];
-
+  late MostRecentProvider mostRecentProvider;
   @override
   void initState() {
     // TODO: implement initState
+    //todo : this part will be init before the build
     super.initState();
-    loadMostRecent();
-  }
-
-  void loadMostRecent() async {
-    mostRecentSuras = await readMostRecentSuras();
-    setState(() {
-
+    //todo : this part will be init after the build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      mostRecentProvider.readMostRecentSuras();
     });
+    //todo cuse of the init of provider will be after build
   }
   @override
   Widget build(BuildContext context) {
     width = MediaQuery.of(context).size.width;
     height = MediaQuery.of(context).size.height;
+    mostRecentProvider = Provider.of<MostRecentProvider>(context);
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -55,7 +55,7 @@ class _QuranScreenState extends State<QuranScreen> {
             SuraSearchBar(onChanged: onSearch),
             SizedBox(height: 8),
             Visibility(
-              visible: mostRecentSuras.isNotEmpty,
+              visible: MostRecentProvider.mostRecentSuras.isNotEmpty,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -69,15 +69,18 @@ class _QuranScreenState extends State<QuranScreen> {
                       itemBuilder: (BuildContext context, int index) =>
                           InkWell(
                               onTap: () {
-                                saveSuraIndex(mostRecentSuras[index]);
+                                saveSuraIndex(
+                                    MostRecentProvider.mostRecentSuras[index]);
                                 Navigator.of(context).pushNamed(
                                   AppRoutes.soraDetailsRouteName,
-                                  arguments: mostRecentSuras[index],
+                                  arguments: MostRecentProvider
+                                      .mostRecentSuras[index],
                                 );
                               },
                               child: MostRecently(
-                                  index: mostRecentSuras[index])),
-                      itemCount: mostRecentSuras.length,
+                                  index: MostRecentProvider
+                                      .mostRecentSuras[index])),
+                      itemCount: MostRecentProvider.mostRecentSuras.length,
                     ),
                   ),
                 ],
@@ -85,7 +88,7 @@ class _QuranScreenState extends State<QuranScreen> {
             ),
             Text("Suras List", style: AppStyles.whiteBold16),
             filterSearch.isEmpty ? Text(
-              "Sorry we couldnt find the sura", style: AppStyles.whiteBold20,) :
+              "Sorry we cant find the sura", style: AppStyles.whiteBold20,) :
             Expanded(
               child: ListView.separated(
                 padding: EdgeInsetsGeometry.symmetric(vertical: 10),
