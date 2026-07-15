@@ -34,7 +34,8 @@ class _SuraDetailsState extends State<SuraDetails> {
     }
 
     return verses.isEmpty
-        ? CircularProgressIndicator(color: AppColors.primaryColor)
+        ? Center(
+        child: CircularProgressIndicator(color: AppColors.primaryColor))
         : Scaffold(
             backgroundColor: AppColors.grayColor,
             appBar: AppBar(
