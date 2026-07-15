@@ -4,20 +4,31 @@ import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../providers/most_recent_provider.dart';
 
 class SuraDetails extends StatefulWidget {
   SuraDetails({super.key});
-
   @override
   State<SuraDetails> createState() => _SuraDetailsState();
 }
 
 class _SuraDetailsState extends State<SuraDetails> {
   List<String> verses = [];
+  late MostRecentProvider mostRecentProvider;
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    mostRecentProvider.readMostRecentSuras();
+  }
 
   @override
   Widget build(BuildContext context) {
     int index = ModalRoute.of(context)!.settings.arguments as int;
+    mostRecentProvider = Provider.of<MostRecentProvider>(context);
     if (verses.isEmpty) {
       loadSuraContent(index);
     }
