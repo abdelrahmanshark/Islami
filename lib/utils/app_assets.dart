@@ -1,4 +1,5 @@
 class AppAssets {
+  static const String hadithCard = 'assets/images/hadith_card.png';
   static const String detailsBg = 'assets/images/details_bg.png';
   static const String header = 'assets/images/header.png';
   static const String quranMR = 'assets/images/quran_mostrec.png';
