@@ -5,24 +5,36 @@ import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_bar.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
+import 'package:islami/utils/shared_preferences.dart';
 
 import '../../../../utils/app_assets.dart';
 import '../../../../utils/app_colors.dart';
 
 class QuranScreen extends StatefulWidget {
   QuranScreen({super.key});
-
   @override
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
 class _QuranScreenState extends State<QuranScreen> {
   List<int> filterSearch = List.generate(114, (index) => index);
-
   late double width;
-
   late double height;
+  List<int> mostRecentSuras = [];
 
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    loadMostRecent();
+  }
+
+  void loadMostRecent() async {
+    mostRecentSuras = await readMostRecentSuras();
+    setState(() {
+
+    });
+  }
   @override
   Widget build(BuildContext context) {
     width = MediaQuery.of(context).size.width;
@@ -42,16 +54,33 @@ class _QuranScreenState extends State<QuranScreen> {
             Image.asset(AppAssets.header),
             SuraSearchBar(onChanged: onSearch),
             SizedBox(height: 8),
-            Text("Most Recently Searched", style: AppStyles.whiteBold16),
-            SizedBox(height: 8),
-            SizedBox(
-              width: width * 0.8,
-              height: height * 0.174,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (BuildContext context, int index) =>
-                    MostRecently(index: index),
-                itemCount: 5,
+            Visibility(
+              visible: mostRecentSuras.isNotEmpty,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text("Most Recently Searched", style: AppStyles.whiteBold16),
+                  SizedBox(height: 8),
+                  SizedBox(
+                    width: width * 0.8,
+                    height: height * 0.174,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (BuildContext context, int index) =>
+                          InkWell(
+                              onTap: () {
+                                saveSuraIndex(mostRecentSuras[index]);
+                                Navigator.of(context).pushNamed(
+                                  AppRoutes.soraDetailsRouteName,
+                                  arguments: mostRecentSuras[index],
+                                );
+                              },
+                              child: MostRecently(
+                                  index: mostRecentSuras[index])),
+                      itemCount: mostRecentSuras.length,
+                    ),
+                  ),
+                ],
               ),
             ),
             Text("Suras List", style: AppStyles.whiteBold16),
@@ -62,6 +91,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 padding: EdgeInsetsGeometry.symmetric(vertical: 10),
                 itemBuilder: (BuildContext context, int index) => InkWell(
                   onTap: () {
+                    saveSuraIndex(filterSearch[index]);
                     Navigator.of(context).pushNamed(
                       AppRoutes.soraDetailsRouteName,
                       arguments: filterSearch[index],
