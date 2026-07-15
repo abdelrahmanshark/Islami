@@ -14,5 +14,10 @@ class AppTheme {
       showUnselectedLabels: false,
       selectedLabelStyle: AppStyles.whiteBold12,
     ),
+    textSelectionTheme: const TextSelectionThemeData(
+      selectionHandleColor: AppColors.primaryColor,
+      cursorColor: AppColors.primaryColor,
+      selectionColor: AppColors.blackColor,
+    ),
   );
 }

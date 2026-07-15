@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
 
 import '../../../../../utils/app_assets.dart';
 import '../../../../../utils/app_colors.dart';
@@ -29,9 +30,12 @@ class MostRecently extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Text("Al-Fatiha", style: AppStyles.blackBold24),
-              Text("الفاتحة", style: AppStyles.blackBold24),
-              Text("7 verses", style: AppStyles.blackBold14),
+              Text(QuranResources.englishQuranSuras[index],
+                  style: AppStyles.blackBold24),
+              Text(QuranResources.arabicQuranSuras[index],
+                  style: AppStyles.blackBold24),
+              Text(QuranResources.AyaNumber[index],
+                  style: AppStyles.blackBold14),
             ],
           ),
           Spacer(),
