@@ -5,6 +5,7 @@ import 'package:islami/api_manger/api_manger.dart';
 import 'package:islami/ui/home/tabs/radio_screen/models/RecitersResponse.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 import 'models/RadioResponce.dart';
 
@@ -82,7 +83,16 @@ class RadioViewModel extends ChangeNotifier {
       selectedRadio = null;
     } else {
       try {
-        await player.setUrl(radio.url ?? '');
+        await player.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(radio.url ?? ''),
+            tag: MediaItem(
+              id: 'radio_${radio.id ?? radio.name}',
+              title: radio.name ?? 'Radio',
+              artist: 'Islami',
+            ),
+          ),
+        );
         player.play();
         selectedRadio = radio;
       } catch (e) {
@@ -113,7 +123,16 @@ class RadioViewModel extends ChangeNotifier {
     } else {
       try {
         String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
-        await player.setUrl(url);
+        await player.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(url),
+            tag: MediaItem(
+              id: 'sura_$_currentSura',
+              title: 'سورة $_currentSura',
+              artist: reciter.name ?? 'قارئ',
+            ),
+          ),
+        );
         player.play();
         selectedReciter = reciter;
       } catch (e) {
@@ -128,7 +147,16 @@ class RadioViewModel extends ChangeNotifier {
     if (_currentSura < 114) {
       _currentSura++;
       String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
-      await player.setUrl(url);
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: 'sura_$_currentSura',
+            title: 'سورة $_currentSura',
+            artist: reciter.name ?? 'قارئ',
+          ),
+        ),
+      );
       player.play();
       selectedReciter = reciter;
       notifyListeners();
@@ -139,7 +167,16 @@ class RadioViewModel extends ChangeNotifier {
     if (_currentSura > 1) {
       _currentSura--;
       String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
-      await player.setUrl(url);
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: 'sura_$_currentSura',
+            title: 'سورة $_currentSura',
+            artist: reciter.name ?? 'قارئ',
+          ),
+        ),
+      );
       player.play();
       selectedReciter = reciter;
       notifyListeners();
