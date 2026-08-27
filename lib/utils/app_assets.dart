@@ -14,4 +14,10 @@ class AppAssets {
   static const String sebhaIc = 'assets/icons/sebha_ic.svg';
   static const String timeIc = 'assets/icons/time_ic.svg';
   static const String suraNumVector = 'assets/icons/sura_num_vector.svg';
+  static const String sebhaBody = "assets/images/sebha_body.png";
+  static const String sebhaTitle = "assets/images/sebha_title.png";
+  static const String inActiveRadioCard =
+      "assets/images/inactive_radio_card.png";
+  static const String activeRadioCard = "assets/images/active_radio_card.png";
+  static const String prayTimeBg = "assets/images/pray_time_bg.png";
 }

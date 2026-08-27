@@ -13,6 +13,11 @@ class AppStyles {
     fontSize: 16,
     fontWeight: FontWeight.bold,
   );
+  static final TextStyle whiteBold14 = TextStyle(
+    color: AppColors.whiteColor,
+    fontSize: 14,
+    fontWeight: FontWeight.bold,
+  );
   static final TextStyle blackBold24 = TextStyle(
     color: AppColors.blackColor,
     fontSize: 24,
@@ -21,6 +26,11 @@ class AppStyles {
   static final TextStyle blackBold14 = TextStyle(
     color: AppColors.blackColor,
     fontSize: 14,
+    fontWeight: FontWeight.bold,
+  );
+  static final TextStyle blackBold16 = TextStyle(
+    color: AppColors.blackColor,
+    fontSize: 16,
     fontWeight: FontWeight.bold,
   );
   static final TextStyle blackBold18 = TextStyle(

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:islami/ui/home/tabs/hadith_screen/hadith_screen.dart';
-import 'package:islami/ui/home/tabs/quran_screen/quran_screen.dart';
-import 'package:islami/ui/home/tabs/radio_screen/radio_screen.dart';
-import 'package:islami/ui/home/tabs/sebha_screen/sebha_screen.dart';
-import 'package:islami/ui/home/tabs/time_screen/time_screen.dart';
+import 'package:islami/ui/home/home_screen_view_model.dart';
+import 'package:islami/ui/home/widgets/bottom_navigation_bar_Item.dart';
 import 'package:islami/utils/app_assets.dart';
-import 'package:islami/utils/app_colors.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   HomeScreen({super.key});
@@ -16,56 +12,41 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int selectedIndex = 0;
-  List<Widget> tabs = [
-    QuranScreen(),
-    HadithScreen(),
-    SebhaScreen(),
-    RadioScreen(),
-    TimeScreen(),
-  ];
+  HomeScreenViewModel homeScreenViewModel = HomeScreenViewModel();
   @override
   Widget build(BuildContext context) {
-
-    return Scaffold(
-      body: tabs[selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (index) {
-          selectedIndex = index;
-          setState(() {
-
-          });
+    return ChangeNotifierProvider(
+      create: (context) => homeScreenViewModel,
+      child: Consumer<HomeScreenViewModel>(
+        builder: (context, value, child) {
+          return SafeArea(
+            child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              body: homeScreenViewModel.tabs[homeScreenViewModel.selectedIndex],
+              bottomNavigationBar: BottomNavigationBar(
+                currentIndex: homeScreenViewModel.selectedIndex,
+                onTap: (index) {
+                  homeScreenViewModel.updateIndex(index);
+                },
+                items: [
+                  bottomNavBarItem(0, 'Quran', AppAssets.quranIc,
+                      homeScreenViewModel.selectedIndex),
+                  bottomNavBarItem(1, 'Hadith', AppAssets.hadithIc,
+                      homeScreenViewModel.selectedIndex),
+                  bottomNavBarItem(2, 'Sebha', AppAssets.sebhaIc,
+                      homeScreenViewModel.selectedIndex),
+                  bottomNavBarItem(3, 'Radio', AppAssets.radioIc,
+                      homeScreenViewModel.selectedIndex),
+                  bottomNavBarItem(4, 'Time', AppAssets.timeIc,
+                      homeScreenViewModel.selectedIndex),
+                ],
+              ),
+            ),
+          );
         },
-        items: [
-          bottomNavBarItem(0, 'Quran', AppAssets.quranIc),
-          bottomNavBarItem(1, 'Hadith', AppAssets.hadithIc),
-          bottomNavBarItem(2, 'Sebha', AppAssets.sebhaIc),
-          bottomNavBarItem(3, 'Radio', AppAssets.radioIc),
-          bottomNavBarItem(4, 'Time', AppAssets.timeIc),
-        ],
       ),
     );
   }
 
-  BottomNavigationBarItem bottomNavBarItem(int index, String label,
-      String icon) {
-    return BottomNavigationBarItem(
-      icon: selectedIndex == index ? Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 6
-          ),
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(66),
-              color: AppColors.grayColor
-          ),
-          child: SvgPicture.asset(
-            icon,
-            color: AppColors.whiteColor,
-          )
-      ) : SvgPicture.asset(icon),
-      label: label,
-    );
-  }
+
 }

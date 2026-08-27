@@ -6,7 +6,7 @@ import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_themes.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
   runApp(ChangeNotifierProvider(
       create: (context) => MostRecentProvider(),
       child: Islami()));

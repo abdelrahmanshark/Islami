@@ -6,15 +6,13 @@ import 'package:islami/utils/app_assets.dart';
 class HadithScreen extends StatelessWidget {
   HadithScreen({super.key});
 
-  late double height;
-  late double width;
   @override
   Widget build(BuildContext context) {
-    height = MediaQuery
+    var height = MediaQuery
         .of(context)
         .size
         .height;
-    width = MediaQuery
+    var width = MediaQuery
         .of(context)
         .size
         .width;
