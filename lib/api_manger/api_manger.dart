@@ -6,8 +6,8 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/RadioResponce.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/RecitersResponse.dart';
+import 'package:islami/ui/home/tabs/radio_screen/models/radio_response.dart';
+import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
 
 abstract class ApiManger {
@@ -18,6 +18,7 @@ abstract class ApiManger {
   static const String timeEndpoint =
       '/v1/timingsByCity?city=cairo&country=egypt';
 
+/*  /v1/timingsByCity?city=Makkah&country=Saudi%20Arabia*/
   /*/v1/timingsByCity?city=cairo&country=egypt*/
   static Future<RadioResponse> getRadioResponse() async {
     try {

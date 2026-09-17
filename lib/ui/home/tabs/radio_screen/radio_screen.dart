@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/reciters_screen.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_toggle_switch.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_card.dart';
@@ -9,6 +10,7 @@ import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../utils/app_assets.dart';
+import '../quran_screen/widgets/sura_bar.dart';
 
 class RadioScreen extends StatelessWidget {
   const RadioScreen({super.key});
@@ -69,44 +71,54 @@ class RadioScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                )
-                    : provider.reciterIsLoading
-                    ? Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                )
-                    : provider.reciterFailureMsg.isNotEmpty
-                    ? Expanded(
-                  child: Center(
-                    child: Text(
-                      provider.reciterFailureMsg,
-                      style: AppStyles.primaryBold24,
-                    ),
-                  ),
-                )
-                    : Expanded(
-                  child: Column(
-                    children: [
-                      SuraSearchBar(onChanged: (newText) {
-                        provider.filterReciter(newText);
-                      },
-                        hintText: 'Shikh Search',
-                        textDirection: TextDirection.rtl,),
-                      Expanded(
-                        child: ListView.builder(
-                          itemBuilder: (context, index) {
-                            return ReciterCard(
-                                reciter: provider.filteredReciters[index]);
-                          },
-                          itemCount: provider.filteredReciters.length,
-                        ),
+                ):
+                    Expanded(
+                      child: Column(
+                        children: [
+                          SuraSearchBar(onChanged: provider.onSearch,textDirection: TextDirection.rtl,),
+                          SizedBox(height: 12),
+                          provider.filterSearch.isEmpty ? Text(
+                            "Sorry we cant find the sura",
+                            style: AppStyles.whiteBold20,) :
+                          Expanded(
+                            child: ListView.separated(
+                              padding: EdgeInsetsGeometry.symmetric(vertical: 10,horizontal: 20),
+                              itemBuilder: (BuildContext context, int index) =>
+                                  InkWell(
+                                    onTap: () {
+                                      provider.currentSura = provider.filterSearch[index] + 1;
+                                      provider.resetReciterSearch();
+                                      Navigator.push(context, MaterialPageRoute(
+                                          builder: (_) {
+                                          return  ChangeNotifierProvider.value(
+                                              value: provider,
+                                              child: RecitersScreen(index: provider.filterSearch[index],),
+
+                                            );
+
+                                          },
+
+
+                                      ));
+                                    },
+                                    child: SuraBar(index: provider.filterSearch[index]),
+                                  ),
+                              separatorBuilder: (BuildContext context, int index) =>
+                                  Container(
+                                    margin: EdgeInsets.symmetric(
+                                      vertical: 10,
+                                      horizontal: 12,
+                                    ),
+                                    height: 2,
+                                    width: double.infinity,
+                                    color: AppColors.whiteColor,
+                                  ),
+                              itemCount: provider.filterSearch.length,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    )
               ],
             ),
           );

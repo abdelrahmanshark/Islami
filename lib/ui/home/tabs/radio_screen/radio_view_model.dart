@@ -2,14 +2,18 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:islami/api_manger/api_manger.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/RecitersResponse.dart';
+import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
+import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
-import 'models/RadioResponce.dart';
+import '../../../../services/audio_player_service.dart';
+import '../quran_screen/quran_resources.dart';
+import 'models/radio_response.dart';
 
 class RadioViewModel extends ChangeNotifier {
+  List<int> filterSearch = List.generate(114, (index) => index);
   bool radioIsLoading = false;
   bool reciterIsLoading = false;
   List<Radios> radios = [];
@@ -21,8 +25,8 @@ class RadioViewModel extends ChangeNotifier {
   Radios? selectedRadio;
   Radios? selectedRadioForSound;
   Reciters? selectedReciter;
-  int _currentSura = 1;
-  final player = AudioPlayer();
+  int currentSura = 1;
+  final player = AudioPlayerService.instance.player;
   int toggleSwitchIndex = 0;
 
   RadioViewModel() {
@@ -114,7 +118,7 @@ class RadioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get formatSura => _currentSura.toString().padLeft(3, '0');
+  String get formatSura => currentSura.toString().padLeft(3, '0');
 
   Future<void> playReciter(Reciters reciter) async {
     if (selectedReciter == reciter) {
@@ -127,8 +131,8 @@ class RadioViewModel extends ChangeNotifier {
           AudioSource.uri(
             Uri.parse(url),
             tag: MediaItem(
-              id: 'sura_$_currentSura',
-              title: 'سورة $_currentSura',
+              id: 'sura_$currentSura',
+              title: 'سورة $currentSura',
               artist: reciter.name ?? 'قارئ',
             ),
           ),
@@ -144,15 +148,15 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   Future<void> recitersNext(Reciters reciter) async {
-    if (_currentSura < 114) {
-      _currentSura++;
+    if (currentSura < 114) {
+      currentSura++;
       String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
           tag: MediaItem(
-            id: 'sura_$_currentSura',
-            title: 'سورة $_currentSura',
+            id: 'sura_$currentSura',
+            title: 'سورة $currentSura',
             artist: reciter.name ?? 'قارئ',
           ),
         ),
@@ -164,15 +168,15 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   Future<void> recitersBack(Reciters reciter) async {
-    if (_currentSura > 1) {
-      _currentSura--;
+    if (currentSura > 1) {
+      currentSura--;
       String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
           tag: MediaItem(
-            id: 'sura_$_currentSura',
-            title: 'سورة $_currentSura',
+            id: 'sura_$currentSura',
+            title: 'سورة $currentSura',
             artist: reciter.name ?? 'قارئ',
           ),
         ),
@@ -205,10 +209,35 @@ class RadioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  void onSearch(String newText) {
+    List<int> suraResultSearch = [];
+
+    for (int i = 0; i < QuranResources.englishQuranSuras.length; i++) {
+      if (QuranResources.englishQuranSuras[i].toUpperCase().contains(
+        newText.toUpperCase(),
+      ) ||
+          QuranResources.arabicQuranSuras[i].contains(newText)) {
+        suraResultSearch.add(i);
+      }
+    }
+
+    filterSearch = suraResultSearch;
+    notifyListeners();
+  }
+
+  void onSuraTap(int index, BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.recitersRouteName,
+      arguments: index
+    );
+  }
+  void resetReciterSearch() {
+    filteredReciters = reciters;
+    notifyListeners();
+  }
   @override
   void dispose() {
     // TODO: implement dispose
-    player.dispose();
     super.dispose();
   }
 }

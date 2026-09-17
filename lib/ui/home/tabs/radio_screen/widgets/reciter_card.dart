@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/RecitersResponse.dart';
+import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../utils/app_assets.dart';
