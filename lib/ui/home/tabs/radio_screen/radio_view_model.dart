@@ -93,7 +93,7 @@ class RadioViewModel extends ChangeNotifier {
           AudioSource.uri(
             Uri.parse(radio.url ?? ''),
             tag: MediaItem(
-              id: 'radio_${radio.id ?? radio.name}',
+              id: 'radio_${radio.name}',
               title: radio.name ?? 'Radio',
               artist: 'Islami',
             ),
@@ -128,7 +128,7 @@ class RadioViewModel extends ChangeNotifier {
       selectedReciter = null;
     } else {
       try {
-        String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
+        String url = '${reciter.server}$formatSura.mp3';
         await player.setAudioSource(
           AudioSource.uri(
             Uri.parse(url),
@@ -152,7 +152,7 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> recitersNext(Reciters reciter) async {
     if (currentSura < 114) {
       currentSura++;
-      String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
+      String url = '${reciter.server}$formatSura.mp3';
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
@@ -172,7 +172,7 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> recitersBack(Reciters reciter) async {
     if (currentSura > 1) {
       currentSura--;
-      String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
+      String url = '${reciter.server}$formatSura.mp3';
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
