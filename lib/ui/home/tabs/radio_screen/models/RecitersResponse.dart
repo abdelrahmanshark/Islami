@@ -57,6 +57,7 @@ class Reciters {
   }
 }
 
+
 class Moshaf {
   Moshaf({
     this.id,
