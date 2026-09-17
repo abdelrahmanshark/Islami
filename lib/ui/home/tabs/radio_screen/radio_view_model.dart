@@ -1,7 +1,8 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:islami/api_manger/api_manger.dart';
+import 'package:islami/data/repository/radio_repository_impl.dart';
+import 'package:islami/domain/repository/radio_repository.dart';
 import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -13,6 +14,14 @@ import '../quran_screen/quran_resources.dart';
 import 'models/radio_response.dart';
 
 class RadioViewModel extends ChangeNotifier {
+  RadioViewModel({RadioRepository? radioRepository})
+    : _radioRepository = radioRepository ?? RadioRepositoryImpl() {
+    getRadios();
+    getReciters();
+  }
+
+  final RadioRepository _radioRepository;
+
   List<int> filterSearch = List.generate(114, (index) => index);
   bool radioIsLoading = false;
   bool reciterIsLoading = false;
@@ -28,11 +37,6 @@ class RadioViewModel extends ChangeNotifier {
   int currentSura = 1;
   final player = AudioPlayerService.instance.player;
   int toggleSwitchIndex = 0;
-
-  RadioViewModel() {
-    getRadios();
-    getReciters();
-  }
 
   void changeToggleIndex(int index) {
     toggleSwitchIndex = index;
@@ -51,8 +55,7 @@ class RadioViewModel extends ChangeNotifier {
     radioIsLoading = true;
     notifyListeners();
     try {
-      RadioResponse radiosResponse = await ApiManger.getRadioResponse();
-      radios = radiosResponse.radios ?? [];
+      radios = await _radioRepository.getRadios();
       filteredRadios = radios;
       radioIsLoading = false;
       notifyListeners();
@@ -68,8 +71,7 @@ class RadioViewModel extends ChangeNotifier {
     reciterIsLoading = true;
     notifyListeners();
     try {
-      var recitersResponse = await ApiManger.getRecitersResponse();
-      reciters = recitersResponse.reciters ?? [];
+      reciters = await _radioRepository.getReciters();
       reciterIsLoading = false;
       filteredReciters = reciters;
       notifyListeners();
@@ -187,6 +189,16 @@ class RadioViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> seekReciter(Duration position) async {
+    await player.seek(position);
+  }
+
+  String formatAudioTime(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
   void filterRadio(String newText) {
     if (newText.isEmpty) {
       filteredRadios = radios;
@@ -209,14 +221,13 @@ class RadioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
   void onSearch(String newText) {
     List<int> suraResultSearch = [];
 
     for (int i = 0; i < QuranResources.englishQuranSuras.length; i++) {
       if (QuranResources.englishQuranSuras[i].toUpperCase().contains(
-        newText.toUpperCase(),
-      ) ||
+            newText.toUpperCase(),
+          ) ||
           QuranResources.arabicQuranSuras[i].contains(newText)) {
         suraResultSearch.add(i);
       }
@@ -227,17 +238,11 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   void onSuraTap(int index, BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.recitersRouteName,
-      arguments: index
-    );
+    Navigator.pushNamed(context, AppRoutes.recitersRouteName, arguments: index);
   }
+
   void resetReciterSearch() {
     filteredReciters = reciters;
     notifyListeners();
-  }
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
   }
 }
