@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:islami/data/repository/radio_repository_impl.dart';
 import 'package:islami/domain/repository/radio_repository.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
+import 'package:islami/models/reciters_response.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:just_audio/just_audio.dart';
@@ -93,7 +93,7 @@ class RadioViewModel extends ChangeNotifier {
           AudioSource.uri(
             Uri.parse(radio.url ?? ''),
             tag: MediaItem(
-              id: 'radio_${radio.id ?? radio.name}',
+              id: 'radio_${radio.name}',
               title: radio.name ?? 'Radio',
               artist: 'Islami',
             ),
@@ -128,7 +128,7 @@ class RadioViewModel extends ChangeNotifier {
       selectedReciter = null;
     } else {
       try {
-        String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
+        String url = '${reciter.server}$formatSura.mp3';
         await player.setAudioSource(
           AudioSource.uri(
             Uri.parse(url),
@@ -152,7 +152,7 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> recitersNext(Reciters reciter) async {
     if (currentSura < 114) {
       currentSura++;
-      String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
+      String url = '${reciter.server}$formatSura.mp3';
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),
@@ -172,7 +172,7 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> recitersBack(Reciters reciter) async {
     if (currentSura > 1) {
       currentSura--;
-      String url = '${reciter.moshaf?.first.server}$formatSura.mp3';
+      String url = '${reciter.server}$formatSura.mp3';
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(url),

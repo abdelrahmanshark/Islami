@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/radio_response.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
+import 'package:islami/models/radio_response.dart';
+import 'package:islami/models/reciters_response.dart';
 
 class RadioRemoteDataSource {
   static const String _baseUrl = 'https://mp3quran.net';
