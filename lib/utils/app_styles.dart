@@ -43,6 +43,11 @@ class AppStyles {
     fontSize: 20,
     fontWeight: FontWeight.bold,
   );
+  static final TextStyle primaryBold16 = TextStyle(
+    color: AppColors.primaryColor,
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+  );
   static final TextStyle primaryBold20 = TextStyle(
     color: AppColors.primaryColor,
     fontSize: 20,

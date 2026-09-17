@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/RecitersResponse.dart';
+import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../utils/app_assets.dart';
 import '../../../../../utils/app_colors.dart';
 import '../../../../../utils/app_styles.dart';
 import '../radio_view_model.dart';
+import 'reciter_audio_slider.dart';
 
 class ReciterCard extends StatelessWidget {
-  Reciters reciter;
+  final Reciters reciter;
 
   ReciterCard({super.key, required this.reciter});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
-      height: MediaQuery.heightOf(context) * 0.14,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Consumer<RadioViewModel>(
-        builder: (context, provider, child) {
-          bool isReciterOn = provider.selectedReciter == reciter;
-          return Stack(
+    return Consumer<RadioViewModel>(
+      builder: (context, provider, child) {
+        bool isReciterOn = provider.selectedReciter == reciter;
+        return Container(
+          margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
+          height: MediaQuery.heightOf(context) * (isReciterOn ? 0.22 : 0.14),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Stack(
             alignment: AlignmentGeometry.bottomCenter,
             children: [
               isReciterOn
@@ -80,12 +81,13 @@ class ReciterCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (isReciterOn) const ReciterAudioSlider(),
                 ],
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

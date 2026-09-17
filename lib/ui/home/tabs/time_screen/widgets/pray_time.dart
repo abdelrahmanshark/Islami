@@ -9,91 +9,109 @@ import 'package:provider/provider.dart';
 import '../models/TimeResponse.dart';
 
 class PrayTime extends StatelessWidget {
-  Timings? timing;
+  final Timings? timing;
+  final DateInfo? dateInfo;
 
-  DateInfo? dateInfo;
-
-  PrayTime({super.key, required this.timing, required this.dateInfo});
+  const PrayTime({super.key, required this.timing, required this.dateInfo});
 
   @override
   Widget build(BuildContext context) {
+    final prayers = context.select((TimeViewModel vm) => vm.pryerTimes);
+    final nextPrayerIndex =
+        context.select((TimeViewModel vm) => vm.nextPrayerIndex);
+
     return Container(
       width: double.infinity,
-      height: MediaQuery.heightOf(context) * .4,
-      padding: EdgeInsetsGeometry.symmetric(vertical: 5),
+      height: MediaQuery.heightOf(context) * 0.38,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage(AppAssets.prayTimeBg),
           fit: BoxFit.fill,
         ),
+        borderRadius: BorderRadius.circular(20),
       ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              SizedBox(width: 1),
-              Column(
-                children: [
-                  Text(
-                    dateInfo?.gregorian?.day ?? '',
-                    style: AppStyles.whiteBold16,
-                  ),
-                  Text(
-                    dateInfo?.gregorian?.month?.en ?? '',
-                    style: AppStyles.whiteBold16,
-                  ),
-                  Text(
-                    dateInfo?.gregorian?.year ?? '',
-                    style: AppStyles.whiteBold16,
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      dateInfo?.gregorian?.day ?? '',
+                      style: AppStyles.whiteBold16,
+                    ),
+                    Text(
+                      dateInfo?.gregorian?.month?.en ?? '',
+                      style: AppStyles.whiteBold14,
+                    ),
+                    Text(
+                      dateInfo?.gregorian?.year ?? '',
+                      style: AppStyles.whiteBold12,
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: 10),
-              Column(
-                children: [
-                  Text('Pray Time', style: AppStyles.blackBold18),
-                  Text(
-                    dateInfo?.hijri?.weekday?.ar ?? '',
-                    style: AppStyles.whiteBold20,
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  children: [
+                    Text('Pray Time', style: AppStyles.blackBold18),
+                    const SizedBox(height: 4),
+                    Text(
+                      dateInfo?.hijri?.weekday?.ar ?? '',
+                      style: AppStyles.whiteBold20,
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: 1),
-              Column(
-                children: [
-                  Text(
-                    dateInfo?.hijri?.day ?? '',
-                    style: AppStyles.whiteBold16,
-                  ),
-                  Text(
-                    dateInfo?.hijri?.month?.en ?? '',
-                    style: AppStyles.whiteBold16,
-                  ),
-                  Text(
-                    dateInfo?.hijri?.year ?? '',
-                    style: AppStyles.whiteBold16,
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      dateInfo?.hijri?.day ?? '',
+                      style: AppStyles.whiteBold16,
+                    ),
+                    Text(
+                      dateInfo?.hijri?.month?.ar ??
+                          dateInfo?.hijri?.month?.en ??
+                          '',
+                      style: AppStyles.whiteBold14,
+                    ),
+                    Text(
+                      dateInfo?.hijri?.year ?? '',
+                      style: AppStyles.whiteBold12,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
           Expanded(
-            child: CarouselSlider(
-              options: CarouselOptions(
-                height: MediaQuery.heightOf(context) * .2,
-                enlargeCenterPage: true,
-                reverse: true,
-                viewportFraction: .22,
-                enlargeFactor: .1,
-              ),
-              items: List.generate(8, (index) => index).map((index) {
-                return PrayersCard(
-                  prayer: context.read<TimeViewModel>().pryerTimes[index],
-                );
-              }).toList(),
-            ),
+            child: prayers.isEmpty
+                ? const SizedBox.shrink()
+                : CarouselSlider.builder(
+                    itemCount: prayers.length,
+                    options: CarouselOptions(
+                      height: MediaQuery.heightOf(context) * 0.2,
+                      enlargeCenterPage: true,
+                      reverse: true,
+                      viewportFraction: 0.24,
+                      enlargeFactor: 0.15,
+                      initialPage:
+                          nextPrayerIndex >= 0 ? nextPrayerIndex : 0,
+                    ),
+                    itemBuilder: (context, index, realIndex) {
+                      return PrayersCard(
+                        prayer: prayers[index],
+                        isNext: index == nextPrayerIndex,
+                      );
+                    },
+                  ),
           ),
         ],
       ),

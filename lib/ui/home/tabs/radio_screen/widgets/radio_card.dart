@@ -5,7 +5,7 @@ import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-import '../models/RadioResponce.dart';
+import '../models/radio_response.dart';
 
 class RadioCard extends StatelessWidget {
   Radios radio;
