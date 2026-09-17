@@ -6,18 +6,16 @@ import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
 class HadithCard extends StatelessWidget {
-  int index;
+  final int index;
 
-  HadithCard({super.key, required this.index});
-
-
+  const HadithCard({super.key, required this.index});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) =>
-      HadithModelView()
-        ..loadHadithContent(index),
+          HadithModelView()
+            ..loadHadithContent(index),
       child: Consumer<HadithModelView>(
         builder: (BuildContext context, HadithModelView provider,
             Widget? child) {
@@ -32,24 +30,24 @@ class HadithCard extends StatelessWidget {
             ),
             child: provider.hadith.title.isEmpty
                 ? Center(
-              child: CircularProgressIndicator(color: AppColors.blackColor),
-            )
+                    child: CircularProgressIndicator(color: AppColors.blackColor),
+                  )
                 : Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text("${provider.hadith.title}", style: AppStyles.blackBold24),
-                SizedBox(height: 30),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Text(
-                      "${provider.hadith.content}",
-                      style: AppStyles.blackBold18,
-                      textAlign: TextAlign.center,
-                    ),
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(provider.hadith.title, style: AppStyles.blackBold24),
+                      SizedBox(height: 30),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Text(
+                            provider.hadith.content,
+                            style: AppStyles.blackBold18,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           );
         },
       ),
