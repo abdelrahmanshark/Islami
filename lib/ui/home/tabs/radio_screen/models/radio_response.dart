@@ -21,6 +21,7 @@ class RadioResponse {
     return map;
   }
 }
+
 class Radios {
   Radios({this.id, this.name, this.url, this.recentDate});
 

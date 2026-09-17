@@ -22,6 +22,7 @@ class RecitersResponse {
   }
 }
 
+
 class Reciters {
   Reciters({this.id, this.name, this.letter, this.date, this.moshaf});
 
