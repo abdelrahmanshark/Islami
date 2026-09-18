@@ -1,0 +1,31 @@
+[33m106d278[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/audio_background[m[33m)[m Revert moving radio models to lib/models.
+[33m0f37429[m[33m ([m[1;31morigin/feat/audio_background[m[33m)[m -organized files
+[33m03568a8[m Merge branch 'feat/audio_background' of https://github.com/abdelrahmanshark/Islami into feat/audio_background
+[33m4260e53[m Refactor RadioResponse and RecitersResponse models to simplify structure and improve JSON handling; remove unused properties and files.
+[33mb6f3aea[m Merge branch 'dev' into feat/audio_background
+[33mfeea955[m -feat clean arch
+[33mbe33da9[m[33m ([m[1;31morigin/dev[m[33m)[m Update RecitersResponse.dart
+[33mdaa9a00[m Update RadioResponce.dart
+[33m27c0873[m -fix comment mangment
+[33maa16dbc[m - Implement RadioResponse and RecitersResponse models with JSON serialization/deserialization
+[33m41be548[m -feat radio background
+[33m4e965a9[m[33m ([m[1;32mdev[m[33m)[m -feat radio -feat MvvM
+[33m16a50c6[m Merge pull request #11 from abdelrahmanshark/feat/hadith_screen
+[33mefc323a[m[33m ([m[1;31morigin/feat/hadith_screen[m[33m, [m[1;32mfeat/hadith_screen[m[33m)[m -feat hadith tab
+[33m2f1cca9[m Merge pull request #10 from abdelrahmanshark/feat/most_recent_provider
+[33me59268f[m[33m ([m[1;31morigin/feat/most_recent_provider[m[33m, [m[1;32mfeat/most_recent_provider[m[33m)[m -feat most recent provider
+[33me8dfc4e[m Merge pull request #9 from abdelrahmanshark/feat/most_recently
+[33m4e6a6bb[m[33m ([m[1;31morigin/feat/most_recently[m[33m, [m[1;32mfeat/most_recently[m[33m)[m -feat most recent suras
+[33mdb87267[m Merge pull request #8 from abdelrahmanshark/feat/search
+[33mea4d5af[m[33m ([m[1;31morigin/feat/search[m[33m, [m[1;32mfeat/search[m[33m)[m -feat sura search
+[33mecf818e[m -feat home screen
+[33m6844226[m Merge pull request #7 from abdelrahmanshark/feat/home_screen
+[33m4158f91[m -feat home screen -added suras -added app assets and utils -feat quran tab done
+[33m1ac96b9[m Merge pull request #4 from abdelrahmanshark/master
+[33m2b59fca[m Merge pull request #3 from abdelrahmanshark/feat/appbar
+[33mbca8e35[m -Set AppBar background color to black in HomeScreen
+[33m259c87a[m Merge pull request #2 from abdelrahmanshark/feat/appbar
+[33m504b0a1[m -Set AppBar background color to white in HomeScreen
+[33m83a2c9f[m Merge pull request #1 from abdelrahmanshark/feat/appbar
+[33m107eceb[m -Add AppBar to HomeScreen
+[33m10662c8[m -init islami -Add app routes and colors

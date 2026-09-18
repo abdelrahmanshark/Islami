@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/radio_screen/models/reciters_response.dart';
+import 'package:islami/models/reciters_response.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../utils/app_assets.dart';
@@ -11,7 +11,7 @@ import 'reciter_audio_slider.dart';
 class ReciterCard extends StatelessWidget {
   final Reciters reciter;
 
-  ReciterCard({super.key, required this.reciter});
+  const ReciterCard({super.key, required this.reciter});
 
   @override
   Widget build(BuildContext context) {

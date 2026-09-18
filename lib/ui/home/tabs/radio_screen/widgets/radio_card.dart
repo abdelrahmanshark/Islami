@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:islami/models/radio_response.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-import '../models/radio_response.dart';
-
 class RadioCard extends StatelessWidget {
-  Radios radio;
+  final Radios radio;
 
-  RadioCard({super.key, required this.radio});
+  const RadioCard({super.key, required this.radio});
 
   @override
   Widget build(BuildContext context) {

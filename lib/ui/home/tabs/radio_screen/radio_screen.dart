@@ -4,7 +4,6 @@ import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/reciters_screen.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_toggle_switch.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_card.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
