@@ -85,7 +85,9 @@ class RadioScreen extends StatelessWidget {
                               itemBuilder: (BuildContext context, int index) =>
                                   InkWell(
                                     onTap: () {
-                                      provider.currentSura = provider.filterSearch[index] + 1;
+                                      provider.updateCurrentSura(
+                                        provider.filterSearch[index] + 1,
+                                      );
                                       provider.resetReciterSearch();
                                       Navigator.push(context, MaterialPageRoute(
                                           builder: (_) {

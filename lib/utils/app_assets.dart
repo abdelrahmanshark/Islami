@@ -20,4 +20,8 @@ class AppAssets {
       "assets/images/inactive_radio_card.png";
   static const String activeRadioCard = "assets/images/active_radio_card.png";
   static const String prayTimeBg = "assets/images/pray_time_bg.png";
+  static const String azan = 'assets/audio/azan.mp3';
+  static const String azkarJson = 'assets/json/azkar.json';
+  static const String morningAzkar = 'assets/images/morning_azkar.png';
+  static const String eveningAzkar = 'assets/images/evening_azkar.png';
 }

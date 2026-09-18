@@ -4,7 +4,7 @@ import 'package:islami/ui/home/tabs/hadith_screen/hadith_card.dart';
 import 'package:islami/utils/app_assets.dart';
 
 class HadithScreen extends StatelessWidget {
-  HadithScreen({super.key});
+  const HadithScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

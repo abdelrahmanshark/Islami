@@ -11,7 +11,7 @@ import '../../../../utils/app_assets.dart';
 import '../../../../utils/app_colors.dart';
 
 class QuranScreen extends StatefulWidget {
-  QuranScreen({super.key});
+  const QuranScreen({super.key});
   @override
   State<QuranScreen> createState() => _QuranScreenState();
 }

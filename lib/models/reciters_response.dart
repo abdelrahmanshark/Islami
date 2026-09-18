@@ -14,9 +14,10 @@ class RecitersResponse {
 }
 
 class Reciters {
-  Reciters({this.name, this.server});
+  Reciters({this.id, this.name, this.server});
 
   Reciters.fromJson(dynamic json) {
+    id = json['id'];
     name = json['name'];
     final moshafList = json['moshaf'];
     if (moshafList is List && moshafList.isNotEmpty) {
@@ -24,6 +25,7 @@ class Reciters {
     }
   }
 
+  int? id;
   String? name;
   String? server;
 }

@@ -5,7 +5,7 @@ import 'package:islami/utils/app_assets.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  HomeScreen({super.key});
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Consumer<HomeScreenViewModel>(
         builder: (context, value, child) {
           return SafeArea(
+            top: false,
             child: Scaffold(
               resizeToAvoidBottomInset: false,
               body: homeScreenViewModel.tabs[homeScreenViewModel.selectedIndex],

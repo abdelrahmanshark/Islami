@@ -35,7 +35,10 @@ class HadithCard extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(provider.hadith.title, style: AppStyles.blackBold24),
+                      Text(provider.hadith.title,
+                       style: AppStyles.blackBold24,
+                       textAlign: TextAlign.center,
+                       ),
                       SizedBox(height: 30),
                       Expanded(
                         child: SingleChildScrollView(

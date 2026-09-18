@@ -14,7 +14,7 @@ class MostRecentProvider extends ChangeNotifier {
   Future<void> readMostRecentSuras() async {
     final pref = await SharedPreferences.getInstance();
     List<String> mostRecentAsString =
-        await pref.getStringList(SharedPreferencesKay.kay) ?? [];
+        pref.getStringList(SharedPreferencesKay.kay) ?? [];
     List<int> mostRecentAsInt = mostRecentAsString
         .map((e) => int.parse(e))
         .toList();

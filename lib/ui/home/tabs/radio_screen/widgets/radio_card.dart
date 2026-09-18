@@ -23,8 +23,12 @@ class RadioCard extends StatelessWidget {
       ),
       child: Consumer<RadioViewModel>(
         builder: (context, provider, child) {
-          bool isRadioOn = provider.selectedRadio == radio;
-          bool isSoundON = provider.selectedRadioForSound != radio;
+          bool isRadioOn =
+              provider.selectedRadioId != null &&
+              provider.selectedRadioId == radio.id;
+          bool isSoundON =
+              provider.selectedRadioForSoundId == null ||
+              provider.selectedRadioForSoundId != radio.id;
           return Stack(
             alignment: AlignmentGeometry.bottomCenter,
             children: [

@@ -7,6 +7,7 @@ import '../../../../../utils/app_colors.dart';
 import '../../../../../utils/app_styles.dart';
 import '../radio_view_model.dart';
 import 'reciter_audio_slider.dart';
+import 'reciter_mode_icon_button.dart';
 
 class ReciterCard extends StatelessWidget {
   final Reciters reciter;
@@ -17,7 +18,9 @@ class ReciterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<RadioViewModel>(
       builder: (context, provider, child) {
-        bool isReciterOn = provider.selectedReciter == reciter;
+        bool isReciterOn =
+            provider.selectedReciterId != null &&
+            provider.selectedReciterId == reciter.id;
         return Container(
           margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
           height: MediaQuery.heightOf(context) * (isReciterOn ? 0.22 : 0.14),
@@ -49,6 +52,14 @@ class ReciterCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      if (isReciterOn)
+                        ReciterModeIconButton(
+                          icon: Icons.repeat_one_rounded,
+                          isActive: provider.isRepeatEnabled,
+                          onPressed: () {
+                            provider.toggleRepeat();
+                          },
+                        ),
                       IconButton(
                         onPressed: () {
                           provider.recitersBack(reciter);
@@ -79,6 +90,14 @@ class ReciterCard extends StatelessWidget {
                           size: 50,
                         ),
                       ),
+                      if (isReciterOn)
+                        ReciterModeIconButton(
+                          icon: Icons.playlist_play_rounded,
+                          isActive: provider.isAutoNextEnabled,
+                          onPressed: () {
+                            provider.toggleAutoNext();
+                          },
+                        ),
                     ],
                   ),
                   if (isReciterOn) const ReciterAudioSlider(),
