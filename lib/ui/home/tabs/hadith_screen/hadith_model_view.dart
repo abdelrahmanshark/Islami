@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../models/hadith.dart';
 
 class HadithModelView extends ChangeNotifier {
-  HadithModelView() {}
+  HadithModelView();
   Hadith hadith = Hadith(title: '', content: '');
 
   void loadHadithContent(int index) async {

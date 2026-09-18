@@ -1,16 +1,11 @@
 import 'package:islami/data/radio/radio_remote_data_source.dart';
+import 'package:islami/domain/repositories/radio_repository.dart';
 import 'package:islami/models/radio_response.dart';
 import 'package:islami/models/reciters_response.dart';
 
-abstract class RadioRepository {
-  Future<List<Radios>> getRadios();
-
-  Future<List<Reciters>> getReciters();
-}
-
 class RadioRepositoryImpl implements RadioRepository {
   RadioRepositoryImpl({RadioRemoteDataSource? dataSource})
-    : _dataSource = dataSource ?? RadioRemoteDataSource();
+      : _dataSource = dataSource ?? RadioRemoteDataSource();
 
   final RadioRemoteDataSource _dataSource;
 

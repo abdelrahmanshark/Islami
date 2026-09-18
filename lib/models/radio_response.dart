@@ -14,13 +14,15 @@ class RadioResponse {
 }
 
 class Radios {
-  Radios({this.name, this.url});
+  Radios({this.id, this.name, this.url});
 
   Radios.fromJson(dynamic json) {
+    id = json['id'];
     name = json['name'];
     url = json['url'];
   }
 
+  int? id;
   String? name;
   String? url;
 }

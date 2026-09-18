@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import '../../../../providers/most_recent_provider.dart';
 
 class SuraDetails extends StatefulWidget {
-  SuraDetails({super.key});
+  const SuraDetails({super.key});
   @override
   State<SuraDetails> createState() => _SuraDetailsState();
 }
@@ -61,7 +61,7 @@ class _SuraDetailsState extends State<SuraDetails> {
                 children: [
                   SizedBox(height: 30),
                   Text(
-                    "${QuranResources.arabicQuranSuras[index]}",
+                    QuranResources.arabicQuranSuras[index],
                     style: AppStyles.primaryBold24,
                     textAlign: TextAlign.center,
                   ),

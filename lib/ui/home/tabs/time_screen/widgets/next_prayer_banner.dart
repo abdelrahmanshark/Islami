@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/time_screen/time_view_model.dart';
+import 'package:islami/ui/home/tabs/time_screen/widgets/azan_sound_button.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
@@ -25,33 +26,39 @@ class NextPrayerBanner extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.primaryColor, width: 1.5),
           ),
-          child: Column(
-            children: [
-              Text(
-                'الصلاة القادمة',
-                style: AppStyles.primaryBold16,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                prayer.PryerName,
-                style: AppStyles.whiteBold20,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                prayer.PryerTime,
-                style: AppStyles.primaryBold20,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'متبقي',
-                style: AppStyles.whiteBold14,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                provider.remainingTimeFormatted,
-                style: AppStyles.primaryBold24,
-              ),
-            ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [ Column(
+                  children: [
+                    Text(
+                      'الصلاة القادمة',
+                      style: AppStyles.primaryBold16,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      prayer.PryerName,
+                      style: AppStyles.whiteBold20,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      prayer.PryerTime,
+                      style: AppStyles.primaryBold20,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'متبقي',
+                      style: AppStyles.whiteBold14,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      provider.remainingTimeFormatted,
+                      style: AppStyles.primaryBold24,
+                    ),
+                  ],
+                ),
+                    Column(children: [
+                      Text('AZAN SOUND', style: AppStyles.whiteBold20,),
+                      AzanSoundButton()])]
           ),
         );
       },
