@@ -6,6 +6,7 @@ import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/models/moshaf_page_marker.dart';
 import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
 import 'package:islami/utils/app_assets.dart';
+import 'package:islami/utils/arabic_utils.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 /// How the Mushaf search field interprets the query.
@@ -96,12 +97,13 @@ class MoshafViewModel extends ChangeNotifier {
   /// Finds the first Surah match and returns the page where it starts.
   int? _findPageIndexBySuraName(String query) {
     final lowerQuery = query.toLowerCase();
+    final normalizedQuery = normalizeArabic(query);
     int? suraNumber;
 
     for (int i = 0; i < QuranResources.arabicQuranSuras.length; i++) {
-      final arabic = QuranResources.arabicQuranSuras[i];
+      final arabic = normalizeArabic(QuranResources.arabicQuranSuras[i]);
       final english = QuranResources.englishQuranSuras[i].toLowerCase();
-      if (arabic.contains(query) || english.contains(lowerQuery)) {
+      if (arabic.contains(normalizedQuery) || english.contains(lowerQuery)) {
         suraNumber = i + 1;
         break;
       }

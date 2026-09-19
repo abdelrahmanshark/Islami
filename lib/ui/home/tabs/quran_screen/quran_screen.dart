@@ -40,7 +40,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Image.asset(AppAssets.header),
-                  SuraSearchBar(onChanged: provider.onSearch),
+                  SuraSearchBar(onChanged: provider.onSearch,textDirection: TextDirection.rtl),
                   const SizedBox(height: 8),
                   if (provider.hasLastRead)
                     ContinueReadingBanner(

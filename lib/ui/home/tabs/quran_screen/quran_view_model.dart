@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
+import 'package:islami/utils/arabic_utils.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 import '../../../../utils/app_routes.dart';
@@ -36,12 +37,14 @@ class QuranViewModel extends ChangeNotifier {
 
   void onSearch(String newText) {
     List<int> suraResultSearch = [];
+    final normalizedQuery = normalizeArabic(newText);
 
     for (int i = 0; i < QuranResources.englishQuranSuras.length; i++) {
       if (QuranResources.englishQuranSuras[i].toUpperCase().contains(
             newText.toUpperCase(),
           ) ||
-          QuranResources.arabicQuranSuras[i].contains(newText)) {
+          normalizeArabic(QuranResources.arabicQuranSuras[i])
+              .contains(normalizedQuery)) {
         suraResultSearch.add(i);
       }
     }

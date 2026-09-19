@@ -8,6 +8,7 @@ import 'package:islami/models/radio_response.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
+import 'package:islami/utils/arabic_utils.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -340,8 +341,11 @@ class RadioViewModel extends ChangeNotifier {
     if (newText.isEmpty) {
       filteredRadios = radios;
     } else {
+      final normalizedQuery = normalizeArabic(newText);
       filteredRadios = radios.where((radio) {
-        return radio.name?.contains(newText) ?? false;
+        final name = radio.name;
+        if (name == null) return false;
+        return normalizeArabic(name).contains(normalizedQuery);
       }).toList();
     }
     notifyListeners();
@@ -351,8 +355,11 @@ class RadioViewModel extends ChangeNotifier {
     if (newText.isEmpty) {
       filteredReciters = reciters;
     } else {
-      filteredReciters = reciters.where((reciters) {
-        return reciters.name?.contains(newText) ?? false;
+      final normalizedQuery = normalizeArabic(newText);
+      filteredReciters = reciters.where((reciter) {
+        final name = reciter.name;
+        if (name == null) return false;
+        return normalizeArabic(name).contains(normalizedQuery);
       }).toList();
     }
     notifyListeners();
@@ -360,12 +367,14 @@ class RadioViewModel extends ChangeNotifier {
 
   void onSearch(String newText) {
     List<int> suraResultSearch = [];
+    final normalizedQuery = normalizeArabic(newText);
 
     for (int i = 0; i < QuranResources.englishQuranSuras.length; i++) {
       if (QuranResources.englishQuranSuras[i].toUpperCase().contains(
             newText.toUpperCase(),
           ) ||
-          QuranResources.arabicQuranSuras[i].contains(newText)) {
+          normalizeArabic(QuranResources.arabicQuranSuras[i])
+              .contains(normalizedQuery)) {
         suraResultSearch.add(i);
       }
     }
