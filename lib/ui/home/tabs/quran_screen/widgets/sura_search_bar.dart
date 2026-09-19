@@ -28,7 +28,7 @@ class SuraSearchBar extends StatelessWidget {
         style: AppStyles.primaryBold20,
         cursorColor: AppColors.primaryColor,
         decoration: InputDecoration(
-          hintText: hintText ?? "Sura Name",
+          hintText: hintText ?? "اسم السورة",
           hintStyle: AppStyles.whiteBold16,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),

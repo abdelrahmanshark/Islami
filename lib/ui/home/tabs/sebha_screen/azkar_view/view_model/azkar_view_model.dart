@@ -37,7 +37,7 @@ class AzkarViewModel extends ChangeNotifier {
       remainingCounts = azkarList.map((item) => item.countAsInt).toList();
     } catch (e) {
       log(e.toString());
-      failureMsg = 'Failed to load azkar';
+      failureMsg = 'فشل تحميل الأذكار';
     } finally {
       isLoading = false;
       notifyListeners();

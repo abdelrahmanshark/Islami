@@ -57,7 +57,7 @@ class NextPrayerBanner extends StatelessWidget {
                   ],
                 ),
                     Column(children: [
-                      Text('AZAN SOUND', style: AppStyles.whiteBold20,),
+                      Text('صوت الأذان', style: AppStyles.whiteBold20,),
                       AzanSoundButton()])]
           ),
         );

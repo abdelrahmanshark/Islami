@@ -26,11 +26,11 @@ class SuraBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              QuranResources.englishQuranSuras[index],
+              QuranResources.arabicQuranSuras[index],
               style: AppStyles.whiteBold20,
             ),
             Text(
-              '${QuranResources.AyaNumber[index]} verses',
+              '${QuranResources.AyaNumber[index]} آيات',
               style: AppStyles.whiteBold12,
               textAlign: TextAlign.start,
             ),

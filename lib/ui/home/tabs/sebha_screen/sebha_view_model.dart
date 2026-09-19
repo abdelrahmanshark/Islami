@@ -52,7 +52,7 @@ class SebhaViewModel extends ChangeNotifier {
       eveningAzkar = response.eveningAzkar ?? [];
     } catch (e) {
       log(e.toString());
-      azkarFailureMsg = 'Failed to load azkar';
+      azkarFailureMsg = 'فشل تحميل الأذكار';
     } finally {
       isAzkarLoading = false;
       notifyListeners();

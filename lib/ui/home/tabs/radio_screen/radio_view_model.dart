@@ -146,7 +146,7 @@ class RadioViewModel extends ChangeNotifier {
     } catch (e) {
       log(e.toString());
       radioIsLoading = false;
-      radioFailureMsg = 'some thing went Wrong';
+      radioFailureMsg = 'حدث خطأ ما';
       notifyListeners();
     }
   }
@@ -163,7 +163,7 @@ class RadioViewModel extends ChangeNotifier {
     } catch (e) {
       log(e.toString());
       reciterIsLoading = false;
-      reciterFailureMsg = 'something went wrong';
+      reciterFailureMsg = 'حدث خطأ ما';
       notifyListeners();
     }
   }
@@ -181,7 +181,7 @@ class RadioViewModel extends ChangeNotifier {
             Uri.parse(radio.url ?? ''),
             tag: MediaItem(
               id: 'radio_${radio.id}',
-              title: radio.name ?? 'Radio',
+              title: radio.name ?? 'راديو',
               artist: 'Islami',
             ),
           ),

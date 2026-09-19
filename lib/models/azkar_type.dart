@@ -9,9 +9,9 @@ extension AzkarTypeX on AzkarType {
   String get title {
     switch (this) {
       case AzkarType.morning:
-        return 'Morning Azkar';
+        return 'أذكار الصباح';
       case AzkarType.evening:
-        return 'Evening Azkar';
+        return 'أذكار المساء';
     }
   }
 }

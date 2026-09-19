@@ -17,11 +17,11 @@ class RadioToggleSwitch extends StatelessWidget {
         values: const [0, 1],
         iconList: [
           Text(
-            'Radio',
+            'راديو',
             style: context.read<RadioViewModel>().switcherTextStyle(0),
           ),
           Text(
-            'Reciters',
+            'القراء',
             style: context.read<RadioViewModel>().switcherTextStyle(1),
           ),
         ],

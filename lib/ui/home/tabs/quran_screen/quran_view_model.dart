@@ -7,6 +7,33 @@ import '../../../../utils/app_routes.dart';
 class QuranViewModel extends ChangeNotifier {
   List<int> filterSearch = List.generate(114, (index) => index);
 
+  int? lastReadSuraIndex;
+  int? lastReadAyahIndex;
+  bool isLastReadLoaded = false;
+
+  QuranViewModel() {
+    loadLastRead();
+  }
+
+  /// Loads the saved last-read position for the Continue Reading banner.
+  Future<void> loadLastRead() async {
+    final lastRead = await getLastRead();
+    if (lastRead != null) {
+      lastReadSuraIndex = lastRead.suraIndex;
+      lastReadAyahIndex = lastRead.ayahIndex;
+    } else {
+      lastReadSuraIndex = null;
+      lastReadAyahIndex = null;
+    }
+    isLastReadLoaded = true;
+    notifyListeners();
+  }
+
+  /// Whether a last-read position exists to show Continue Reading.
+  bool get hasLastRead {
+    return lastReadSuraIndex != null && lastReadAyahIndex != null;
+  }
+
   void onSearch(String newText) {
     List<int> suraResultSearch = [];
 
@@ -25,9 +52,19 @@ class QuranViewModel extends ChangeNotifier {
 
   void onSuraTap(int index, BuildContext context) {
     saveSuraIndexToSharedPreferences(index);
-    Navigator.of(
-      context,
-    ).pushNamed(AppRoutes.soraDetailsRouteName, arguments: index);
-    notifyListeners();
+    Navigator.of(context)
+        .pushNamed(AppRoutes.soraDetailsRouteName, arguments: index)
+        .then((_) => loadLastRead());
+  }
+
+  /// Opens the sura of the last-read ayah.
+  void onContinueReading(BuildContext context) {
+    if (!hasLastRead) return;
+    Navigator.of(context)
+        .pushNamed(
+          AppRoutes.soraDetailsRouteName,
+          arguments: lastReadSuraIndex,
+        )
+        .then((_) => loadLastRead());
   }
 }

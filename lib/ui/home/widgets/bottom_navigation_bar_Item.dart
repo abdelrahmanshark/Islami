@@ -23,3 +23,25 @@ BottomNavigationBarItem bottomNavBarItem(
     label: label,
   );
 }
+
+/// Same selected style as [bottomNavBarItem], but with a Material icon.
+BottomNavigationBarItem bottomNavBarIconItem(
+  int index,
+  String label,
+  IconData icon,
+  int selectedIndex,
+) {
+  return BottomNavigationBarItem(
+    icon: selectedIndex == index
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(66),
+              color: AppColors.grayColor,
+            ),
+            child: Icon(icon, size: 28, color: AppColors.whiteColor),
+          )
+        : Icon(icon, size: 28, color: AppColors.blackColor),
+    label: label,
+  );
+}

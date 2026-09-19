@@ -41,6 +41,20 @@ class Timings {
   String? firstThird;
   String? lastThird;
 
+  Timings({
+    this.fajr,
+    this.sunrise,
+    this.dhuhr,
+    this.asr,
+    this.sunset,
+    this.maghrib,
+    this.isha,
+    this.imsak,
+    this.midnight,
+    this.firstThird,
+    this.lastThird,
+  });
+
   Timings.fromJson(Map<String, dynamic> json) {
     fajr = json['Fajr'];
     sunrise = json['Sunrise'];

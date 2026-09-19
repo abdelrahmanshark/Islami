@@ -63,7 +63,7 @@ class RecitersScreen extends StatelessWidget {
                           onChanged: (newText) {
                             provider.filterReciter(newText);
                           },
-                          hintText: 'Shikh Search',
+                          hintText: 'بحث عن شيخ',
                           textDirection: TextDirection.rtl,
                         ),
                         SizedBox(height: 40,),

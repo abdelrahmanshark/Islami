@@ -24,7 +24,7 @@ class MostRecentProvider extends ChangeNotifier {
 
   Future<void> saveSuraIndex(int index, BuildContext context) async {
     await saveSuraIndexToSharedPreferences(index);
-    Navigator.of(
+    await Navigator.of(
       context,
     ).pushNamed(AppRoutes.soraDetailsRouteName, arguments: index);
 

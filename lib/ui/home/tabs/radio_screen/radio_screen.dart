@@ -56,7 +56,7 @@ class RadioScreen extends StatelessWidget {
                       SuraSearchBar(onChanged: (newText) {
                         provider.filterRadio(newText);
                       },
-                          hintText: 'Shikh Search',
+                          hintText: 'بحث عن شيخ',
                           textDirection: TextDirection.rtl),
                       Expanded(
                         child: ListView.builder(
@@ -77,7 +77,7 @@ class RadioScreen extends StatelessWidget {
                           SuraSearchBar(onChanged: provider.onSearch,textDirection: TextDirection.rtl,),
                           SizedBox(height: 12),
                           provider.filterSearch.isEmpty ? Text(
-                            "Sorry we cant find the sura",
+                            "عذراً، لم نتمكن من العثور على السورة",
                             style: AppStyles.whiteBold20,) :
                           Expanded(
                             child: ListView.separated(

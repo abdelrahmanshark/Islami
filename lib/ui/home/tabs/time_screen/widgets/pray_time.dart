@@ -47,7 +47,10 @@ class PrayTime extends StatelessWidget {
                           style: AppStyles.whiteBold16,
                         ),
                         Text(
-                          dateInfo?.gregorian?.month?.en ?? '',
+                          _arabicGregorianMonth(
+                                dateInfo?.gregorian?.month?.number,
+                              ) ??
+                              '',
                           style: AppStyles.whiteBold14,
                         ),
                         Text(
@@ -60,7 +63,7 @@ class PrayTime extends StatelessWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        Text('Pray Time', style: AppStyles.blackBold18),
+                        Text('مواقيت الصلاة', style: AppStyles.blackBold18),
                         const SizedBox(height: 4),
                         Text(
                           dateInfo?.hijri?.weekday?.ar ?? '',
@@ -120,4 +123,23 @@ class PrayTime extends StatelessWidget {
       },
     );
   }
+}
+
+/// Converts a Gregorian month number to its Arabic name.
+String? _arabicGregorianMonth(int? monthNumber) {
+  const months = <int, String>{
+    1: 'يناير',
+    2: 'فبراير',
+    3: 'مارس',
+    4: 'أبريل',
+    5: 'مايو',
+    6: 'يونيو',
+    7: 'يوليو',
+    8: 'أغسطس',
+    9: 'سبتمبر',
+    10: 'أكتوبر',
+    11: 'نوفمبر',
+    12: 'ديسمبر',
+  };
+  return months[monthNumber];
 }

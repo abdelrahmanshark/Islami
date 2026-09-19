@@ -43,6 +43,11 @@ class AppStyles {
     fontSize: 20,
     fontWeight: FontWeight.bold,
   );
+  static final TextStyle primaryBold14 = TextStyle(
+    color: AppColors.primaryColor,
+    fontSize: 14,
+    fontWeight: FontWeight.bold,
+  );
   static final TextStyle primaryBold16 = TextStyle(
     color: AppColors.primaryColor,
     fontSize: 16,
@@ -57,5 +62,21 @@ class AppStyles {
     color: AppColors.primaryColor,
     fontSize: 24,
     fontWeight: FontWeight.bold,
+  );
+
+  /// Quran ayah body text with Amiri Quran font and comfortable line height.
+  static final TextStyle quranAyah = TextStyle(
+    color: AppColors.primaryColor,
+    fontSize: 24,
+    height: 2.0,
+    fontFamily: 'AmiriQuran',
+  );
+
+  /// Bismillah and Surah title style for the reading screen.
+  static final TextStyle quranBismillah = TextStyle(
+    color: AppColors.primaryColor,
+    fontSize: 26,
+    height: 1.8,
+    fontFamily: 'AmiriQuran',
   );
 }

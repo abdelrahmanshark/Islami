@@ -28,13 +28,14 @@ class AzkarItemCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: AppColors.primaryColor),
+          color: AppColors.primaryColor,
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 item.content ?? '',
-                style: AppStyles.primaryBold20,
+                style: AppStyles.blackBold18,
                 textAlign: TextAlign.center,
               ),
             ),

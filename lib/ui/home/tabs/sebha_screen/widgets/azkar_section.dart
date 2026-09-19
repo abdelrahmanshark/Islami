@@ -20,7 +20,7 @@ class AzkarSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Azkar',
+            'أذكار',
             style: AppStyles.whiteBold16,
           ),
           const SizedBox(height: 16),
@@ -28,7 +28,7 @@ class AzkarSection extends StatelessWidget {
             children: [
               Expanded(
                 child: AzkarCard(
-                  title: 'Evening Azkar',
+                  title: 'أذكار المساء',
                   imagePath: AppAssets.eveningAzkar,
                   onTap: () => provider.openAzkar(context, AzkarType.evening),
                 ),
@@ -36,7 +36,7 @@ class AzkarSection extends StatelessWidget {
               const SizedBox(width: 20),
               Expanded(
                 child: AzkarCard(
-                  title: 'Morning Azkar',
+                  title: 'أذكار الصباح',
                   imagePath: AppAssets.morningAzkar,
                   onTap: () => provider.openAzkar(context, AzkarType.morning),
                 ),

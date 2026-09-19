@@ -35,13 +35,13 @@ class SegmentedCircularProgress extends StatelessWidget {
           segmentCount: visualSegments,
           progress: progress,
           strokeWidth: strokeWidth,
-          activeColor: AppColors.primaryColor,
-          inactiveColor: AppColors.primaryColor.withValues(alpha: 0.25),
+          activeColor: AppColors.blackColor,
+          inactiveColor: AppColors.blackColor.withValues(alpha: 0.25),
         ),
         child: Center(
           child: Text(
             '$safeRemaining',
-            style: AppStyles.primaryBold16,
+            style: AppStyles.blackBold18,
           ),
         ),
       ),

@@ -30,12 +30,12 @@ class MostRecently extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Text(QuranResources.englishQuranSuras[index],
-                  style: AppStyles.blackBold24),
               Text(QuranResources.arabicQuranSuras[index],
                   style: AppStyles.blackBold24),
-              Text(QuranResources.AyaNumber[index],
-                  style: AppStyles.blackBold14),
+              Text(
+                '${QuranResources.AyaNumber[index]} آيات',
+                style: AppStyles.blackBold14,
+              ),
             ],
           ),
           Spacer(),
