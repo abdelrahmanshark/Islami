@@ -23,6 +23,17 @@ class AppAssets {
   static const String azan = 'assets/audio/azan.mp3';
   static const String azkarJson = 'assets/json/azkar.json';
   static const String quranJson = 'assets/json/quran.json';
+  static const String quranWithJuzHizbRubJson =
+      'assets/json/quran_with_juz_hizb_rub.json';
+  static const String quranImagesFolder = 'assets/quran_images';
+  static const String quranImagesDarkFolder = 'assets/quran_images_dark';
   static const String morningAzkar = 'assets/images/morning_azkar.png';
   static const String eveningAzkar = 'assets/images/evening_azkar.png';
+
+  /// Returns the asset path for Quran page [pageNumber] (1–604).
+  static String quranPageImage(int pageNumber, {bool isDark = false}) {
+    final padded = pageNumber.toString().padLeft(3, '0');
+    final folder = isDark ? quranImagesDarkFolder : quranImagesFolder;
+    return '$folder/$padded.webp';
+  }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:islami/providers/most_recent_provider.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/azkar_view.dart';
 import 'package:islami/ui/home/home_screen.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/moshaf_index_view.dart';
 import 'package:islami/ui/home/tabs/quran_screen/sura_details.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_themes.dart';
@@ -41,6 +42,7 @@ class Islami extends StatelessWidget {
           AppRoutes.homeRouteName: (context) => HomeScreen(),
           AppRoutes.soraDetailsRouteName: (context) => SuraDetails(),
           AppRoutes.azkarRouteName: (context) => const AzkarView(),
+          AppRoutes.moshafIndexRouteName: (context) => const MoshafIndexView(),
         },
         theme: AppTheme.lightTheme,
         themeMode: ThemeMode.light,

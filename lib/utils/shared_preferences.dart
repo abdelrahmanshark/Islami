@@ -6,6 +6,7 @@ class SharedPreferencesKay {
   static const String lastReadSura = 'lastReadSura';
   static const String lastReadAyah = 'lastReadAyah';
   static const String moshafLastPage = 'moshafLastPage';
+  static const String moshafDarkTheme = 'moshafDarkTheme';
   static const String prayerDate = 'prayerDate';
   static const String prayerFajr = 'prayerFajr';
   static const String prayerDhuhr = 'prayerDhuhr';
@@ -143,4 +144,16 @@ Future<void> saveMoshafLastPage(int page) async {
 Future<int?> getMoshafLastPage() async {
   final pref = await SharedPreferences.getInstance();
   return pref.getInt(SharedPreferencesKay.moshafLastPage);
+}
+
+/// Returns whether Mushaf dark theme is on. Defaults to light (false).
+Future<bool> getMoshafDarkTheme() async {
+  final pref = await SharedPreferences.getInstance();
+  return pref.getBool(SharedPreferencesKay.moshafDarkTheme) ?? false;
+}
+
+/// Saves the Mushaf dark/light theme preference.
+Future<void> saveMoshafDarkTheme(bool isDark) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setBool(SharedPreferencesKay.moshafDarkTheme, isDark);
 }

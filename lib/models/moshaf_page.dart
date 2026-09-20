@@ -1,37 +1,55 @@
-/// One ayah shown inside a Moshaf page.
-class MoshafAyah {
-  /// 1-based sura number.
-  final int sura;
+import 'package:islami/models/moshaf_page_marker.dart';
+import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
+import 'package:islami/utils/app_assets.dart';
 
-  /// 1-based ayah number.
-  final int aya;
-
-  final String text;
-
-  /// True when this ayah is the first ayah of its Surah on this page.
-  final bool startsSura;
-
-  const MoshafAyah({
-    required this.sura,
-    required this.aya,
-    required this.text,
-    required this.startsSura,
-  });
-}
-
-/// One of the 604 Mushaf pages built from page markers + Surah text files.
+/// One Mushaf page: metadata + image path for the page image.
 class MoshafPage {
   final int pageNumber;
-  final List<MoshafAyah> ayahs;
+  final int sura;
+  final int aya;
+  final int juz;
+  final int hizb;
+  final int rub;
+  final String imagePath;
 
   const MoshafPage({
     required this.pageNumber,
-    required this.ayahs,
+    required this.sura,
+    required this.aya,
+    required this.juz,
+    required this.hizb,
+    required this.rub,
+    required this.imagePath,
   });
 
-  /// Surah used for the AppBar while this page is visible (0-based index).
-  int get primarySuraIndex {
-    if (ayahs.isEmpty) return 0;
-    return ayahs.first.sura - 1;
+  /// Builds a page from JSON metadata and the matching Quran image asset.
+  factory MoshafPage.fromMarker(MoshafPageMarker marker) {
+    return MoshafPage(
+      pageNumber: marker.page,
+      sura: marker.sura,
+      aya: marker.aya,
+      juz: marker.juz,
+      hizb: marker.hizb,
+      rub: marker.rub,
+      imagePath: AppAssets.quranPageImage(marker.page),
+    );
+  }
+
+  /// Arabic Surah name for this page.
+  String get suraName {
+    if (sura < 1 || sura > QuranResources.arabicQuranSuras.length) {
+      return '';
+    }
+    return QuranResources.arabicQuranSuras[sura - 1];
+  }
+
+  /// AppBar title for the currently visible page (sura name only).
+  String get appBarTitle {
+    return suraName.isEmpty ? 'المصحف' : suraName;
+  }
+
+  /// Bottom footer text: juz, hizb, and rub for this page.
+  String get pageFooterMarkers {
+    return 'الجزء $juz • الحزب $hizb • الربع $rub';
   }
 }
