@@ -87,6 +87,8 @@ flutter:
     - assets/hadith/
     - assets/json/
     - assets/json/sharawe/
+    - assets/json/quran_coordinates/
+    - assets/json/tafser/
     - assets/data/
     - assets/audio/
     - assets/quran_images/

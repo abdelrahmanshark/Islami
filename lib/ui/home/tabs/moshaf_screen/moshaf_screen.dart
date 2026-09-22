@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_view_model.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_content_tab_button.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_view.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_tafser_view.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -104,7 +106,7 @@ class _MoshafScreenState extends State<MoshafScreen> {
                 backgroundColor: AppColors.blackColor,
                 centerTitle: true,
                 title: Text(
-                  provider.isLoading ? 'المصحف' : provider.visiblePageTitle,
+                  provider.isLoading ? 'المصحف' : provider.appBarTitle,
                   style: AppStyles.primaryBold16,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -150,7 +152,7 @@ class _MoshafScreenState extends State<MoshafScreen> {
     );
   }
 
-  /// Builds loading, error, or the horizontal Mushaf PageView.
+  /// Builds loading, error, or Mushaf / Tafsir content with tab switcher.
   Widget _buildBody(MoshafViewModel provider) {
     if (provider.isLoading) {
       return const Center(
@@ -174,14 +176,65 @@ class _MoshafScreenState extends State<MoshafScreen> {
       );
     }
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Row(
+            children: [
+              MoshafContentTabButton(
+                label: 'المصحف',
+                isSelected: provider.contentTab == MoshafContentTab.moshaf,
+                onTap: () => provider.setContentTab(MoshafContentTab.moshaf),
+              ),
+              const SizedBox(width: 8),
+              MoshafContentTabButton(
+                label: 'التفسير',
+                isSelected: provider.contentTab == MoshafContentTab.tafser,
+                onTap: () => provider.setContentTab(MoshafContentTab.tafser),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          // Keep both tabs mounted so the Mushaf PageView stays on the same page.
+          child: IndexedStack(
+            index: provider.contentTab == MoshafContentTab.tafser ? 1 : 0,
+            children: [
+              _buildMoshafPages(provider),
+              MoshafTafserView(
+                isLoading: provider.isTafserLoading,
+                errorMessage: provider.tafserErrorMessage,
+                surahName: provider.selectedTafserSurahName,
+                ayah: provider.selectedTafserAyah,
+                surahNumber: provider.selectedAyah?.surahNumber,
+                ayahNumber: provider.selectedAyah?.ayahNumber,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the horizontal Mushaf PageView.
+  Widget _buildMoshafPages(MoshafViewModel provider) {
     return PageView.builder(
       controller: _pageController,
       itemCount: provider.pages.length,
       onPageChanged: provider.updateVisiblePage,
       itemBuilder: (context, index) {
+        final page = provider.pages[index];
+        final isVisiblePage = index == provider.visiblePageIndex;
+
         return MoshafPageView(
-          page: provider.pages[index],
+          page: page,
           isDarkTheme: provider.isDarkTheme,
+          ayahs: isVisiblePage ? provider.currentPageAyahs : const [],
+          selectedAyah: isVisiblePage ? provider.selectedAyah : null,
+          findAyahAt: provider.findAyahAt,
+          onAyahTapped: provider.onAyahTapped,
+          onTafserLabelTapped: provider.openTafserForSelectedAyah,
         );
       },
     );

@@ -14,7 +14,7 @@ class MoshafPageFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, top: 4, left: 12, right: 12),
+      padding: const EdgeInsets.only(bottom: 2, top: 4, left: 12, right: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         textDirection: TextDirection.rtl,

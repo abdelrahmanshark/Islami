@@ -30,7 +30,7 @@ class MoshafPageFrame extends StatelessWidget {
         child: Container(
           color: fillColor,
           // Very small gap so the text almost touches the frame.
-          padding: const EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 10),
+          padding: const EdgeInsets.only(left: 10, right: 12, top: 4, bottom: 10),
           child: child,
         ),
       ),

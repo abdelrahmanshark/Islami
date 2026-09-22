@@ -2,12 +2,21 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:islami/models/ayah_coordinate.dart';
 import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/models/moshaf_page_marker.dart';
+import 'package:islami/models/tafser_surah.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
+/// Content tabs inside the Moshaf screen.
+enum MoshafContentTab { moshaf, tafser }
+
 class MoshafViewModel extends ChangeNotifier {
+  /// Madani coordinate page size used by quran_coordinates JSON.
+  static const double coordinatePageWidth = 345;
+  static const double coordinatePageHeight = 550;
+
   List<MoshafPage> pages = [];
   bool isLoading = true;
   String? errorMessage;
@@ -26,6 +35,33 @@ class MoshafViewModel extends ChangeNotifier {
 
   bool didRestorePage = false;
 
+  /// Ayah polygons for the currently visible page.
+  List<AyahCoordinate> currentPageAyahs = [];
+
+  /// Currently highlighted ayah, or null when nothing is selected.
+  AyahCoordinate? selectedAyah;
+
+  /// Active content tab: Mushaf pages or Tafsir.
+  MoshafContentTab contentTab = MoshafContentTab.moshaf;
+
+  /// Loaded tafsir for the selected ayah, or null when none.
+  TafserAyah? selectedTafserAyah;
+
+  /// Surah name from the loaded tafsir file.
+  String? selectedTafserSurahName;
+
+  /// True while loading tafsir JSON.
+  bool isTafserLoading = false;
+
+  /// Error message when tafsir fails to load.
+  String? tafserErrorMessage;
+
+  /// Cache of page number → parsed ayah coordinates.
+  final Map<int, List<AyahCoordinate>> _ayahCache = {};
+
+  /// Cache of surah number → parsed tafsir surah.
+  final Map<int, TafserSurah> _tafserCache = {};
+
   /// Metadata title for the AppBar of the visible page.
   String get visiblePageTitle {
     if (pages.isEmpty ||
@@ -34,6 +70,22 @@ class MoshafViewModel extends ChangeNotifier {
       return 'المصحف';
     }
     return pages[visiblePageIndex].appBarTitle;
+  }
+
+  /// AppBar label: selected ayah when set, otherwise the surah title.
+  String get appBarTitle {
+    if (contentTab == MoshafContentTab.tafser) {
+      if (selectedAyah != null) {
+        final surahLabel =
+            selectedTafserSurahName ?? 'سورة ${selectedAyah!.surahNumber}';
+        return '$surahLabel • آية ${selectedAyah!.ayahNumber}';
+      }
+      return 'التفسير';
+    }
+    if (selectedAyah != null) {
+      return 'سورة ${selectedAyah!.surahNumber} • آية ${selectedAyah!.ayahNumber}';
+    }
+    return visiblePageTitle;
   }
 
   /// Current 1-based page number, or 1 when empty.
@@ -75,6 +127,8 @@ class MoshafViewModel extends ChangeNotifier {
       visiblePageIndex = initialPage - 1;
       isLoading = false;
       notifyListeners();
+
+      await loadAyahCoordinatesForPage(initialPage);
     } catch (_) {
       errorMessage = 'تعذر تحميل المصحف';
       isLoading = false;
@@ -98,13 +152,146 @@ class MoshafViewModel extends ChangeNotifier {
         .toList();
   }
 
+  /// Loads ayah polygons for [pageNumber] (uses cache when available).
+  Future<void> loadAyahCoordinatesForPage(int pageNumber) async {
+    if (_ayahCache.containsKey(pageNumber)) {
+      if (visiblePageNumber != pageNumber) return;
+      currentPageAyahs = _ayahCache[pageNumber]!;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final path = AppAssets.quranPageCoordinates(pageNumber);
+      final raw = await rootBundle.loadString(path);
+      final list = jsonDecode(raw) as List<dynamic>;
+      final ayahs = list
+          .map((e) => AyahCoordinate.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      _ayahCache[pageNumber] = ayahs;
+
+      // Ignore stale loads if the user already swiped away.
+      if (visiblePageNumber != pageNumber) return;
+
+      currentPageAyahs = ayahs;
+      notifyListeners();
+    } catch (_) {
+      if (visiblePageNumber != pageNumber) return;
+      currentPageAyahs = [];
+      notifyListeners();
+    }
+  }
+
+  /// Finds the ayah under [localPosition] using the displayed image [size].
+  AyahCoordinate? findAyahAt(Offset localPosition, Size size) {
+    if (size.width <= 0 || size.height <= 0) return null;
+
+    final scaleX = size.width / coordinatePageWidth;
+    final scaleY = size.height / coordinatePageHeight;
+
+    // Check from last to first so later (visually upper) ayahs win ties.
+    for (var i = currentPageAyahs.length - 1; i >= 0; i--) {
+      final ayah = currentPageAyahs[i];
+      if (ayah.contains(localPosition, scaleX, scaleY)) {
+        return ayah;
+      }
+    }
+    return null;
+  }
+
+  /// Handles an ayah tap: select, switch, or toggle off if already selected.
+  void onAyahTapped(AyahCoordinate ayah) {
+    if (selectedAyah != null && selectedAyah!.isSameAyah(ayah)) {
+      selectedAyah = null;
+    } else {
+      selectedAyah = ayah;
+    }
+    notifyListeners();
+  }
+
+  /// Clears the ayah highlight.
+  void clearSelectedAyah() {
+    if (selectedAyah == null) return;
+    selectedAyah = null;
+    notifyListeners();
+  }
+
+  /// Switches to the tafsir tab and loads tafsir for the selected ayah.
+  Future<void> openTafserForSelectedAyah() async {
+    if (selectedAyah == null) return;
+    contentTab = MoshafContentTab.tafser;
+    notifyListeners();
+    await loadTafserForAyah(
+      selectedAyah!.surahNumber,
+      selectedAyah!.ayahNumber,
+    );
+  }
+
+  /// Switches the content tab; loads tafsir when opening that tab with a selection.
+  void setContentTab(MoshafContentTab tab) {
+    if (contentTab == tab) return;
+    contentTab = tab;
+    notifyListeners();
+
+    if (tab == MoshafContentTab.tafser && selectedAyah != null) {
+      loadTafserForAyah(
+        selectedAyah!.surahNumber,
+        selectedAyah!.ayahNumber,
+      );
+    }
+  }
+
+  /// Loads tafsir for [surahNumber]/[ayahNumber] from assets.
+  Future<void> loadTafserForAyah(int surahNumber, int ayahNumber) async {
+    isTafserLoading = true;
+    tafserErrorMessage = null;
+    selectedTafserAyah = null;
+    selectedTafserSurahName = null;
+    notifyListeners();
+
+    try {
+      final surah = await _loadTafserSurah(surahNumber);
+      final ayah = surah.ayahByNumber(ayahNumber);
+      if (ayah == null) {
+        tafserErrorMessage = 'تعذر العثور على تفسير هذه الآية';
+      } else {
+        selectedTafserAyah = ayah;
+        selectedTafserSurahName = surah.surah;
+      }
+    } catch (_) {
+      tafserErrorMessage = 'تعذر تحميل التفسير';
+    }
+
+    isTafserLoading = false;
+    notifyListeners();
+  }
+
+  /// Loads and caches a full surah tafsir file.
+  Future<TafserSurah> _loadTafserSurah(int surahNumber) async {
+    final cached = _tafserCache[surahNumber];
+    if (cached != null) return cached;
+
+    final path = AppAssets.tafserSurah(surahNumber);
+    final raw = await rootBundle.loadString(path);
+    final surah = TafserSurah.fromJson(
+      jsonDecode(raw) as Map<String, dynamic>,
+    );
+    _tafserCache[surahNumber] = surah;
+    return surah;
+  }
+
   /// Updates the visible page from a PageView index.
   void updateVisiblePage(int pageIndex) {
     if (pageIndex < 0 || pageIndex >= pages.length) return;
     if (visiblePageIndex == pageIndex) return;
 
     visiblePageIndex = pageIndex;
+    selectedAyah = null;
+    currentPageAyahs = [];
     notifyListeners();
+
+    loadAyahCoordinatesForPage(pages[pageIndex].pageNumber);
   }
 
   /// Saves the currently visible page as the bookmark.
