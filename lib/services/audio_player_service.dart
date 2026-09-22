@@ -11,6 +11,9 @@ class AudioPlayerService {
   int? selectedRadioId;
   int? selectedRadioForSoundId;
   int? selectedReciterId;
+  String? selectedSermonAudioUrl;
+  String? selectedSharawyAudioUrl;
+  double playbackSpeed = 1.0;
   int currentSura = 1;
   bool isRepeatEnabled = false;
   bool isAutoNextEnabled = false;

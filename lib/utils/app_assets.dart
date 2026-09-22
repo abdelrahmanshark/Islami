@@ -22,7 +22,25 @@ class AppAssets {
   static const String prayTimeBg = "assets/images/pray_time_bg.png";
   static const String azan = 'assets/audio/azan.mp3';
   static const String azkarJson = 'assets/json/azkar.json';
+  static const String sermonsJson = 'assets/data/sermons.json';
+  static const String quranStoriesJson =
+      'assets/json/sharawe/quran_storys.json';
+  static const String prophetSeerahJson =
+      'assets/json/sharawe/prophet_mohamed.json';
+  static const String womenInIslamJson =
+      'assets/json/sharawe/wemen_in_islam.json';
+  static const String religionAndLifeProgramJson =
+      'assets/json/sharawe/religion_and_life_program.json';
+  static const String sharawyLecturesJson =
+      'assets/json/sharawe/sharawy_lectures.json';
+  static const String pillarsOfIslamJson =
+      'assets/json/sharawe/pillars_of_islam.json';
+  static const String jewsInQuranJson =
+      'assets/json/sharawe/jews_in_quran.json';
+  static const String storiesOfProphetsJson =
+      'assets/json/sharawe/storys_of_phrophets.json';
   static const String quranJson = 'assets/json/quran.json';
+
   static const String quranWithJuzHizbRubJson =
       'assets/json/quran_with_juz_hizb_rub.json';
   static const String quranImagesFolder = 'assets/quran_images';

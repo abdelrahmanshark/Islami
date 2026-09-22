@@ -14,7 +14,7 @@ class RadioToggleSwitch extends StatelessWidget {
       child: AnimatedToggleSwitch<int>.size(
         textDirection: TextDirection.ltr,
         current: context.watch<RadioViewModel>().toggleSwitchIndex,
-        values: const [0, 1],
+        values: const [0, 1, 2, 3],
         iconList: [
           Text(
             'راديو',
@@ -24,16 +24,29 @@ class RadioToggleSwitch extends StatelessWidget {
             'القراء',
             style: context.read<RadioViewModel>().switcherTextStyle(1),
           ),
+          Text(
+            'دروس',
+            style: context.read<RadioViewModel>().switcherTextStyle(2),
+          ),
+          Text(
+            'الشعراوي',
+            style: context.read<RadioViewModel>().switcherTextStyle(3),
+          ),
         ],
         onTap: (props) {
-          if (props.tapped?.index == 0) {
+          final index = props.tapped?.index;
+          if (index == 0) {
             context.read<RadioViewModel>().getRadios();
-          } else {
+          } else if (index == 1) {
             context.read<RadioViewModel>().getReciters();
+          } else if (index == 2) {
+            context.read<RadioViewModel>().getSermons();
+          } else if (index == 3) {
+            context.read<RadioViewModel>().getSharawyCategories();
           }
         },
         iconOpacity: 1,
-        indicatorSize: Size(MediaQuery.widthOf(context) * .5, double.infinity),
+        indicatorSize: Size(MediaQuery.widthOf(context) / 4.2, double.infinity),
         borderWidth: 2.0,
         iconAnimationType: AnimationType.onHover,
         style: ToggleStyle(
