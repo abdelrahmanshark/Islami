@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
+import 'package:islami/models/quran_resources.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_card.dart';
 import 'package:provider/provider.dart';

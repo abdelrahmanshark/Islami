@@ -47,6 +47,9 @@ dependencies:
   android_alarm_manager_plus: ^5.1.1
   permission_handler: ^13.0.2
   scrollable_positioned_list: ^0.3.8
+  geolocator: ^14.0.2
+  geocoding: ^5.0.0
+  flutter_compass_v2: ^1.0.3
 
 # permission_handler_android 14.x uses kotlin { compilerOptions } without applying
 # the Kotlin Android plugin, which requires AGP 9 built-in Kotlin. Flutter 3.35.1

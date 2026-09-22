@@ -19,7 +19,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 import '../../../../services/audio_player_service.dart';
-import '../quran_screen/quran_resources.dart';
+import 'package:islami/models/quran_resources.dart';
 
 class RadioViewModel extends ChangeNotifier {
   RadioViewModel({

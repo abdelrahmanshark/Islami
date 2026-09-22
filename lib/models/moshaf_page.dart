@@ -1,5 +1,5 @@
 import 'package:islami/models/moshaf_page_marker.dart';
-import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
+import 'package:islami/models/quran_resources.dart';
 import 'package:islami/utils/app_assets.dart';
 
 /// One Mushaf page: metadata + image path for the page image.

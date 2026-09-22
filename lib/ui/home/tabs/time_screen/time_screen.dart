@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/time_screen/time_view_model.dart';
+import 'package:islami/ui/home/tabs/time_screen/widgets/location_qibla_row.dart';
 import 'package:islami/ui/home/tabs/time_screen/widgets/next_prayer_banner.dart';
 import 'package:islami/ui/home/tabs/time_screen/widgets/pray_time.dart';
 import 'package:islami/utils/app_colors.dart';
@@ -63,6 +64,8 @@ class TimeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Image.asset(AppAssets.header),
+                  const SizedBox(height: 12),
+                  const LocationQiblaRow(),
                   const SizedBox(height: 12),
                   const NextPrayerBanner(),
                   const SizedBox(height: 20),

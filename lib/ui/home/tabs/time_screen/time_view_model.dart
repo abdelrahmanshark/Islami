@@ -4,21 +4,29 @@ import 'dart:developer';
 import 'package:flutter/widgets.dart';
 import 'package:islami/data/time/time_repository.dart';
 import 'package:islami/domain/repositories/time_repository.dart';
+import 'package:islami/models/user_location.dart';
 import 'package:islami/services/adhan_alarm_scheduler.dart';
 import 'package:islami/services/prayer_widget_updater.dart';
+import 'package:islami/services/user_location_service.dart';
 import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/prayer.dart';
+import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 class TimeViewModel extends ChangeNotifier {
-  TimeViewModel({TimeRepository? timeRepository})
-      : _timeRepository = timeRepository ?? TimeRepositoryImpl() {
+  TimeViewModel({
+    TimeRepository? timeRepository,
+    UserLocationService? locationService,
+  })  : _timeRepository = timeRepository ?? TimeRepositoryImpl(),
+        _locationService = locationService ?? UserLocationService() {
     _loadAzanEnabled();
+    _loadSavedLocation();
     getTimeResponse();
   }
 
   final TimeRepository _timeRepository;
+  final UserLocationService _locationService;
 
   List<Prayer> pryerTimes = [];
   Timings? timing;
@@ -26,16 +34,54 @@ class TimeViewModel extends ChangeNotifier {
   bool isTimeLoading = false;
   String timeFailureMsg = '';
   bool isAzanEnabled = true;
+  bool isLocationLoading = false;
+  UserLocation? userLocation;
 
   Prayer? nextPrayer;
   int nextPrayerIndex = -1;
   Duration remainingTime = Duration.zero;
   Timer? _countdownTimer;
 
+  /// Text shown under the location icon.
+  String get locationDisplayText {
+    final String placeName = userLocation?.displayName ?? '';
+    if (placeName.isNotEmpty) {
+      return placeName;
+    }
+    return 'اضغط لتحديد موقعك';
+  }
+
   /// Loads the saved azan on/off preference (defaults to on).
   Future<void> _loadAzanEnabled() async {
     isAzanEnabled = await getAzanEnabled();
     notifyListeners();
+  }
+
+  /// Loads the last saved city/country for the location banner.
+  Future<void> _loadSavedLocation() async {
+    userLocation = await _locationService.getSavedLocation();
+    notifyListeners();
+  }
+
+  /// Fetches accurate GPS, saves it locally, then reloads prayer times.
+  Future<void> refreshUserLocation() async {
+    if (isLocationLoading) {
+      return;
+    }
+
+    isLocationLoading = true;
+    notifyListeners();
+
+    try {
+      userLocation = await _locationService.refreshAndSaveLocation();
+      isLocationLoading = false;
+      notifyListeners();
+      await getTimeResponse();
+    } catch (e) {
+      log('Failed to refresh user location: $e');
+      isLocationLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Toggles azan sound and cancels or reschedules prayer alarms.
@@ -72,6 +118,8 @@ class TimeViewModel extends ChangeNotifier {
       timing = timeResponse.data?.timings;
       dateInfo = timeResponse.data?.date;
       pryerTimes = getPryerTimesList(timing);
+      // Keep the banner in sync if prayer times saved a new GPS location.
+      userLocation = await _locationService.getSavedLocation();
       isTimeLoading = false;
       _updateNextPrayer(pushWidget: true);
       _startCountdownTimer();
@@ -145,6 +193,11 @@ class TimeViewModel extends ChangeNotifier {
         nextResult: result,
       );
     }
+  }
+
+  /// Opens the Qibla compass screen.
+  void openQibla(BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.qiblaRouteName);
   }
 
   @override

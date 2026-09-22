@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/quran_screen/quran_resources.dart';
+import 'package:islami/models/quran_resources.dart';
 import 'package:islami/ui/home/tabs/quran_screen/sura_view_model.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/ayahs_paragraph.dart';
 import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_header.dart';

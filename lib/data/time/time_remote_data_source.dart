@@ -5,13 +5,26 @@ import 'package:http/http.dart';
 /// Fetches prayer times from the Aladhan API.
 class TimeRemoteDataSource {
   static const String _baseUrl = 'https://api.aladhan.com';
-  static const String _timingsPath =
-      '/v1/timingsByCity?city=cairo&country=egypt';
+
+  /// Builds the timings path using the user's GPS coordinates.
+  String buildTimingsPath({
+    required double latitude,
+    required double longitude,
+  }) {
+    return '/v1/timings?latitude=$latitude&longitude=$longitude';
+  }
 
   /// Returns the raw API JSON body on success.
-  Future<String> fetchTimeResponseJson() async {
+  Future<String> fetchTimeResponseJson({
+    required double latitude,
+    required double longitude,
+  }) async {
     try {
-      final uri = Uri.parse('$_baseUrl$_timingsPath');
+      final String timingsPath = buildTimingsPath(
+        latitude: latitude,
+        longitude: longitude,
+      );
+      final uri = Uri.parse('$_baseUrl$timingsPath');
       final response = await get(uri);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {

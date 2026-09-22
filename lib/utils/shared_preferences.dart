@@ -1,3 +1,4 @@
+import 'package:islami/models/user_location.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesKay {
@@ -14,6 +15,10 @@ class SharedPreferencesKay {
   static const String prayerMaghrib = 'prayerMaghrib';
   static const String prayerIsha = 'prayerIsha';
   static const String cachedTimeResponse = 'cachedTimeResponse';
+  static const String userLatitude = 'userLatitude';
+  static const String userLongitude = 'userLongitude';
+  static const String userCity = 'userCity';
+  static const String userCountry = 'userCountry';
 }
 
 /// Returns whether azan sound is enabled. Defaults to true when unset.
@@ -157,4 +162,31 @@ Future<bool> getMoshafDarkTheme() async {
 Future<void> saveMoshafDarkTheme(bool isDark) async {
   final pref = await SharedPreferences.getInstance();
   await pref.setBool(SharedPreferencesKay.moshafDarkTheme, isDark);
+}
+
+/// Saves the user's coordinates and place names locally.
+Future<void> saveUserLocation(UserLocation location) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setDouble(SharedPreferencesKay.userLatitude, location.latitude);
+  await pref.setDouble(SharedPreferencesKay.userLongitude, location.longitude);
+  await pref.setString(SharedPreferencesKay.userCity, location.city);
+  await pref.setString(SharedPreferencesKay.userCountry, location.country);
+}
+
+/// Returns the saved location, or null when nothing was stored yet.
+Future<UserLocation?> getSavedUserLocation() async {
+  final pref = await SharedPreferences.getInstance();
+  final double? latitude = pref.getDouble(SharedPreferencesKay.userLatitude);
+  final double? longitude = pref.getDouble(SharedPreferencesKay.userLongitude);
+
+  if (latitude == null || longitude == null) {
+    return null;
+  }
+
+  return UserLocation(
+    latitude: latitude,
+    longitude: longitude,
+    city: pref.getString(SharedPreferencesKay.userCity) ?? '',
+    country: pref.getString(SharedPreferencesKay.userCountry) ?? '',
+  );
 }
