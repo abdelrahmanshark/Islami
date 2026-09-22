@@ -50,6 +50,11 @@ dependencies:
   geolocator: ^14.0.2
   geocoding: ^5.0.0
   flutter_compass_v2: ^1.0.3
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
+  flutter_timezone: ^5.1.0
+  # Runtime preserve/remove keeps native + Flutter splash as one continuous screen.
+  flutter_native_splash: ^2.4.7
 
 # permission_handler_android 14.x uses kotlin { compilerOptions } without applying
 # the Kotlin Android plugin, which requires AGP 9 built-in Kotlin. Flutter 3.35.1
@@ -93,6 +98,7 @@ flutter:
     - assets/audio/
     - assets/quran_images/
     - assets/quran_images_dark/
+    - assets/images/splash/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

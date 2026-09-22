@@ -69,14 +69,50 @@ class QuranAudioDownloadService {
         await _downloadedAudioRepository.isDownloaded(
       suraId: suraId,
       reciterId: reciterId,
+      reciterName: reciterName,
     );
     if (alreadyDownloaded) {
       final DownloadedAudio? existing =
           await _downloadedAudioRepository.getDownload(
         suraId: suraId,
         reciterId: reciterId,
+        reciterName: reciterName,
       );
       if (existing != null) return existing;
+    }
+
+    // After reinstall, metadata may be gone while the MP3 still exists.
+    final String displayName =
+        _mediaStoreDataSource.buildDisplayName(suraId: suraId);
+    final String relativePath =
+        _mediaStoreDataSource.relativePathForReciter(reciterName);
+    final Map<String, dynamic>? onDevice =
+        await _mediaStoreDataSource.findExistingQuranAudio(
+      displayName: displayName,
+      relativePath: relativePath,
+    );
+    if (onDevice != null) {
+      final String? localUri = onDevice['uri'] as String?;
+      if (localUri != null && localUri.isNotEmpty) {
+        final int fileSizeBytes = onDevice['size'] is num
+            ? (onDevice['size'] as num).toInt()
+            : 0;
+        final int dateMs = onDevice['dateAdded'] is num
+            ? (onDevice['dateAdded'] as num).toInt()
+            : 0;
+        final DownloadedAudio restored = DownloadedAudio(
+          suraId: suraId,
+          reciterId: reciterId,
+          reciterName: reciterName,
+          localUri: localUri,
+          fileSizeBytes: fileSizeBytes,
+          downloadedAt: dateMs > 0
+              ? DateTime.fromMillisecondsSinceEpoch(dateMs)
+              : DateTime.now(),
+        );
+        await _downloadedAudioRepository.saveDownload(restored);
+        return restored;
+      }
     }
 
     final String paddedSura = suraId.toString().padLeft(3, '0');
@@ -141,11 +177,6 @@ class QuranAudioDownloadService {
       if (!hasSpaceForFile) {
         throw StateError('Not enough storage space');
       }
-
-      final String displayName =
-          _mediaStoreDataSource.buildDisplayName(suraId: suraId);
-      final String relativePath =
-          _mediaStoreDataSource.relativePathForReciter(reciterName);
 
       final String? localUri = await _mediaStoreDataSource.saveAudioFromPath(
         sourcePath: tempFile.path,

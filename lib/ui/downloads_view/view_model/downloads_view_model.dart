@@ -45,6 +45,15 @@ class DownloadsViewModel extends ChangeNotifier {
   /// Whether the selected offline sura is actively playing.
   bool isPlaying = false;
 
+  /// Repeat one sura (same as reciters tab).
+  bool isRepeatEnabled = false;
+
+  /// Auto-play next downloaded sura when the current one ends.
+  bool isAutoNextEnabled = false;
+
+  /// Shared audio player used by the downloads player card.
+  AudioPlayer get player => _audioService.player;
+
   /// Loads valid downloads and builds the reciter list.
   Future<void> loadDownloads() async {
     isLoading = true;
@@ -65,6 +74,11 @@ class DownloadsViewModel extends ChangeNotifier {
       errorMessage = 'تعذر تحميل التحميلات';
       notifyListeners();
     }
+  }
+
+  /// Rescans device storage (Music/Islami/Quran) and refreshes the list.
+  Future<void> rescanDownloads() async {
+    await loadDownloads();
   }
 
   /// Filters reciters that have downloads by name.
@@ -101,10 +115,9 @@ class DownloadsViewModel extends ChangeNotifier {
   void filterSuras(String query) {
     if (selectedReciter == null) return;
 
-    final List<DownloadedAudio> forReciter = _allDownloads
-        .where((item) => item.reciterId == selectedReciter!.reciterId)
-        .toList()
-      ..sort((a, b) => a.suraId.compareTo(b.suraId));
+    final List<DownloadedAudio> forReciter = _downloadsForReciter(
+      selectedReciter!.reciterId,
+    );
 
     if (query.trim().isEmpty) {
       filteredSuras = forReciter;
@@ -124,52 +137,10 @@ class DownloadsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Plays or pauses a locally downloaded sura.
+  /// Plays a downloaded sura (does not toggle pause — card handles that).
   Future<void> playDownloadedSura(DownloadedAudio download) async {
-    final bool isSameTrack = playingReciterId == download.reciterId &&
-        playingSuraId == download.suraId;
-
-    if (isSameTrack) {
-      if (isPlaying) {
-        await _audioService.player.pause();
-        isPlaying = false;
-      } else {
-        // Do not await play() — it completes only when playback ends.
-        _audioService.player.play();
-        isPlaying = true;
-      }
-      notifyListeners();
-      return;
-    }
-
     try {
-      final String suraTitle = _suraTitle(download.suraId);
-      await _audioService.player.setLoopMode(LoopMode.off);
-      await _audioService.player.setAudioSource(
-        _audioService.buildUriAudioSource(
-          Uri.parse(download.localUri),
-          tag: MediaItem(
-            id: 'download_${download.reciterId}_${download.suraId}',
-            title: 'سورة $suraTitle',
-            artist: download.reciterName,
-          ),
-        ),
-      );
-
-      // Clear other audio modes so only this download is active.
-      _audioService.selectedRadioId = null;
-      _audioService.selectedRadioForSoundId = null;
-      _audioService.selectedSermonAudioUrl = null;
-      _audioService.selectedSharawyAudioUrl = null;
-      _audioService.selectedReciterId = download.reciterId;
-      _audioService.currentSura = download.suraId;
-
-      playingReciterId = download.reciterId;
-      playingSuraId = download.suraId;
-      isPlaying = true;
-
-      // Do not await play() — it completes only when playback ends.
-      _audioService.player.play();
+      await _startDownload(download);
     } catch (e) {
       log(e.toString());
       isPlaying = false;
@@ -177,6 +148,111 @@ class DownloadsViewModel extends ChangeNotifier {
       playingSuraId = null;
     }
     notifyListeners();
+  }
+
+  /// Plays or pauses the active downloaded reciter (card play button).
+  Future<void> playSelectedReciter() async {
+    if (selectedReciter == null) return;
+
+    final int reciterId = selectedReciter!.reciterId;
+    final bool isSameReciter = playingReciterId == reciterId;
+
+    if (isSameReciter && playingSuraId != null) {
+      if (isPlaying) {
+        await player.pause();
+        isPlaying = false;
+      } else {
+        // Do not await play() — it completes only when playback ends.
+        player.play();
+        isPlaying = true;
+      }
+      notifyListeners();
+      return;
+    }
+
+    final List<DownloadedAudio> downloads = _downloadsForReciter(reciterId);
+    if (downloads.isEmpty) return;
+
+    // Prefer current sura if it exists offline; otherwise first download.
+    DownloadedAudio target = downloads.first;
+    if (playingSuraId != null) {
+      for (final DownloadedAudio item in downloads) {
+        if (item.suraId == playingSuraId) {
+          target = item;
+          break;
+        }
+      }
+    }
+
+    await playDownloadedSura(target);
+  }
+
+  /// Plays the next downloaded sura for the active reciter.
+  Future<void> playNextDownload() async {
+    final DownloadedAudio? next = _adjacentDownload(goForward: true);
+    if (next == null) return;
+    await playDownloadedSura(next);
+  }
+
+  /// Plays the previous downloaded sura for the active reciter.
+  Future<void> playPreviousDownload() async {
+    final DownloadedAudio? previous = _adjacentDownload(goForward: false);
+    if (previous == null) return;
+    await playDownloadedSura(previous);
+  }
+
+  /// Turns repeat on/off; enabling it disables auto-next.
+  Future<void> toggleRepeat() async {
+    if (isRepeatEnabled) {
+      isRepeatEnabled = false;
+      await player.setLoopMode(LoopMode.off);
+    } else {
+      isRepeatEnabled = true;
+      isAutoNextEnabled = false;
+      await player.setLoopMode(LoopMode.one);
+    }
+    _audioService.isRepeatEnabled = isRepeatEnabled;
+    _audioService.isAutoNextEnabled = isAutoNextEnabled;
+    notifyListeners();
+  }
+
+  /// Turns auto-next on/off; enabling it disables repeat.
+  Future<void> toggleAutoNext() async {
+    if (isAutoNextEnabled) {
+      isAutoNextEnabled = false;
+      await player.setLoopMode(LoopMode.off);
+    } else {
+      isAutoNextEnabled = true;
+      isRepeatEnabled = false;
+      await player.setLoopMode(LoopMode.off);
+    }
+    _audioService.isRepeatEnabled = isRepeatEnabled;
+    _audioService.isAutoNextEnabled = isAutoNextEnabled;
+    notifyListeners();
+  }
+
+  /// Stops playback and clears the downloads selection.
+  Future<void> stopPlayback() async {
+    await player.stop();
+    isPlaying = false;
+    playingReciterId = null;
+    playingSuraId = null;
+    _audioService.selectedReciterId = null;
+    notifyListeners();
+  }
+
+  /// Seeks the currently playing download.
+  Future<void> seekPlayback(Duration position) async {
+    await player.seek(position);
+  }
+
+  /// Formats a duration as mm:ss for the slider labels.
+  String formatAudioTime(Duration duration) {
+    final String minutes =
+        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final String seconds =
+        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   /// Whether [download] is the currently selected offline track.
@@ -195,7 +271,7 @@ class DownloadsViewModel extends ChangeNotifier {
     try {
       // Stop playback if this track is currently playing.
       if (isSelectedDownload(download)) {
-        await _audioService.player.stop();
+        await player.stop();
         isPlaying = false;
         playingReciterId = null;
         playingSuraId = null;
@@ -239,14 +315,12 @@ class DownloadsViewModel extends ChangeNotifier {
     if (selectedReciter == null) return false;
 
     final int reciterId = selectedReciter!.reciterId;
-    final List<DownloadedAudio> toDelete = _allDownloads
-        .where((item) => item.reciterId == reciterId)
-        .toList();
+    final List<DownloadedAudio> toDelete = _downloadsForReciter(reciterId);
 
     try {
       for (final DownloadedAudio download in toDelete) {
         if (isSelectedDownload(download)) {
-          await _audioService.player.stop();
+          await player.stop();
           isPlaying = false;
           playingReciterId = null;
           playingSuraId = null;
@@ -274,18 +348,94 @@ class DownloadsViewModel extends ChangeNotifier {
     }
   }
 
+  /// Starts a download track and syncs shared audio selection.
+  Future<void> _startDownload(DownloadedAudio download) async {
+    final String suraTitle = _suraTitle(download.suraId);
+    await player.setLoopMode(
+      isRepeatEnabled ? LoopMode.one : LoopMode.off,
+    );
+    await player.setAudioSource(
+      _audioService.buildUriAudioSource(
+        Uri.parse(download.localUri),
+        tag: MediaItem(
+          id: 'download_${download.reciterId}_${download.suraId}',
+          title: 'سورة $suraTitle',
+          artist: download.reciterName,
+        ),
+      ),
+    );
+
+    // Clear other audio modes so only this download is active.
+    _audioService.selectedRadioId = null;
+    _audioService.selectedRadioForSoundId = null;
+    _audioService.selectedSermonAudioUrl = null;
+    _audioService.selectedSharawyAudioUrl = null;
+    _audioService.selectedReciterId = download.reciterId;
+    _audioService.currentSura = download.suraId;
+
+    playingReciterId = download.reciterId;
+    playingSuraId = download.suraId;
+    isPlaying = true;
+
+    // Do not await play() — it completes only when playback ends.
+    player.play();
+  }
+
+  /// Finds next or previous downloaded sura for the playing reciter.
+  DownloadedAudio? _adjacentDownload({required bool goForward}) {
+    final int? reciterId = playingReciterId ?? selectedReciter?.reciterId;
+    if (reciterId == null) return null;
+
+    final List<DownloadedAudio> downloads = _downloadsForReciter(reciterId);
+    if (downloads.isEmpty) return null;
+
+    if (playingSuraId == null) {
+      return goForward ? downloads.first : downloads.last;
+    }
+
+    final int currentIndex = downloads.indexWhere(
+      (item) => item.suraId == playingSuraId,
+    );
+    if (currentIndex < 0) {
+      return goForward ? downloads.first : downloads.last;
+    }
+
+    if (goForward) {
+      if (currentIndex >= downloads.length - 1) return null;
+      return downloads[currentIndex + 1];
+    }
+
+    if (currentIndex <= 0) return null;
+    return downloads[currentIndex - 1];
+  }
+
+  /// Sorted offline suras for one reciter.
+  List<DownloadedAudio> _downloadsForReciter(int reciterId) {
+    return _allDownloads
+        .where((item) => item.reciterId == reciterId)
+        .toList()
+      ..sort((a, b) => a.suraId.compareTo(b.suraId));
+  }
+
   /// Restores play selection from the shared audio service.
   void _restorePlaybackState() {
     playingReciterId = _audioService.selectedReciterId;
     playingSuraId = _audioService.currentSura;
-    isPlaying = playingReciterId != null && _audioService.player.playing;
+    isPlaying = playingReciterId != null && player.playing;
+    isRepeatEnabled = _audioService.isRepeatEnabled;
+    isAutoNextEnabled = _audioService.isAutoNextEnabled;
   }
 
-  /// Keeps play/pause icons in sync with the shared player.
+  /// Keeps play/pause icons in sync and handles auto-next.
   void _listenForPlayerState() {
-    _playerStateSubscription =
-        _audioService.player.playerStateStream.listen((state) {
+    _playerStateSubscription = player.playerStateStream.listen((state) {
       if (playingReciterId == null || playingSuraId == null) return;
+
+      if (state.processingState == ProcessingState.completed &&
+          isAutoNextEnabled) {
+        playNextDownload();
+        return;
+      }
 
       final bool wasPlaying = isPlaying;
       isPlaying = state.playing;
@@ -306,10 +456,7 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Fills [filteredSuras] for the given reciter id.
   void _applySelectedReciter(int reciterId) {
-    filteredSuras = _allDownloads
-        .where((item) => item.reciterId == reciterId)
-        .toList()
-      ..sort((a, b) => a.suraId.compareTo(b.suraId));
+    filteredSuras = _downloadsForReciter(reciterId);
 
     for (final DownloadedReciterSummary summary
         in buildReciterSummaries(_allDownloads)) {

@@ -1,5 +1,7 @@
 package com.example.islami
 
+import android.os.Build
+import android.os.Bundle
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -8,6 +10,16 @@ class MainActivity : AudioServiceActivity() {
 
     companion object {
         private const val STORAGE_CHANNEL = "com.example.islami/quran_storage"
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Avoid Android 12+ splash exit flicker before the Flutter splash draws.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { splashScreenView ->
+                splashScreenView.remove()
+            }
+        }
+        super.onCreate(savedInstanceState)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -77,6 +89,38 @@ class MainActivity : AudioServiceActivity() {
                         }
                     } catch (e: Exception) {
                         result.error("SAVE_ERROR", e.message, null)
+                    }
+                }
+
+                "listQuranAudio" -> {
+                    try {
+                        result.success(QuranStorageHelper.listQuranAudioFiles(this))
+                    } catch (e: Exception) {
+                        result.error("LIST_ERROR", e.message, null)
+                    }
+                }
+
+                "findQuranAudio" -> {
+                    val displayName = call.argument<String>("displayName")
+                    val relativePath = call.argument<String>("relativePath")
+                    if (displayName.isNullOrBlank() || relativePath.isNullOrBlank()) {
+                        result.error(
+                            "INVALID_ARGS",
+                            "displayName and relativePath are required",
+                            null,
+                        )
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        result.success(
+                            QuranStorageHelper.findQuranAudio(
+                                this,
+                                displayName,
+                                relativePath,
+                            ),
+                        )
+                    } catch (e: Exception) {
+                        result.error("FIND_ERROR", e.message, null)
                     }
                 }
 

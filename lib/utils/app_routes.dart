@@ -1,4 +1,5 @@
 class AppRoutes {
+  static const String splashRouteName = 'SplashScreen';
   static const String homeRouteName = 'HomeScreen';
   static const String recitersRouteName = 'Reciters Screen';
   static const String azkarRouteName = 'AzkarScreen';

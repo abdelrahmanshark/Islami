@@ -99,4 +99,49 @@ class QuranMediaStoreDataSource {
     final String folder = sanitizeReciterFolderName(reciterName);
     return '$quranAudioRelativePath/$folder';
   }
+
+  /// Lists Quran MP3s already on the device under Music/Islami/Quran.
+  Future<List<Map<String, dynamic>>> listExistingQuranAudio() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return <Map<String, dynamic>>[];
+    }
+
+    try {
+      final result = await _channel.invokeMethod<dynamic>('listQuranAudio');
+      if (result is! List) return <Map<String, dynamic>>[];
+
+      return result
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    } on PlatformException {
+      return <Map<String, dynamic>>[];
+    }
+  }
+
+  /// Finds one existing Quran MP3 by display name and relative folder.
+  Future<Map<String, dynamic>?> findExistingQuranAudio({
+    required String displayName,
+    required String relativePath,
+  }) async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return null;
+    }
+
+    try {
+      final result = await _channel.invokeMethod<dynamic>(
+        'findQuranAudio',
+        <String, dynamic>{
+          'displayName': displayName,
+          'relativePath': relativePath,
+        },
+      );
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      return null;
+    } on PlatformException {
+      return null;
+    }
+  }
 }

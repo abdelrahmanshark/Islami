@@ -1,4 +1,14 @@
 class AppAssets {
+  static const String splashBg = 'assets/images/splash/splash_bg.jpg';
+  static const String splashLogo = 'assets/images/splash/splash_logo.png';
+  static const String splashLamp = 'assets/images/splash/splash_lamp.png';
+  static const String splashMosque = 'assets/images/splash/splash_mosque.png';
+  static const String splashWheelLeft =
+      'assets/images/splash/splash_wheel_left.png';
+  static const String splashWheelRight =
+      'assets/images/splash/splash_wheel_right.png';
+  static const String splashBranding =
+      'assets/images/splash/splash_branding.png';
   static const String hadithCard = 'assets/images/hadith_card.png';
   static const String detailsBg = 'assets/images/details_bg.png';
   static const String header = 'assets/images/header.png';

@@ -297,6 +297,10 @@ class RadioViewModel extends ChangeNotifier {
     try {
       reciters = await _radioRepository.getReciters();
       filteredReciters = reciters;
+      // Rematch restored download folders to real API reciter ids.
+      await _downloadedAudioRepository.restoreExistingDownloads(
+        knownReciters: reciters,
+      );
       _syncSelectedReciterFromList();
       reciterIsLoading = false;
       notifyListeners();
@@ -738,6 +742,7 @@ class RadioViewModel extends ChangeNotifier {
           await _downloadedAudioRepository.getDownload(
         suraId: suraNumber,
         reciterId: reciterId,
+        reciterName: reciter.name,
       );
       localUri = download?.localUri;
     }

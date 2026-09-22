@@ -49,6 +49,7 @@ class ReciterDownloadViewModel extends ChangeNotifier {
       final List<DownloadedAudio> items =
           await _downloadedAudioRepository.getValidDownloadsForReciter(
         reciterId,
+        reciterName: reciter.name,
       );
       downloadedSuraIds
         ..clear()

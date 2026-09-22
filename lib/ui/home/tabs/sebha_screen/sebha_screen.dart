@@ -41,7 +41,6 @@ class _SebhaScreenState extends State<SebhaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Image.asset(AppAssets.header),
-                        Image.asset(AppAssets.sebhaTitle),
                         const SizedBox(height: 20),
                         InkWell(
                           onTap: () {

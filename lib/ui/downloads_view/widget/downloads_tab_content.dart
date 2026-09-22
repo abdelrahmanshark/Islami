@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_reciter_card.dart';
+import 'package:islami/ui/downloads_view/widget/downloaded_reciter_player_card.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_sura_row.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -66,6 +67,7 @@ class DownloadsTabContent extends StatelessWidget {
 
     return Column(
       children: [
+        DownloadedReciterPlayerCard(summary: viewModel.selectedReciter!),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -90,7 +92,7 @@ class DownloadsTabContent extends StatelessWidget {
                 download: download,
                 isSelected: viewModel.isSelectedDownload(download),
                 isPlaying: viewModel.isPlayingDownload(download),
-                onPlay: () => viewModel.playDownloadedSura(download),
+                onPlay: () => _onSuraPlay(viewModel, download),
                 onDelete: () => _confirmDeleteSura(context, download),
               );
             },
@@ -104,6 +106,18 @@ class DownloadsTabContent extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Plays a sura, or toggles pause if that sura is already selected.
+  void _onSuraPlay(
+    DownloadsViewModel viewModel,
+    DownloadedAudio download,
+  ) {
+    if (viewModel.isSelectedDownload(download)) {
+      viewModel.playSelectedReciter();
+    } else {
+      viewModel.playDownloadedSura(download);
+    }
   }
 
   /// Asks before deleting one downloaded sura.
