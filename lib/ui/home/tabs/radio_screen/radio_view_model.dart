@@ -12,7 +12,6 @@ import 'package:islami/models/reciters_response.dart';
 import 'package:islami/models/sermon.dart';
 import 'package:islami/models/sharawy_category.dart';
 import 'package:islami/models/sharawy_pillar.dart';
-import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:islami/utils/arabic_utils.dart';
 import 'package:just_audio/just_audio.dart';
@@ -156,9 +155,47 @@ class RadioViewModel extends ChangeNotifier {
     _audioService.playbackSpeed = speed;
   }
 
-  // Called when user picks a sura before opening RecitersScreen.
+  // Called when user picks a sura for the current reciter.
   void updateCurrentSura(int sura) {
     _setCurrentSura(sura);
+  }
+
+  // Resets sura search results to the full list of 114 suras.
+  void resetSuraSearch() {
+    filterSearch = List.generate(114, (index) => index);
+    notifyListeners();
+  }
+
+  // Plays a specific sura with the given reciter (does not toggle pause).
+  Future<void> playReciterSura(Reciters reciter, int suraNumber) async {
+    try {
+      _setCurrentSura(suraNumber);
+      String url = '${reciter.server}$formatSura.mp3';
+      await player.setLoopMode(
+        isRepeatEnabled ? LoopMode.one : LoopMode.off,
+      );
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url),
+          tag: MediaItem(
+            id: 'sura_$currentSura',
+            title: 'سورة $currentSura',
+            artist: reciter.name ?? 'قارئ',
+          ),
+        ),
+      );
+      _setSelectedRadio(null);
+      _setSelectedSermon(null);
+      _setSelectedSharawyLecture(null);
+      _setSelectedReciter(reciter);
+      isReciterPlaying = true;
+      _audioService.currentSura = currentSura;
+      player.play();
+    } catch (e) {
+      log(e.toString());
+      rethrow;
+    }
+    notifyListeners();
   }
 
   void changeToggleIndex(int index) {
@@ -537,6 +574,14 @@ class RadioViewModel extends ChangeNotifier {
 
   String get formatSura => currentSura.toString().padLeft(3, '0');
 
+  // Stops reciter audio and clears the current selection.
+  Future<void> stopReciter() async {
+    await player.stop();
+    _setSelectedReciter(null);
+    isReciterPlaying = false;
+    notifyListeners();
+  }
+
   // Plays or pauses a reciter audio (keeps selection on pause).
   Future<void> playReciter(Reciters reciter) async {
     if (selectedReciterId != null && selectedReciterId == reciter.id) {
@@ -786,10 +831,6 @@ class RadioViewModel extends ChangeNotifier {
 
     filterSearch = suraResultSearch;
     notifyListeners();
-  }
-
-  void onSuraTap(int index, BuildContext context) {
-    Navigator.pushNamed(context, AppRoutes.recitersRouteName, arguments: index);
   }
 
   void resetReciterSearch() {

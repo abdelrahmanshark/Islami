@@ -106,6 +106,22 @@ class ReciterCard extends StatelessWidget {
                   if (isReciterOn) const ReciterAudioSlider(),
                 ],
               ),
+              // Stop and quit audio when this reciter is active.
+              if (isReciterOn)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: IconButton(
+                    onPressed: () {
+                      provider.stopReciter();
+                    },
+                    icon: Icon(
+                      Icons.stop_rounded,
+                      color: AppColors.blackColor,
+                      size: 32,
+                    ),
+                  ),
+                ),
             ],
           ),
         );

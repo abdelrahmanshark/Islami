@@ -1,88 +1,100 @@
 import 'package:flutter/material.dart';
-import 'package:islami/models/quran_resources.dart';
+import 'package:islami/models/reciters_response.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_card.dart';
+import 'package:islami/ui/home/widgets/sura_bar.dart';
+import 'package:islami/ui/home/widgets/sura_search_bar.dart';
+import 'package:islami/utils/app_assets.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../utils/app_colors.dart';
 import '../../../../utils/app_styles.dart';
-import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 
 class RecitersScreen extends StatelessWidget {
-  final int index;
+  final Reciters reciter;
 
   const RecitersScreen({
     super.key,
-    required this.index,
+    required this.reciter,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Scaffold(
-        backgroundColor: AppColors.transparentColor,
-        appBar: AppBar(
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          backgroundColor: AppColors.grayColor,
-          iconTheme: IconThemeData(color: AppColors.primaryColor),
-          title: Text(
-            QuranResources.arabicQuranSuras[index],
-            style: AppStyles.primaryBold24,
-          ),
-          centerTitle: true,
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(AppAssets.radioBg),
+          fit: BoxFit.cover,
         ),
-        body: Consumer<RadioViewModel>(
-          builder: (context, provider, child) {
-            return Column(
-              children: [
-                if (provider.reciterIsLoading)
-                  Expanded(
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                  )
-                else if (provider.reciterFailureMsg.isNotEmpty)
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        provider.reciterFailureMsg,
-                        style: AppStyles.primaryBold24,
-                      ),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: Column(
-                      children: [
-                        SizedBox(height: 20,),
-                        SuraSearchBar(
-                          onChanged: (newText) {
-                            provider.filterReciter(newText);
-                          },
-                          hintText: 'بحث عن شيخ',
-                          textDirection: TextDirection.rtl,
-                        ),
-                        SizedBox(height: 40,),
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: provider.filteredReciters.length,
-                            itemBuilder: (context, index) {
-                              return ReciterCard(
-                                reciter: provider.filteredReciters[index],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Scaffold(
+          backgroundColor: AppColors.transparentColor,
+          appBar: AppBar(
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            backgroundColor: AppColors.grayColor,
+            iconTheme: IconThemeData(color: AppColors.primaryColor),
+            title: Text(
+              reciter.name ?? '',
+              style: AppStyles.primaryBold24,
+            ),
+            centerTitle: true,
+          ),
+          body: Consumer<RadioViewModel>(
+            builder: (context, provider, child) {
+              return Column(
+                children: [
+                  SizedBox(height: 12),
+                  ReciterCard(reciter: reciter),
+                  SizedBox(height: 12),
+                  SuraSearchBar(
+                    onChanged: provider.onSearch,
+                    textDirection: TextDirection.rtl,
+                  ),
+                  SizedBox(height: 12),
+                  provider.filterSearch.isEmpty
+                      ? Text(
+                          "عذراً، لم نتمكن من العثور على السورة",
+                          style: AppStyles.whiteBold20,
+                        )
+                      : Expanded(
+                          child: ListView.separated(
+                            padding: EdgeInsetsGeometry.symmetric(
+                              vertical: 10,
+                              horizontal: 20,
+                            ),
+                            itemBuilder: (BuildContext context, int index) {
+                              final suraIndex = provider.filterSearch[index];
+                              return InkWell(
+                                onTap: () {
+                                  provider.playReciterSura(
+                                    reciter,
+                                    suraIndex + 1,
+                                  );
+                                },
+                                child: SuraBar(index: suraIndex),
                               );
                             },
+                            separatorBuilder:
+                                (BuildContext context, int index) =>
+                                    Container(
+                                      margin: EdgeInsets.symmetric(
+                                        vertical: 10,
+                                        horizontal: 12,
+                                      ),
+                                      height: 2,
+                                      width: double.infinity,
+                                      color: AppColors.whiteColor,
+                                    ),
+                            itemCount: provider.filterSearch.length,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
