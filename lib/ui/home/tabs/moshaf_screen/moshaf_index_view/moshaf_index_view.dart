@@ -82,8 +82,11 @@ class MoshafIndexView extends StatelessWidget {
                         final item = provider.currentItems[index];
                         return MoshafIndexItemTile(
                           item: item,
+                          isCompleted: provider.isItemCompleted(item),
                           onTap: () =>
                               Navigator.pop(context, item.pageNumber),
+                          onToggleComplete: () =>
+                              provider.toggleItemCompletion(item),
                         );
                       },
                     ),

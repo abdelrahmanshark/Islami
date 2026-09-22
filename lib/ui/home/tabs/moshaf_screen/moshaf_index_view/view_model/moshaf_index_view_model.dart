@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/moshaf_index_item.dart';
+import 'package:islami/models/moshaf_memorization_tracker.dart';
 import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/utils/arabic_utils.dart';
+import 'package:islami/utils/shared_preferences.dart';
 
 class MoshafIndexViewModel extends ChangeNotifier {
   final List<MoshafPage> pages;
@@ -10,15 +12,27 @@ class MoshafIndexViewModel extends ChangeNotifier {
   late final List<MoshafIndexItem> juzItems;
   late final List<MoshafIndexItem> hizbItems;
   late final List<MoshafIndexItem> rubItems;
+  late final MoshafMemorizationTracker memorizationTracker;
 
   int selectedTabIndex = 0;
   String surahSearchQuery = '';
+  bool isProgressLoaded = false;
 
   MoshafIndexViewModel({required this.pages}) {
+    memorizationTracker = MoshafMemorizationTracker.fromPages(pages);
     surahItems = _buildSurahIndex();
-    juzItems = _buildNumberIndex(label: 'الجزء', valueOf: (page) => page.juz);
-    hizbItems = _buildNumberIndex(label: 'الحزب', valueOf: (page) => page.hizb);
+    juzItems = _buildNumberIndex(
+      label: 'الجزء',
+      type: MoshafIndexItemType.juz,
+      valueOf: (page) => page.juz,
+    );
+    hizbItems = _buildNumberIndex(
+      label: 'الحزب',
+      type: MoshafIndexItemType.hizb,
+      valueOf: (page) => page.hizb,
+    );
     rubItems = _buildRubIndex();
+    loadMemorizationProgress();
   }
 
   /// Items for the currently selected index tab.
@@ -46,6 +60,26 @@ class MoshafIndexViewModel extends ChangeNotifier {
     }).toList();
   }
 
+  /// Loads saved memorized pages from local storage.
+  Future<void> loadMemorizationProgress() async {
+    final savedPages = await getMoshafMemorizedPages();
+    memorizationTracker.setCompletedPages(savedPages);
+    isProgressLoaded = true;
+    notifyListeners();
+  }
+
+  /// Whether this index item is fully memorized.
+  bool isItemCompleted(MoshafIndexItem item) {
+    return memorizationTracker.isCompleted(item);
+  }
+
+  /// Toggles memorization for [item] and persists page progress.
+  Future<void> toggleItemCompletion(MoshafIndexItem item) async {
+    final updatedPages = memorizationTracker.toggle(item);
+    notifyListeners();
+    await saveMoshafMemorizedPages(updatedPages);
+  }
+
   /// Updates the selected tab (Surah / Juz / Hizb / Rub).
   void setSelectedTab(int index) {
     if (index == selectedTabIndex) return;
@@ -71,6 +105,8 @@ class MoshafIndexViewModel extends ChangeNotifier {
         MoshafIndexItem(
           title: page.suraName,
           pageNumber: page.pageNumber,
+          type: MoshafIndexItemType.surah,
+          id: page.sura.toString(),
         ),
       );
     }
@@ -81,6 +117,7 @@ class MoshafIndexViewModel extends ChangeNotifier {
   /// Builds starting-page entries for Juz or Hizb.
   List<MoshafIndexItem> _buildNumberIndex({
     required String label,
+    required MoshafIndexItemType type,
     required int Function(MoshafPage page) valueOf,
   }) {
     final items = <MoshafIndexItem>[];
@@ -94,6 +131,8 @@ class MoshafIndexViewModel extends ChangeNotifier {
         MoshafIndexItem(
           title: '$label $value',
           pageNumber: page.pageNumber,
+          type: type,
+          id: value.toString(),
         ),
       );
     }
@@ -114,6 +153,8 @@ class MoshafIndexViewModel extends ChangeNotifier {
         MoshafIndexItem(
           title: 'الحزب ${page.hizb} • الربع ${page.rub}',
           pageNumber: page.pageNumber,
+          type: MoshafIndexItemType.rub,
+          id: key,
         ),
       );
     }

@@ -5,6 +5,7 @@ class SharedPreferencesKay {
   static const String azanEnabled = 'azanEnabled';
   static const String moshafLastPage = 'moshafLastPage';
   static const String moshafDarkTheme = 'moshafDarkTheme';
+  static const String moshafMemorizedPages = 'moshafMemorizedPages';
   static const String prayerDate = 'prayerDate';
   static const String prayerFajr = 'prayerFajr';
   static const String prayerDhuhr = 'prayerDhuhr';
@@ -118,6 +119,24 @@ Future<bool> getMoshafDarkTheme() async {
 Future<void> saveMoshafDarkTheme(bool isDark) async {
   final pref = await SharedPreferences.getInstance();
   await pref.setBool(SharedPreferencesKay.moshafDarkTheme, isDark);
+}
+
+/// Returns Mushaf pages marked as memorized (empty when none saved).
+Future<Set<int>> getMoshafMemorizedPages() async {
+  final pref = await SharedPreferences.getInstance();
+  final saved =
+      pref.getStringList(SharedPreferencesKay.moshafMemorizedPages) ?? [];
+  return saved.map(int.parse).toSet();
+}
+
+/// Saves the set of Mushaf pages marked as memorized.
+Future<void> saveMoshafMemorizedPages(Set<int> pages) async {
+  final pref = await SharedPreferences.getInstance();
+  final sorted = pages.toList()..sort();
+  await pref.setStringList(
+    SharedPreferencesKay.moshafMemorizedPages,
+    sorted.map((page) => page.toString()).toList(),
+  );
 }
 
 /// Saves the user's coordinates and place names locally.
