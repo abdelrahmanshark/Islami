@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-
-import '../../../../../utils/app_assets.dart';
-import '../../../../../utils/app_styles.dart';
 import 'package:islami/models/quran_resources.dart';
+
+import '../../../utils/app_assets.dart';
+import '../../../utils/app_styles.dart';
 
 class SuraBar extends StatelessWidget {
   int index;

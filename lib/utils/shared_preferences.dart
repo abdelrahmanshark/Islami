@@ -2,10 +2,7 @@ import 'package:islami/models/user_location.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesKay {
-  static const String kay = 'MostRecently';
   static const String azanEnabled = 'azanEnabled';
-  static const String lastReadSura = 'lastReadSura';
-  static const String lastReadAyah = 'lastReadAyah';
   static const String moshafLastPage = 'moshafLastPage';
   static const String moshafDarkTheme = 'moshafDarkTheme';
   static const String prayerDate = 'prayerDate';
@@ -97,47 +94,6 @@ Future<SavedPrayerTimings?> getSavedPrayerTimings() async {
     maghrib: maghrib,
     isha: isha,
   );
-}
-
-Future<void> saveSuraIndexToSharedPreferences(int index) async {
-  final pref = await SharedPreferences.getInstance();
-
-  List<String> mostRecent =
-      pref.getStringList(SharedPreferencesKay.kay) ?? [];
-
-  if (mostRecent.contains("$index")) {
-    mostRecent.remove("$index");
-  }
-
-  mostRecent.insert(0, "$index");
-
-  if (mostRecent.length > 5) {
-    mostRecent.removeLast();
-  }
-
-  await pref.setStringList(
-    SharedPreferencesKay.kay,
-    mostRecent,
-  );
-}
-
-/// Saves the last ayah the user stopped reading at.
-Future<void> saveLastRead({
-  required int suraIndex,
-  required int ayahIndex,
-}) async {
-  final pref = await SharedPreferences.getInstance();
-  await pref.setInt(SharedPreferencesKay.lastReadSura, suraIndex);
-  await pref.setInt(SharedPreferencesKay.lastReadAyah, ayahIndex);
-}
-
-/// Returns the saved last-read position, or null if none exists.
-Future<({int suraIndex, int ayahIndex})?> getLastRead() async {
-  final pref = await SharedPreferences.getInstance();
-  final suraIndex = pref.getInt(SharedPreferencesKay.lastReadSura);
-  final ayahIndex = pref.getInt(SharedPreferencesKay.lastReadAyah);
-  if (suraIndex == null || ayahIndex == null) return null;
-  return (suraIndex: suraIndex, ayahIndex: ayahIndex);
 }
 
 /// Saves the last Moshaf page the user stopped reading at (1–604).

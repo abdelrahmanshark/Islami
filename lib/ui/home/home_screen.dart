@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   homeScreenViewModel.updateIndex(index);
                 },
                 items: [
-                  bottomNavBarItem(0, 'قرآن', AppAssets.quranIc,
+                  bottomNavBarItem(0, 'مصحف', AppAssets.quranIc,
                       homeScreenViewModel.selectedIndex),
                   bottomNavBarItem(1, 'حديث', AppAssets.hadithIc,
                       homeScreenViewModel.selectedIndex),
@@ -40,8 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       homeScreenViewModel.selectedIndex),
                   bottomNavBarItem(4, 'مواقيت', AppAssets.timeIc,
                       homeScreenViewModel.selectedIndex),
-                  bottomNavBarIconItem(5, 'مصحف', Icons.menu_book,
-                      homeScreenViewModel.selectedIndex),
                 ],
               ),
             ),
@@ -50,6 +48,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-
 }

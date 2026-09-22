@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
+import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_pillar_card.dart';
 import 'package:islami/utils/app_colors.dart';

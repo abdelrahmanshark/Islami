@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../utils/app_colors.dart';
 import '../../../../utils/app_styles.dart';
-import '../quran_screen/widgets/sura_search_bar.dart';
+import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 
 class RecitersScreen extends StatelessWidget {
   final int index;

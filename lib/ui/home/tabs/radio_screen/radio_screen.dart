@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/reciters_screen.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_toggle_switch.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sermons_list.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_list.dart';
+import 'package:islami/ui/home/widgets/sura_bar.dart';
+import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../utils/app_assets.dart';
-import '../quran_screen/widgets/sura_bar.dart';
 
 class RadioScreen extends StatelessWidget {
   const RadioScreen({super.key});

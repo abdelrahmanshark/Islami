@@ -3,7 +3,7 @@ import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/view_model/moshaf_index_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/widget/moshaf_index_item_tile.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/widget/moshaf_index_tab_button.dart';
-import 'package:islami/ui/home/tabs/quran_screen/widgets/sura_search_bar.dart';
+import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';

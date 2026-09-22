@@ -89,6 +89,7 @@ class RadioViewModel extends ChangeNotifier {
   int toggleSwitchIndex = 0;
   bool isRepeatEnabled = false;
   bool isAutoNextEnabled = false;
+  bool isReciterPlaying = false; // drives play/pause icon on reciter cards
 
   // Restore ids from the singleton so UI survives leaving the Radio tab.
   void _restorePlaybackState() {
@@ -101,6 +102,8 @@ class RadioViewModel extends ChangeNotifier {
     currentSura = _audioService.currentSura;
     isRepeatEnabled = _audioService.isRepeatEnabled;
     isAutoNextEnabled = _audioService.isAutoNextEnabled;
+    isReciterPlaying =
+        selectedReciterId != null && _audioService.player.playing;
   }
 
   // Persist radio play selection on the singleton.
@@ -122,6 +125,9 @@ class RadioViewModel extends ChangeNotifier {
     selectedReciter = reciter;
     selectedReciterId = reciter?.id;
     _audioService.selectedReciterId = reciter?.id;
+    if (reciter == null) {
+      isReciterPlaying = false;
+    }
   }
 
   // Persist sermon play selection on the singleton.
@@ -473,7 +479,14 @@ class RadioViewModel extends ChangeNotifier {
           selectedReciter != null) {
         recitersNext(selectedReciter!);
       }
-      // Keep Sha'rawy play/pause icon in sync with player state.
+      // Keep play/pause icons in sync with player state.
+      if (selectedReciterId != null) {
+        final wasPlaying = isReciterPlaying;
+        isReciterPlaying = state.playing;
+        if (wasPlaying != isReciterPlaying) {
+          notifyListeners();
+        }
+      }
       if (selectedSharawyAudioUrl != null) {
         notifyListeners();
       }
@@ -524,10 +537,17 @@ class RadioViewModel extends ChangeNotifier {
 
   String get formatSura => currentSura.toString().padLeft(3, '0');
 
+  // Plays or pauses a reciter audio (keeps selection on pause).
   Future<void> playReciter(Reciters reciter) async {
     if (selectedReciterId != null && selectedReciterId == reciter.id) {
-      await player.pause();
-      _setSelectedReciter(null);
+      if (isReciterPlaying) {
+        await player.pause();
+        isReciterPlaying = false;
+      } else {
+        // Do not await play() — it completes only when playback ends.
+        player.play();
+        isReciterPlaying = true;
+      }
     } else {
       try {
         String url = '${reciter.server}$formatSura.mp3';
@@ -544,12 +564,15 @@ class RadioViewModel extends ChangeNotifier {
             ),
           ),
         );
-        player.play();
+        // Update selection before play so the card UI refreshes immediately.
         _setSelectedRadio(null);
         _setSelectedSermon(null);
         _setSelectedSharawyLecture(null);
         _setSelectedReciter(reciter);
+        isReciterPlaying = true;
         _audioService.currentSura = currentSura;
+        // Do not await play() — it completes only when playback ends.
+        player.play();
       } catch (e) {
         log(e.toString());
         rethrow;
@@ -610,6 +633,7 @@ class RadioViewModel extends ChangeNotifier {
       _setSelectedSermon(null);
       _setSelectedSharawyLecture(null);
       _setSelectedReciter(reciter);
+      isReciterPlaying = true;
       notifyListeners();
     }
   }
@@ -633,6 +657,7 @@ class RadioViewModel extends ChangeNotifier {
       _setSelectedSermon(null);
       _setSelectedSharawyLecture(null);
       _setSelectedReciter(reciter);
+      isReciterPlaying = true;
       notifyListeners();
     }
   }

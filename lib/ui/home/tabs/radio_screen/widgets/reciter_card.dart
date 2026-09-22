@@ -18,9 +18,10 @@ class ReciterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<RadioViewModel>(
       builder: (context, provider, child) {
-        bool isReciterOn =
+        final isReciterOn =
             provider.selectedReciterId != null &&
             provider.selectedReciterId == reciter.id;
+        final isReciterPlaying = isReciterOn && provider.isReciterPlaying;
         return Container(
           margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
           height: MediaQuery.heightOf(context) * (isReciterOn ? 0.22 : 0.14),
@@ -75,7 +76,9 @@ class ReciterCard extends StatelessWidget {
                           provider.playReciter(reciter);
                         },
                         icon: Icon(
-                          isReciterOn ? Icons.pause : Icons.play_arrow_rounded,
+                          isReciterPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow_rounded,
                           color: AppColors.blackColor,
                           size: 50,
                         ),
