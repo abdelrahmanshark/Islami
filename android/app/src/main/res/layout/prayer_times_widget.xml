@@ -82,16 +82,17 @@
                 android:textColor="@color/widget_white"
                 android:textSize="12sp" />
 
-            <TextView
+            <Chronometer
                 android:id="@+id/widget_remaining"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
+                android:format="%s"
                 android:gravity="center"
                 android:textColor="@color/widget_primary"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                tools:text="01:23" />
+                tools:text="01:23:45" />
         </LinearLayout>
     </LinearLayout>
 

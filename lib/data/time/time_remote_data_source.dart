@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart';
-import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
 
 /// Fetches prayer times from the Aladhan API.
 class TimeRemoteDataSource {
@@ -10,11 +8,17 @@ class TimeRemoteDataSource {
   static const String _timingsPath =
       '/v1/timingsByCity?city=cairo&country=egypt';
 
-  Future<TimeResponse> fetchTimeResponse() async {
+  /// Returns the raw API JSON body on success.
+  Future<String> fetchTimeResponseJson() async {
     try {
       final uri = Uri.parse('$_baseUrl$_timingsPath');
       final response = await get(uri);
-      return TimeResponse.fromJson(jsonDecode(response.body));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Prayer times request failed: ${response.statusCode}');
+      }
+
+      return response.body;
     } catch (e) {
       log(e.toString());
       rethrow;

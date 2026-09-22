@@ -32,8 +32,6 @@ class TimeViewModel extends ChangeNotifier {
   Duration remainingTime = Duration.zero;
   Timer? _countdownTimer;
 
-  DateTime? _lastWidgetUpdate;
-
   /// Loads the saved azan on/off preference (defaults to on).
   Future<void> _loadAzanEnabled() async {
     isAzanEnabled = await getAzanEnabled();
@@ -75,7 +73,7 @@ class TimeViewModel extends ChangeNotifier {
       dateInfo = timeResponse.data?.date;
       pryerTimes = getPryerTimesList(timing);
       isTimeLoading = false;
-      _updateNextPrayer(forceWidgetUpdate: true);
+      _updateNextPrayer(pushWidget: true);
       _startCountdownTimer();
 
       // Schedule background Adhan alarms from fetched prayer times.
@@ -106,7 +104,7 @@ class TimeViewModel extends ChangeNotifier {
     ];
   }
 
-  /// Tick every second so the remaining-time banner stays current.
+  /// Tick every second so the in-app remaining-time banner stays current.
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -115,9 +113,11 @@ class TimeViewModel extends ChangeNotifier {
     });
   }
 
-  /// Finds the next salah and updates remaining time (UI only).
-  void _updateNextPrayer({bool forceWidgetUpdate = false}) {
+  /// Finds the next salah and updates remaining time for the Time screen UI.
+  /// Home widget countdown is driven by the stored next-prayer DateTime on Android.
+  void _updateNextPrayer({bool pushWidget = false}) {
     final DateTime now = DateTime.now();
+    final int previousIndex = nextPrayerIndex;
     final NextPrayerResult? result =
         NextPrayerCalculator.findNext(pryerTimes, now);
 
@@ -125,6 +125,12 @@ class TimeViewModel extends ChangeNotifier {
       nextPrayer = null;
       nextPrayerIndex = -1;
       remainingTime = Duration.zero;
+      if (pushWidget) {
+        PrayerWidgetUpdater.update(
+          prayerTimes: pryerTimes,
+          nextResult: null,
+        );
+      }
       return;
     }
 
@@ -132,29 +138,13 @@ class TimeViewModel extends ChangeNotifier {
     nextPrayerIndex = result.index;
     remainingTime = result.remainingFrom(now);
 
-    _maybeUpdateHomeWidget(result, now, force: forceWidgetUpdate);
-  }
-
-  /// Updates the home widget after fetch, or about once per minute.
-  void _maybeUpdateHomeWidget(
-    NextPrayerResult result,
-    DateTime now, {
-    bool force = false,
-  }) {
-    final bool shouldUpdate = force ||
-        _lastWidgetUpdate == null ||
-        now.difference(_lastWidgetUpdate!).inSeconds >= 60;
-
-    if (!shouldUpdate) {
-      return;
+    // Push widget data after fetch, or when the next prayer itself changes.
+    if (pushWidget || previousIndex != result.index) {
+      PrayerWidgetUpdater.update(
+        prayerTimes: pryerTimes,
+        nextResult: result,
+      );
     }
-
-    _lastWidgetUpdate = now;
-    PrayerWidgetUpdater.update(
-      prayerTimes: pryerTimes,
-      nextResult: result,
-      now: now,
-    );
   }
 
   @override

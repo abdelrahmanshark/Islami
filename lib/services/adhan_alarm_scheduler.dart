@@ -5,8 +5,10 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:islami/data/time/time_repository.dart';
 import 'package:islami/services/adhan_player.dart';
+import 'package:islami/services/prayer_widget_updater.dart';
 import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
+import 'package:islami/ui/home/tabs/time_screen/models/prayer.dart';
 import 'package:islami/utils/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -56,6 +58,7 @@ Future<void> adhanRefreshCallback() async {
 
     await AdhanAlarmScheduler.persistTimings(timings);
     await AdhanAlarmScheduler.scheduleFromTimings(timings);
+    await AdhanAlarmScheduler.updateHomeWidgetFromTimings(timings);
   } catch (e) {
     log('adhanRefreshCallback error: $e');
   }
@@ -153,6 +156,25 @@ class AdhanAlarmScheduler {
       asr: timings.asr ?? '',
       maghrib: timings.maghrib ?? '',
       isha: timings.isha ?? '',
+    );
+  }
+
+  /// Pushes cached/refreshed salah times to the home widget.
+  static Future<void> updateHomeWidgetFromTimings(Timings timings) async {
+    final DateTime now = DateTime.now();
+    final List<Prayer> prayerTimes = [
+      Prayer(NextPrayerCalculator.cleanTime(timings.fajr), 'الفجر'),
+      Prayer(NextPrayerCalculator.cleanTime(timings.dhuhr), 'الظهر'),
+      Prayer(NextPrayerCalculator.cleanTime(timings.asr), 'العصر'),
+      Prayer(NextPrayerCalculator.cleanTime(timings.maghrib), 'المغرب'),
+      Prayer(NextPrayerCalculator.cleanTime(timings.isha), 'العشاء'),
+    ];
+    final NextPrayerResult? next =
+        NextPrayerCalculator.findNext(prayerTimes, now);
+
+    await PrayerWidgetUpdater.update(
+      prayerTimes: prayerTimes,
+      nextResult: next,
     );
   }
 

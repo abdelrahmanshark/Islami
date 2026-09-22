@@ -12,11 +12,10 @@ class PrayerWidgetUpdater {
   static const String qualifiedAndroidName =
       'com.example.islami.PrayerTimesWidgetProvider';
 
-  /// Saves salah times and next-prayer info, then refreshes the widget.
+  /// Saves salah times and the next prayer's actual DateTime, then refreshes.
   static Future<void> update({
     required List<Prayer> prayerTimes,
     required NextPrayerResult? nextResult,
-    required DateTime now,
   }) async {
     try {
       final Map<String, String> salahTimes = {};
@@ -48,7 +47,6 @@ class PrayerWidgetUpdater {
       );
 
       if (nextResult != null) {
-        final Duration remaining = nextResult.remainingFrom(now);
         await HomeWidget.saveWidgetData<String>(
           'next_prayer_name',
           nextResult.prayer.PryerName,
@@ -57,20 +55,15 @@ class PrayerWidgetUpdater {
           'next_prayer_time',
           nextResult.prayer.PryerTime,
         );
-        // Store as string so epoch ms never overflows Android int prefs
+        // Actual next-prayer DateTime; Android counts down from this alone.
         await HomeWidget.saveWidgetData<String>(
           'next_prayer_epoch_ms',
           nextResult.dateTime.millisecondsSinceEpoch.toString(),
-        );
-        await HomeWidget.saveWidgetData<String>(
-          'remaining_hm',
-          NextPrayerCalculator.formatRemainingHm(remaining),
         );
       } else {
         await HomeWidget.saveWidgetData<String>('next_prayer_name', '');
         await HomeWidget.saveWidgetData<String>('next_prayer_time', '');
         await HomeWidget.saveWidgetData<String>('next_prayer_epoch_ms', '');
-        await HomeWidget.saveWidgetData<String>('remaining_hm', '--:--');
       }
 
       await HomeWidget.updateWidget(

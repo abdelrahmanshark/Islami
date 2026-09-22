@@ -13,6 +13,7 @@ class SharedPreferencesKay {
   static const String prayerAsr = 'prayerAsr';
   static const String prayerMaghrib = 'prayerMaghrib';
   static const String prayerIsha = 'prayerIsha';
+  static const String cachedTimeResponse = 'cachedTimeResponse';
 }
 
 /// Returns whether azan sound is enabled. Defaults to true when unset.
