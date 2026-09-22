@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
               resizeToAvoidBottomInset: false,
               body: homeScreenViewModel.tabs[homeScreenViewModel.selectedIndex],
               bottomNavigationBar: BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
                 currentIndex: homeScreenViewModel.selectedIndex,
                 onTap: (index) {
                   homeScreenViewModel.updateIndex(index);
@@ -38,7 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       homeScreenViewModel.selectedIndex),
                   bottomNavBarItem(3, 'راديو', AppAssets.radioIc,
                       homeScreenViewModel.selectedIndex),
-                  bottomNavBarItem(4, 'مواقيت', AppAssets.timeIc,
+                  bottomNavBarItem(4, 'تحميلات', AppAssets.downloadIc,
+                      homeScreenViewModel.selectedIndex),
+                  bottomNavBarItem(5, 'مواقيت', AppAssets.timeIc,
                       homeScreenViewModel.selectedIndex),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/reciters_screen.dart';
+import 'package:islami/ui/home/tabs/radio_screen/view_model/reciter_download_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_toggle_switch.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_select_card.dart';
@@ -117,9 +118,19 @@ class RadioScreen extends StatelessWidget {
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) {
-                                              return ChangeNotifierProvider
-                                                  .value(
-                                                value: provider,
+                                              return MultiProvider(
+                                                providers: [
+                                                  ChangeNotifierProvider
+                                                      .value(
+                                                    value: provider,
+                                                  ),
+                                                  ChangeNotifierProvider(
+                                                    create: (_) =>
+                                                        ReciterDownloadViewModel(
+                                                      reciter: reciter,
+                                                    ),
+                                                  ),
+                                                ],
                                                 child: RecitersScreen(
                                                   reciter: reciter,
                                                 ),

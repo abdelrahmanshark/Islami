@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:islami/data/quran_download/downloaded_audio_repository.dart';
 import 'package:islami/data/radio/radio_repository.dart';
 import 'package:islami/data/sermons/sermons_local_data_source.dart';
 import 'package:islami/data/sharawy/sharawy_local_data_source.dart';
+import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/domain/repositories/radio_repository.dart';
+import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/models/quran_story.dart';
 import 'package:islami/models/radio_response.dart';
 import 'package:islami/models/reciters_response.dart';
@@ -25,11 +28,14 @@ class RadioViewModel extends ChangeNotifier {
     RadioRepository? radioRepository,
     SermonsLocalDataSource? sermonsLocalDataSource,
     SharawyLocalDataSource? sharawyLocalDataSource,
+    DownloadedAudioRepository? downloadedAudioRepository,
   }) : _radioRepository = radioRepository ?? RadioRepositoryImpl(),
        _sermonsLocalDataSource =
            sermonsLocalDataSource ?? SermonsLocalDataSource(),
        _sharawyLocalDataSource =
-           sharawyLocalDataSource ?? SharawyLocalDataSource() {
+           sharawyLocalDataSource ?? SharawyLocalDataSource(),
+       _downloadedAudioRepository =
+           downloadedAudioRepository ?? DownloadedAudioRepositoryImpl() {
     _restorePlaybackState();
     getRadios();
     getReciters();
@@ -41,6 +47,7 @@ class RadioViewModel extends ChangeNotifier {
   final RadioRepository _radioRepository;
   final SermonsLocalDataSource _sermonsLocalDataSource;
   final SharawyLocalDataSource _sharawyLocalDataSource;
+  final DownloadedAudioRepository _downloadedAudioRepository;
   final AudioPlayerService _audioService = AudioPlayerService.instance;
   StreamSubscription<PlayerState>? _playerStateSubscription;
 
@@ -170,13 +177,16 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> playReciterSura(Reciters reciter, int suraNumber) async {
     try {
       _setCurrentSura(suraNumber);
-      String url = '${reciter.server}$formatSura.mp3';
+      final Uri playbackUri = await _resolveReciterPlaybackUri(
+        reciter: reciter,
+        suraNumber: suraNumber,
+      );
       await player.setLoopMode(
         isRepeatEnabled ? LoopMode.one : LoopMode.off,
       );
       await player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
+        _audioService.buildUriAudioSource(
+          playbackUri,
           tag: MediaItem(
             id: 'sura_$currentSura',
             title: 'سورة $currentSura',
@@ -572,8 +582,6 @@ class RadioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get formatSura => currentSura.toString().padLeft(3, '0');
-
   // Stops reciter audio and clears the current selection.
   Future<void> stopReciter() async {
     await player.stop();
@@ -595,13 +603,16 @@ class RadioViewModel extends ChangeNotifier {
       }
     } else {
       try {
-        String url = '${reciter.server}$formatSura.mp3';
+        final Uri playbackUri = await _resolveReciterPlaybackUri(
+          reciter: reciter,
+          suraNumber: currentSura,
+        );
         await player.setLoopMode(
           isRepeatEnabled ? LoopMode.one : LoopMode.off,
         );
         await player.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(url),
+          _audioService.buildUriAudioSource(
+            playbackUri,
             tag: MediaItem(
               id: 'sura_$currentSura',
               title: 'سورة $currentSura',
@@ -662,10 +673,13 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> recitersNext(Reciters reciter) async {
     if (currentSura < 114) {
       _setCurrentSura(currentSura + 1);
-      String url = '${reciter.server}$formatSura.mp3';
+      final Uri playbackUri = await _resolveReciterPlaybackUri(
+        reciter: reciter,
+        suraNumber: currentSura,
+      );
       await player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
+        _audioService.buildUriAudioSource(
+          playbackUri,
           tag: MediaItem(
             id: 'sura_$currentSura',
             title: 'سورة $currentSura',
@@ -686,10 +700,13 @@ class RadioViewModel extends ChangeNotifier {
   Future<void> recitersBack(Reciters reciter) async {
     if (currentSura > 1) {
       _setCurrentSura(currentSura - 1);
-      String url = '${reciter.server}$formatSura.mp3';
+      final Uri playbackUri = await _resolveReciterPlaybackUri(
+        reciter: reciter,
+        suraNumber: currentSura,
+      );
       await player.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url),
+        _audioService.buildUriAudioSource(
+          playbackUri,
           tag: MediaItem(
             id: 'sura_$currentSura',
             title: 'سورة $currentSura',
@@ -705,6 +722,29 @@ class RadioViewModel extends ChangeNotifier {
       isReciterPlaying = true;
       notifyListeners();
     }
+  }
+
+  /// Prefers a local MediaStore file when available; otherwise the remote URL.
+  Future<Uri> _resolveReciterPlaybackUri({
+    required Reciters reciter,
+    required int suraNumber,
+  }) async {
+    final String remoteUrl =
+        '${reciter.server}${suraNumber.toString().padLeft(3, '0')}.mp3';
+    String? localUri;
+    final int? reciterId = reciter.id;
+    if (reciterId != null) {
+      final DownloadedAudio? download =
+          await _downloadedAudioRepository.getDownload(
+        suraId: suraNumber,
+        reciterId: reciterId,
+      );
+      localUri = download?.localUri;
+    }
+    return _audioService.resolvePlaybackUri(
+      remoteUrl: remoteUrl,
+      localUri: localUri,
+    );
   }
 
   Future<void> seekReciter(Duration position) async {

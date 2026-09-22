@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/ui/downloads_view/downloads_view.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/hadith_screen.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_screen.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_screen.dart';
@@ -12,6 +13,7 @@ class HomeScreenViewModel extends ChangeNotifier {
     HadithScreen(),
     SebhaScreen(),
     RadioScreen(),
+    DownloadsView(),
     TimeScreen(),
   ];
 

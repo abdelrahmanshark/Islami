@@ -17,6 +17,7 @@ class SharedPreferencesKay {
   static const String userLongitude = 'userLongitude';
   static const String userCity = 'userCity';
   static const String userCountry = 'userCountry';
+  static const String downloadedQuranAudio = 'downloadedQuranAudio';
 }
 
 /// Returns whether azan sound is enabled. Defaults to true when unset.

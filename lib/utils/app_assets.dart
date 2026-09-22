@@ -13,6 +13,7 @@ class AppAssets {
   static const String radioIc = 'assets/icons/radio_ic.svg';
   static const String sebhaIc = 'assets/icons/sebha_ic.svg';
   static const String timeIc = 'assets/icons/time_ic.svg';
+  static const String downloadIc = 'assets/icons/download_ic.svg';
   static const String suraNumVector = 'assets/icons/sura_num_vector.svg';
   static const String sebhaBody = "assets/images/sebha_body.png";
   static const String sebhaTitle = "assets/images/sebha_title.png";
