@@ -6,7 +6,7 @@ import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-/// Mushaf tab hub: open Mushaf, index, or saved page.
+/// Mushaf tab hub: open Mushaf, index, page search, or saved page.
 class MoshafHubView extends StatefulWidget {
   const MoshafHubView({super.key});
 
@@ -93,6 +93,13 @@ class _MoshafHubViewState extends State<MoshafHubView> {
                                         'تصفح السور والأجزاء والأحزاب والأرباع',
                                     icon: Icons.list_alt_rounded,
                                     onTap: () => provider.openIndex(context),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  MoshafOptionCard(
+                                    title: 'البحث برقم الصفحة',
+                                    subtitle: 'أدخل رقم الصفحة للانتقال إليها',
+                                    icon: Icons.find_in_page_rounded,
+                                    onTap: () => provider.openByPage(context),
                                   ),
                                   if (provider.hasSavedPage) ...[
                                     const SizedBox(height: 16),

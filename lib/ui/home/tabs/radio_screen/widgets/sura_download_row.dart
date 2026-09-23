@@ -27,7 +27,8 @@ class SuraDownloadRow extends StatelessWidget {
       children: [
         Checkbox(
           value: isSelected,
-          onChanged: isDownloaded ? null : onToggleSelect,
+          // Keep tappable when downloaded so we can show "already have" feedback.
+          onChanged: onToggleSelect,
           activeColor: AppColors.primaryColor,
           checkColor: AppColors.blackColor,
           side: const BorderSide(color: AppColors.primaryColor),

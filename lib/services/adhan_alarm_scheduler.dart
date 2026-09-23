@@ -5,6 +5,7 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:islami/data/time/time_repository.dart';
 import 'package:islami/services/adhan_player.dart';
+import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/services/prayer_widget_updater.dart';
 import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
@@ -31,9 +32,28 @@ class AdhanAlarmIds {
   ];
 }
 
-/// Plays Adhan when a prayer alarm fires (runs in a background isolate).
+/// Plays Fajr Adhan when the Fajr alarm fires.
 @pragma('vm:entry-point')
-Future<void> adhanAlarmCallback() async {
+Future<void> fajrAdhanCallback() => _runAdhanAlarm('الفجر');
+
+/// Plays Dhuhr Adhan when the Dhuhr alarm fires.
+@pragma('vm:entry-point')
+Future<void> dhuhrAdhanCallback() => _runAdhanAlarm('الظهر');
+
+/// Plays Asr Adhan when the Asr alarm fires.
+@pragma('vm:entry-point')
+Future<void> asrAdhanCallback() => _runAdhanAlarm('العصر');
+
+/// Plays Maghrib Adhan when the Maghrib alarm fires.
+@pragma('vm:entry-point')
+Future<void> maghribAdhanCallback() => _runAdhanAlarm('المغرب');
+
+/// Plays Isha Adhan when the Isha alarm fires.
+@pragma('vm:entry-point')
+Future<void> ishaAdhanCallback() => _runAdhanAlarm('العشاء');
+
+/// Shared Adhan alarm body (runs in a background isolate).
+Future<void> _runAdhanAlarm(String prayerName) async {
   DartPluginRegistrant.ensureInitialized();
 
   final bool enabled = await getAzanEnabled();
@@ -41,7 +61,9 @@ Future<void> adhanAlarmCallback() async {
     return;
   }
 
-  await AdhanPlayer.play();
+  // Refresh call state in this isolate before deciding to play.
+  await CallAudioGuard.instance.isPhoneCallActive();
+  await AdhanPlayer.play(prayerName: prayerName);
 }
 
 /// Refetches prayer times after midnight and reschedules alarms.
@@ -90,13 +112,14 @@ class AdhanAlarmScheduler {
     await cancelAll();
 
     final DateTime now = DateTime.now();
-    final List<({int id, DateTime time})> prayerAlarms = _buildPrayerAlarms(
+    final List<({int id, DateTime time, Function callback})> prayerAlarms =
+        _buildPrayerAlarms(
       timings,
       now,
     );
 
     for (final alarm in prayerAlarms) {
-      await _scheduleOneShot(alarm.time, alarm.id, adhanAlarmCallback);
+      await _scheduleOneShot(alarm.time, alarm.id, alarm.callback);
     }
 
     // Refresh times shortly after local midnight.
@@ -105,7 +128,11 @@ class AdhanAlarmScheduler {
       now.month,
       now.day,
     ).add(const Duration(days: 1, minutes: 1));
-    await _scheduleOneShot(refreshAt, AdhanAlarmIds.dailyRefresh, adhanRefreshCallback);
+    await _scheduleOneShot(
+      refreshAt,
+      AdhanAlarmIds.dailyRefresh,
+      adhanRefreshCallback,
+    );
   }
 
   /// Reschedules from SharedPreferences after mute is turned back on.
@@ -179,20 +206,25 @@ class AdhanAlarmScheduler {
   }
 
   /// Builds future prayer alarm times from API timings.
-  static List<({int id, DateTime time})> _buildPrayerAlarms(
+  static List<({int id, DateTime time, Function callback})> _buildPrayerAlarms(
     Timings timings,
     DateTime now,
   ) {
-    final List<({int id, String? raw})> prayers = [
-      (id: AdhanAlarmIds.fajr, raw: timings.fajr),
-      (id: AdhanAlarmIds.dhuhr, raw: timings.dhuhr),
-      (id: AdhanAlarmIds.asr, raw: timings.asr),
-      (id: AdhanAlarmIds.maghrib, raw: timings.maghrib),
-      (id: AdhanAlarmIds.isha, raw: timings.isha),
+    final List<({int id, String? raw, Function callback})> prayers = [
+      (id: AdhanAlarmIds.fajr, raw: timings.fajr, callback: fajrAdhanCallback),
+      (id: AdhanAlarmIds.dhuhr, raw: timings.dhuhr, callback: dhuhrAdhanCallback),
+      (id: AdhanAlarmIds.asr, raw: timings.asr, callback: asrAdhanCallback),
+      (
+        id: AdhanAlarmIds.maghrib,
+        raw: timings.maghrib,
+        callback: maghribAdhanCallback,
+      ),
+      (id: AdhanAlarmIds.isha, raw: timings.isha, callback: ishaAdhanCallback),
     ];
 
-    final List<({int id, DateTime time})> result = [];
+    final List<({int id, DateTime time, Function callback})> result = [];
     DateTime? fajrToday;
+    Function? fajrCallback;
 
     for (final prayer in prayers) {
       final String cleaned = NextPrayerCalculator.cleanTime(prayer.raw);
@@ -204,18 +236,24 @@ class AdhanAlarmScheduler {
 
       if (prayer.id == AdhanAlarmIds.fajr) {
         fajrToday = todayTime;
+        fajrCallback = prayer.callback;
       }
 
       if (todayTime.isAfter(now)) {
-        result.add((id: prayer.id, time: todayTime));
+        result.add((
+          id: prayer.id,
+          time: todayTime,
+          callback: prayer.callback,
+        ));
       }
     }
 
     // After Isha, schedule tomorrow's Fajr using today's Fajr + 1 day.
-    if (result.isEmpty && fajrToday != null) {
+    if (result.isEmpty && fajrToday != null && fajrCallback != null) {
       result.add((
         id: AdhanAlarmIds.fajr,
         time: fajrToday.add(const Duration(days: 1)),
+        callback: fajrCallback,
       ));
     }
 

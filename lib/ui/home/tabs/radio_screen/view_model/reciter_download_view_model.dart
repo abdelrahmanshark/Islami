@@ -6,6 +6,7 @@ import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/services/quran_audio_download_service.dart';
+import 'package:islami/utils/network_utils.dart';
 
 /// Selection and download state for a single reciter's surah list.
 class ReciterDownloadViewModel extends ChangeNotifier {
@@ -33,6 +34,8 @@ class ReciterDownloadViewModel extends ChangeNotifier {
   bool wasCancelled = false;
   int downloadCompletedCount = 0;
   int downloadTotalCount = 0;
+  int skippedAlreadyDownloadedCount = 0;
+  int unavailableCount = 0;
   String? downloadErrorMessage;
 
   bool _cancelRequested = false;
@@ -61,13 +64,18 @@ class ReciterDownloadViewModel extends ChangeNotifier {
   }
 
   /// Toggles sura selection (sura numbers 1–114).
-  void toggleSuraSelection(int suraId) {
+  /// Returns false when the sura is already downloaded (selection blocked).
+  bool toggleSuraSelection(int suraId) {
+    if (downloadedSuraIds.contains(suraId)) {
+      return false;
+    }
     if (selectedSuraIds.contains(suraId)) {
       selectedSuraIds.remove(suraId);
     } else {
       selectedSuraIds.add(suraId);
     }
     notifyListeners();
+    return true;
   }
 
   /// True when [suraId] is selected.
@@ -87,17 +95,30 @@ class ReciterDownloadViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Downloads the currently selected surahs.
+  /// Downloads the currently selected surahs, skipping ones already on device.
   Future<int> downloadSelected() async {
-    final List<int> toDownload = selectedSuraIds.toList()..sort();
+    final List<int> selected = selectedSuraIds.toList()..sort();
+    final List<int> toDownload = await _filterAlreadyDownloaded(selected);
+    if (toDownload.isEmpty) {
+      notifyListeners();
+      return 0;
+    }
     return _downloadSuras(toDownload);
   }
 
   /// Downloads every sura that is not already on the device.
   Future<int> downloadAllSuras() async {
+    skippedAlreadyDownloadedCount = 0;
+    unavailableCount = 0;
+    downloadErrorMessage = null;
+
     final List<int> toDownload = List<int>.generate(114, (index) => index + 1)
         .where((suraId) => !downloadedSuraIds.contains(suraId))
         .toList();
+    if (toDownload.isEmpty) {
+      notifyListeners();
+      return 0;
+    }
     return _downloadSuras(toDownload);
   }
 
@@ -109,6 +130,41 @@ class ReciterDownloadViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Removes already-downloaded suras from [suraIds] and updates skip count.
+  Future<List<int>> _filterAlreadyDownloaded(List<int> suraIds) async {
+    await loadDownloadedSuras();
+
+    skippedAlreadyDownloadedCount = 0;
+    unavailableCount = 0;
+    downloadErrorMessage = null;
+
+    final int? reciterId = reciter.id;
+    final List<int> toDownload = <int>[];
+
+    for (final int suraId in suraIds) {
+      bool alreadyOnDevice = downloadedSuraIds.contains(suraId);
+
+      if (!alreadyOnDevice && reciterId != null) {
+        alreadyOnDevice = await _downloadedAudioRepository.isDownloaded(
+          suraId: suraId,
+          reciterId: reciterId,
+          reciterName: reciter.name,
+        );
+      }
+
+      if (alreadyOnDevice) {
+        downloadedSuraIds.add(suraId);
+        selectedSuraIds.remove(suraId);
+        skippedAlreadyDownloadedCount++;
+        continue;
+      }
+
+      toDownload.add(suraId);
+    }
+
+    return toDownload;
+  }
+
   /// Runs sequential downloads and returns how many succeeded.
   Future<int> _downloadSuras(List<int> suraIds) async {
     if (isDownloading || suraIds.isEmpty) return 0;
@@ -118,8 +174,18 @@ class ReciterDownloadViewModel extends ChangeNotifier {
     _cancelRequested = false;
     downloadCompletedCount = 0;
     downloadTotalCount = suraIds.length;
+    // Keep skip count from filtering; reset only unavailable for this run.
+    unavailableCount = 0;
     downloadErrorMessage = null;
     notifyListeners();
+
+    if (!await NetworkUtils.hasInternetConnection()) {
+      isDownloading = false;
+      unavailableCount = suraIds.length;
+      downloadErrorMessage = NetworkUtils.noInternetMessage;
+      notifyListeners();
+      return 0;
+    }
 
     int successCount = 0;
 
@@ -141,13 +207,27 @@ class ReciterDownloadViewModel extends ChangeNotifier {
         } on DownloadCancelledException {
           wasCancelled = true;
           break;
+        } on AlreadyDownloadedException {
+          // File appeared on device during the batch — skip and continue.
+          downloadedSuraIds.add(suraId);
+          selectedSuraIds.remove(suraId);
+          skippedAlreadyDownloadedCount++;
+        } on AudioUnavailableException catch (e) {
+          log('Audio unavailable for sura $suraId: $e');
+          unavailableCount++;
+          downloadErrorMessage = AudioUnavailableException.userMessage;
+          selectedSuraIds.remove(suraId);
         } catch (e) {
           if (_cancelRequested) {
             wasCancelled = true;
             break;
           }
           log('Failed to download sura $suraId: $e');
-          downloadErrorMessage = e.toString();
+          unavailableCount++;
+          downloadErrorMessage = NetworkUtils.isNetworkError(e)
+              ? NetworkUtils.noInternetMessage
+              : AudioUnavailableException.userMessage;
+          selectedSuraIds.remove(suraId);
         }
         downloadCompletedCount++;
         notifyListeners();

@@ -12,6 +12,7 @@ import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.d
 import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/prayer.dart';
 import 'package:islami/utils/app_routes.dart';
+import 'package:islami/utils/network_utils.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 class TimeViewModel extends ChangeNotifier {
@@ -105,6 +106,7 @@ class TimeViewModel extends ChangeNotifier {
   }
 
   /// Loads prayer times from the repository and starts the countdown.
+  /// Offline failure UI only appears when there is no local cache yet.
   Future<void> getTimeResponse() async {
     _countdownTimer?.cancel();
     _countdownTimer = null;
@@ -133,7 +135,8 @@ class TimeViewModel extends ChangeNotifier {
     } catch (e) {
       log(e.toString());
       isTimeLoading = false;
-      timeFailureMsg = 'حدث خطأ ما';
+      // Reached only when remote failed AND no cached prayer times exist.
+      timeFailureMsg = await NetworkUtils.failureMessageFor(e);
       notifyListeners();
     }
   }

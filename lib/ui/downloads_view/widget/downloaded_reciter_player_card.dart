@@ -3,12 +3,11 @@ import 'package:islami/models/downloaded_reciter_summary.dart';
 import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_audio_slider.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_mode_icon_button.dart';
-import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-/// Player card for a downloaded reciter (same features as ReciterCard).
+/// Compact player card for a downloaded reciter (no radio card backgrounds).
 class DownloadedReciterPlayerCard extends StatelessWidget {
   const DownloadedReciterPlayerCard({
     super.key,
@@ -27,91 +26,97 @@ class DownloadedReciterPlayerCard extends StatelessWidget {
         final bool isReciterPlaying = isReciterOn && viewModel.isPlaying;
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          height: MediaQuery.heightOf(context) * (isReciterOn ? 0.22 : 0.14),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.fromLTRB(8, 8, 8, isReciterOn ? 6 : 8),
           width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Stack(
-            alignment: Alignment.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              isReciterOn
-                  ? Image.asset(AppAssets.activeRadioCard, fit: BoxFit.cover)
-                  : Image.asset(AppAssets.inActiveRadioCard),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  Expanded(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 36),
                     child: Text(
                       summary.reciterName,
-                      style: AppStyles.blackBold18,
-                      maxLines: 2,
+                      style: AppStyles.blackBold16,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isReciterOn)
-                        ReciterModeIconButton(
-                          icon: Icons.repeat_one_rounded,
-                          isActive: viewModel.isRepeatEnabled,
-                          onPressed: viewModel.toggleRepeat,
+                  // Stop playback when this reciter is active.
+                  if (isReciterOn)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: viewModel.stopPlayback,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
                         ),
-                      IconButton(
-                        onPressed: viewModel.playPreviousDownload,
                         icon: const Icon(
-                          Icons.skip_previous_rounded,
+                          Icons.stop_rounded,
                           color: AppColors.blackColor,
-                          size: 50,
+                          size: 28,
                         ),
                       ),
-                      IconButton(
-                        onPressed: viewModel.playSelectedReciter,
-                        icon: Icon(
-                          isReciterPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow_rounded,
-                          color: AppColors.blackColor,
-                          size: 50,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: viewModel.playNextDownload,
-                        icon: const Icon(
-                          Icons.skip_next_rounded,
-                          color: AppColors.blackColor,
-                          size: 50,
-                        ),
-                      ),
-                      if (isReciterOn)
-                        ReciterModeIconButton(
-                          icon: Icons.playlist_play_rounded,
-                          isActive: viewModel.isAutoNextEnabled,
-                          onPressed: viewModel.toggleAutoNext,
-                        ),
-                    ],
-                  ),
-                  if (isReciterOn) const DownloadedAudioSlider(),
+                    ),
                 ],
               ),
-              // Stop and quit audio when this reciter is active.
-              if (isReciterOn)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: IconButton(
-                    onPressed: viewModel.stopPlayback,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isReciterOn)
+                    ReciterModeIconButton(
+                      icon: Icons.repeat_one_rounded,
+                      isActive: viewModel.isRepeatEnabled,
+                      onPressed: viewModel.toggleRepeat,
+                    ),
+                  IconButton(
+                    onPressed: viewModel.playPreviousDownload,
+                    visualDensity: VisualDensity.compact,
                     icon: const Icon(
-                      Icons.stop_rounded,
+                      Icons.skip_previous_rounded,
                       color: AppColors.blackColor,
-                      size: 32,
+                      size: 36,
                     ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: viewModel.playSelectedReciter,
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      isReciterPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow_rounded,
+                      color: AppColors.blackColor,
+                      size: 40,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: viewModel.playNextDownload,
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(
+                      Icons.skip_next_rounded,
+                      color: AppColors.blackColor,
+                      size: 36,
+                    ),
+                  ),
+                  if (isReciterOn)
+                    ReciterModeIconButton(
+                      icon: Icons.playlist_play_rounded,
+                      isActive: viewModel.isAutoNextEnabled,
+                      onPressed: viewModel.toggleAutoNext,
+                    ),
+                ],
+              ),
+              if (isReciterOn) const DownloadedAudioSlider(),
             ],
           ),
         );

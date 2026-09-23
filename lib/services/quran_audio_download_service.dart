@@ -16,6 +16,22 @@ class DownloadCancelledException implements Exception {
   String toString() => 'Download cancelled';
 }
 
+/// Thrown when the remote audio file is missing or the server fails.
+class AudioUnavailableException implements Exception {
+  static const String userMessage = 'نتأسف هذا الملف لايمكن تحميله حاليا';
+
+  @override
+  String toString() => userMessage;
+}
+
+/// Thrown when the sura is already saved on the device.
+class AlreadyDownloadedException implements Exception {
+  static const String userMessage = 'هذا الملف محمّل مسبقاً';
+
+  @override
+  String toString() => userMessage;
+}
+
 /// Downloads Quran MP3s to shared MediaStore storage (not app-private).
 class QuranAudioDownloadService {
   QuranAudioDownloadService({
@@ -36,8 +52,17 @@ class QuranAudioDownloadService {
   final DeviceStorageService _deviceStorageService;
   final http.Client _httpClient;
 
+  /// How long to wait for the server to start responding.
+  static const Duration _connectTimeout = Duration(seconds: 20);
+
+  /// How long to wait between stream chunks before treating as stalled.
+  static const Duration _streamIdleTimeout = Duration(seconds: 30);
+
   /// Completer used to abort the current HTTP download.
   Completer<void>? _abortTrigger;
+
+  /// True when abort was triggered by a timeout / server failure (not the user).
+  bool _abortedDueToFailure = false;
 
   /// Stops the current in-progress HTTP download, if any.
   void cancelActiveDownload() {
@@ -45,6 +70,20 @@ class QuranAudioDownloadService {
     if (trigger != null && !trigger.isCompleted) {
       trigger.complete();
     }
+  }
+
+  /// Aborts the active request because the server stalled or failed.
+  void _abortDueToFailure() {
+    _abortedDueToFailure = true;
+    cancelActiveDownload();
+  }
+
+  /// Maps an abort into cancel vs unavailable, depending on who triggered it.
+  Never _throwForAbort() {
+    if (_abortedDueToFailure) {
+      throw AudioUnavailableException();
+    }
+    throw DownloadCancelledException();
   }
 
   /// Downloads one sura for [reciter] into Music/Islami/Quran/{reciterName}.
@@ -72,13 +111,7 @@ class QuranAudioDownloadService {
       reciterName: reciterName,
     );
     if (alreadyDownloaded) {
-      final DownloadedAudio? existing =
-          await _downloadedAudioRepository.getDownload(
-        suraId: suraId,
-        reciterId: reciterId,
-        reciterName: reciterName,
-      );
-      if (existing != null) return existing;
+      throw AlreadyDownloadedException();
     }
 
     // After reinstall, metadata may be gone while the MP3 still exists.
@@ -111,7 +144,7 @@ class QuranAudioDownloadService {
               : DateTime.now(),
         );
         await _downloadedAudioRepository.saveDownload(restored);
-        return restored;
+        throw AlreadyDownloadedException();
       }
     }
 
@@ -123,6 +156,7 @@ class QuranAudioDownloadService {
 
     final Completer<void> abortTrigger = Completer<void>();
     _abortTrigger = abortTrigger;
+    _abortedDueToFailure = false;
 
     try {
       final http.AbortableRequest request = http.AbortableRequest(
@@ -133,16 +167,28 @@ class QuranAudioDownloadService {
 
       final http.StreamedResponse response;
       try {
-        response = await _httpClient.send(request);
+        response = await _httpClient.send(request).timeout(
+          _connectTimeout,
+          onTimeout: () {
+            _abortDueToFailure();
+            throw TimeoutException(
+              'Server did not respond in time',
+              _connectTimeout,
+            );
+          },
+        );
       } on http.RequestAbortedException {
-        throw DownloadCancelledException();
+        _throwForAbort();
+      } on TimeoutException {
+        throw AudioUnavailableException();
+      } on SocketException {
+        throw AudioUnavailableException();
+      } on http.ClientException {
+        throw AudioUnavailableException();
       }
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw HttpException(
-          'Download failed with status ${response.statusCode}',
-          uri: remoteUri,
-        );
+        throw AudioUnavailableException();
       }
 
       final int? contentLength = response.contentLength;
@@ -156,20 +202,40 @@ class QuranAudioDownloadService {
 
       final IOSink sink = tempFile.openWrite();
       try {
-        await response.stream.listen(sink.add).asFuture<void>();
+        await response.stream
+            .timeout(
+              _streamIdleTimeout,
+              onTimeout: (EventSink<List<int>> eventSink) {
+                _abortDueToFailure();
+                eventSink.addError(
+                  TimeoutException(
+                    'Download stalled',
+                    _streamIdleTimeout,
+                  ),
+                );
+              },
+            )
+            .listen(sink.add)
+            .asFuture<void>();
       } on http.RequestAbortedException {
-        throw DownloadCancelledException();
+        _throwForAbort();
+      } on TimeoutException {
+        throw AudioUnavailableException();
+      } on SocketException {
+        throw AudioUnavailableException();
+      } on http.ClientException {
+        throw AudioUnavailableException();
       } finally {
         await sink.close();
       }
 
       if (abortTrigger.isCompleted) {
-        throw DownloadCancelledException();
+        _throwForAbort();
       }
 
       final int fileSize = await tempFile.length();
       if (fileSize <= 0) {
-        throw StateError('Downloaded file is empty');
+        throw AudioUnavailableException();
       }
 
       final bool hasSpaceForFile =

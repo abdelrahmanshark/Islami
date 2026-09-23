@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:islami/models/moshaf_page.dart';
-import 'package:islami/models/moshaf_page_marker.dart';
+import 'package:islami/models/hafs_ayah_meta.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_search_dialog.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/shared_preferences.dart';
@@ -14,7 +14,7 @@ class MoshafHubViewModel extends ChangeNotifier {
   bool isLoadingIndex = false;
   String? errorMessage;
 
-  List<MoshafPage>? _pages;
+  List<HafsAyahMeta>? _ayahs;
 
   /// True when a bookmarked page exists.
   bool get hasSavedPage => savedPage != null;
@@ -45,7 +45,7 @@ class MoshafHubViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final pages = await _loadPages();
+      final ayahs = await _loadAyahs();
       isLoadingIndex = false;
       notifyListeners();
 
@@ -54,7 +54,7 @@ class MoshafHubViewModel extends ChangeNotifier {
       final selectedPage = await Navigator.pushNamed(
         context,
         AppRoutes.moshafIndexRouteName,
-        arguments: pages,
+        arguments: ayahs,
       ) as int?;
 
       if (!context.mounted || selectedPage == null) return;
@@ -72,18 +72,22 @@ class MoshafHubViewModel extends ChangeNotifier {
     await openMoshaf(context, startPage: savedPage);
   }
 
-  /// Loads Mushaf page metadata once and caches it.
-  Future<List<MoshafPage>> _loadPages() async {
-    if (_pages != null) return _pages!;
+  /// Asks for a page number, then opens the Mushaf at that page.
+  Future<void> openByPage(BuildContext context) async {
+    final selectedPage = await MoshafPageSearchDialog.show(context);
+    if (!context.mounted || selectedPage == null) return;
+    await openMoshaf(context, startPage: selectedPage);
+  }
 
-    final jsonString =
-        await rootBundle.loadString(AppAssets.quranWithJuzHizbRubJson);
+  /// Loads ayah metadata once and caches it.
+  Future<List<HafsAyahMeta>> _loadAyahs() async {
+    if (_ayahs != null) return _ayahs!;
+
+    final jsonString = await rootBundle.loadString(AppAssets.hafsAyahMetaJson);
     final list = jsonDecode(jsonString) as List<dynamic>;
-    final markers = list
-        .map((e) => MoshafPageMarker.fromJson(e as Map<String, dynamic>))
+    _ayahs = list
+        .map((e) => HafsAyahMeta.fromJson(e as Map<String, dynamic>))
         .toList();
-
-    _pages = markers.map(MoshafPage.fromMarker).toList();
-    return _pages!;
+    return _ayahs!;
   }
 }

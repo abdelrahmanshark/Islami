@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:islami/models/ayah_coordinate.dart';
+import 'package:islami/models/hafs_ayah_meta.dart';
 import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/models/moshaf_page_marker.dart';
 import 'package:islami/models/tafser_surah.dart';
@@ -17,6 +18,9 @@ class MoshafViewModel extends ChangeNotifier {
   List<MoshafPage> pages = [];
   bool isLoading = true;
   String? errorMessage;
+
+  /// Cached ayah metadata for the Mushaf index screen.
+  List<HafsAyahMeta>? _ayahMeta;
 
   /// Whether Mushaf uses dark page images. Default is light.
   bool isDarkTheme = false;
@@ -308,9 +312,17 @@ class MoshafViewModel extends ChangeNotifier {
     loadAyahCoordinatesForPage(pages[pageIndex].pageNumber);
   }
 
-  /// Saves the currently visible page as the bookmark.
-  Future<void> saveBookmark() async {
+  /// Saves the current page as bookmark, or removes it if already saved.
+  Future<void> toggleBookmark() async {
     if (pages.isEmpty) return;
+
+    // Second tap on the same page removes the bookmark.
+    if (isCurrentPageBookmarked) {
+      await clearMoshafLastPage();
+      bookmarkedPage = null;
+      notifyListeners();
+      return;
+    }
 
     final page = visiblePageNumber;
     await saveMoshafLastPage(page);
@@ -321,5 +333,17 @@ class MoshafViewModel extends ChangeNotifier {
   /// Marks that the initial page restore already happened.
   void markPageRestored() {
     didRestorePage = true;
+  }
+
+  /// Loads ayah metadata for the index (cached after first load).
+  Future<List<HafsAyahMeta>> loadAyahMeta() async {
+    if (_ayahMeta != null) return _ayahMeta!;
+
+    final raw = await rootBundle.loadString(AppAssets.hafsAyahMetaJson);
+    final list = jsonDecode(raw) as List<dynamic>;
+    _ayahMeta = list
+        .map((e) => HafsAyahMeta.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return _ayahMeta!;
   }
 }

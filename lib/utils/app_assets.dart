@@ -54,6 +54,7 @@ class AppAssets {
 
   static const String quranWithJuzHizbRubJson =
       'assets/json/quran_with_juz_hizb_rub.json';
+  static const String hafsAyahMetaJson = 'assets/json/hafs-ayah-meta.json';
   static const String quranImagesFolder = 'assets/quran_images';
   static const String quranImagesDarkFolder = 'assets/quran_images_dark';
   static const String quranCoordinatesFolder =

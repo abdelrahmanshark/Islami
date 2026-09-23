@@ -162,9 +162,8 @@ class DownloadsViewModel extends ChangeNotifier {
         await player.pause();
         isPlaying = false;
       } else {
-        // Do not await play() — it completes only when playback ends.
-        player.play();
-        isPlaying = true;
+        final bool started = await _audioService.play();
+        isPlaying = started;
       }
       notifyListeners();
       return;
@@ -350,6 +349,11 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Starts a download track and syncs shared audio selection.
   Future<void> _startDownload(DownloadedAudio download) async {
+    if (!await _audioService.ensureCanPlay()) {
+      isPlaying = false;
+      return;
+    }
+
     final String suraTitle = _suraTitle(download.suraId);
     await player.setLoopMode(
       isRepeatEnabled ? LoopMode.one : LoopMode.off,
@@ -375,10 +379,9 @@ class DownloadsViewModel extends ChangeNotifier {
 
     playingReciterId = download.reciterId;
     playingSuraId = download.suraId;
-    isPlaying = true;
 
-    // Do not await play() — it completes only when playback ends.
-    player.play();
+    final bool started = await _audioService.play();
+    isPlaying = started;
   }
 
   /// Finds next or previous downloaded sura for the playing reciter.

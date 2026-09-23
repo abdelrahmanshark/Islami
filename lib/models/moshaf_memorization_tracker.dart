@@ -1,98 +1,70 @@
 import 'package:islami/models/moshaf_index_item.dart';
-import 'package:islami/models/moshaf_page.dart';
 
-/// Tracks Mushaf memorization using page coverage from Quran metadata.
+/// Tracks Mushaf memorization using ayah coverage from hafs-ayah-meta.json.
 ///
-/// Completed pages are the source of truth. An index item is complete only when
-/// every page that belongs to it is completed.
+/// Completed ayah IDs are the source of truth. An index item is complete only
+/// when every ayah that belongs to it is completed.
 class MoshafMemorizationTracker {
-  MoshafMemorizationTracker._({
-    required this.surahPages,
-    required this.juzPages,
-    required this.hizbPages,
-    required this.rubPages,
-    required Set<int> completedPages,
-  }) : completedPages = Set<int>.from(completedPages);
+  MoshafMemorizationTracker({
+    required this.surahAyahs,
+    required this.juzAyahs,
+    required this.hizbAyahs,
+    required this.rubAyahs,
+    Set<int> completedAyahs = const {},
+  }) : completedAyahs = Set<int>.from(completedAyahs);
 
-  final Map<int, Set<int>> surahPages;
-  final Map<int, Set<int>> juzPages;
-  final Map<int, Set<int>> hizbPages;
+  final Map<int, Set<int>> surahAyahs;
+  final Map<int, Set<int>> juzAyahs;
+  final Map<int, Set<int>> hizbAyahs;
 
-  /// Key format: `"hizb-rub"` (same as the index Rub id).
-  final Map<String, Set<int>> rubPages;
+  /// Key is the global rub number from metadata (1–240).
+  final Map<int, Set<int>> rubAyahs;
 
-  /// Pages the user has marked complete (directly or via a parent/child item).
-  final Set<int> completedPages;
+  /// Ayahs the user has marked complete (directly or via a parent/child item).
+  final Set<int> completedAyahs;
 
-  /// Builds page maps for Surah / Juz / Hizb / Rub from Mushaf metadata.
-  factory MoshafMemorizationTracker.fromPages(
-    List<MoshafPage> pages, {
-    Set<int> completedPages = const {},
-  }) {
-    final surahPages = <int, Set<int>>{};
-    final juzPages = <int, Set<int>>{};
-    final hizbPages = <int, Set<int>>{};
-    final rubPages = <String, Set<int>>{};
-
-    for (final page in pages) {
-      surahPages.putIfAbsent(page.sura, () => <int>{}).add(page.pageNumber);
-      juzPages.putIfAbsent(page.juz, () => <int>{}).add(page.pageNumber);
-      hizbPages.putIfAbsent(page.hizb, () => <int>{}).add(page.pageNumber);
-      final rubKey = '${page.hizb}-${page.rub}';
-      rubPages.putIfAbsent(rubKey, () => <int>{}).add(page.pageNumber);
-    }
-
-    return MoshafMemorizationTracker._(
-      surahPages: surahPages,
-      juzPages: juzPages,
-      hizbPages: hizbPages,
-      rubPages: rubPages,
-      completedPages: completedPages,
-    );
-  }
-
-  /// Replaces the in-memory completed page set (e.g. after loading prefs).
-  void setCompletedPages(Set<int> pages) {
-    completedPages
+  /// Replaces the in-memory completed ayah set (e.g. after loading prefs).
+  void setCompletedAyahs(Set<int> ayahs) {
+    completedAyahs
       ..clear()
-      ..addAll(pages);
+      ..addAll(ayahs);
   }
 
-  /// Pages that belong to this index item.
-  Set<int> pagesFor(MoshafIndexItem item) {
+  /// Ayah IDs that belong to this index item.
+  Set<int> ayahsFor(MoshafIndexItem item) {
     switch (item.type) {
       case MoshafIndexItemType.surah:
-        return surahPages[int.parse(item.id)] ?? const {};
+        return surahAyahs[int.parse(item.id)] ?? const {};
       case MoshafIndexItemType.juz:
-        return juzPages[int.parse(item.id)] ?? const {};
+        return juzAyahs[int.parse(item.id)] ?? const {};
       case MoshafIndexItemType.hizb:
-        return hizbPages[int.parse(item.id)] ?? const {};
+        return hizbAyahs[int.parse(item.id)] ?? const {};
       case MoshafIndexItemType.rub:
-        return rubPages[item.id] ?? const {};
+        return rubAyahs[int.parse(item.id)] ?? const {};
     }
   }
 
-  /// True when every page of [item] is completed.
+  /// True when every ayah of [item] is completed.
   bool isCompleted(MoshafIndexItem item) {
-    final pages = pagesFor(item);
-    if (pages.isEmpty) return false;
-    for (final page in pages) {
-      if (!completedPages.contains(page)) return false;
+    final ayahs = ayahsFor(item);
+    if (ayahs.isEmpty) return false;
+    for (final ayahId in ayahs) {
+      if (!completedAyahs.contains(ayahId)) return false;
     }
     return true;
   }
 
-  /// Marks or unmarks all pages of [item], then returns the updated page set.
+  /// Marks or unmarks all ayahs of [item], then returns the updated ayah set.
   Set<int> toggle(MoshafIndexItem item) {
-    final pages = pagesFor(item);
-    if (pages.isEmpty) return Set<int>.from(completedPages);
+    final ayahs = ayahsFor(item);
+    if (ayahs.isEmpty) return Set<int>.from(completedAyahs);
 
     if (isCompleted(item)) {
-      completedPages.removeAll(pages);
+      completedAyahs.removeAll(ayahs);
     } else {
-      completedPages.addAll(pages);
+      completedAyahs.addAll(ayahs);
     }
 
-    return Set<int>.from(completedPages);
+    return Set<int>.from(completedAyahs);
   }
 }

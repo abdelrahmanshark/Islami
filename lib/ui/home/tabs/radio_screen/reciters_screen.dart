@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/reciters_response.dart';
+import 'package:islami/services/connectivity_monitor.dart';
+import 'package:islami/services/quran_audio_download_service.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/view_model/reciter_download_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_download_actions_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sura_download_row.dart';
+import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
@@ -42,6 +45,23 @@ class RecitersScreen extends StatelessWidget {
               style: AppStyles.primaryBold24,
             ),
             centerTitle: true,
+            actions: [
+              Consumer<ConnectivityMonitor>(
+                builder: (context, monitor, child) {
+                  if (monitor.isOnline) {
+                    return const SizedBox.shrink();
+                  }
+                  return IconButton(
+                    onPressed: monitor.checkNow,
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: AppColors.primaryColor,
+                    ),
+                    tooltip: 'تحديث',
+                  );
+                },
+              ),
+            ],
           ),
           body: Consumer2<RadioViewModel, ReciterDownloadViewModel>(
             builder: (context, radioVm, downloadVm, child) {
@@ -89,11 +109,29 @@ class RecitersScreen extends StatelessWidget {
                                     downloadVm.isSuraSelected(suraId),
                                 isDownloaded:
                                     downloadVm.isSuraDownloaded(suraId),
-                                onPlay: () {
-                                  radioVm.playReciterSura(reciter, suraId);
+                                onPlay: () async {
+                                  final bool played =
+                                      await radioVm.playReciterSura(
+                                    reciter,
+                                    suraId,
+                                  );
+                                  if (!played && context.mounted) {
+                                    showPlaybackFailureSnackBar(context);
+                                  }
                                 },
                                 onToggleSelect: (_) {
-                                  downloadVm.toggleSuraSelection(suraId);
+                                  final bool selected =
+                                      downloadVm.toggleSuraSelection(suraId);
+                                  if (!selected) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'هذه السورة لديك بالفعل',
+                                        ),
+                                      ),
+                                    );
+                                  }
                                 },
                               );
                             },
@@ -144,9 +182,33 @@ class RecitersScreen extends StatelessWidget {
           ? 'تم إيقاف التحميل بعد $count سورة'
           : 'تم إيقاف التحميل';
     }
-    return count > 0
-        ? 'تم تحميل $count سورة بنجاح'
-        : 'لم يتم تحميل أي سورة';
+
+    final int skipped = downloadVm.skippedAlreadyDownloadedCount;
+    final int unavailable = downloadVm.unavailableCount;
+    final List<String> parts = <String>[];
+
+    if (count > 0) {
+      parts.add('تم تحميل $count سورة بنجاح');
+    }
+    if (skipped > 0) {
+      parts.add(
+        skipped == 1
+            ? 'تم تخطي سورة محمّلة مسبقاً'
+            : 'تم تخطي $skipped سور محمّلة مسبقاً',
+      );
+    }
+    if (unavailable > 0) {
+      parts.add(
+        downloadVm.downloadErrorMessage ??
+            AudioUnavailableException.userMessage,
+      );
+    }
+
+    if (parts.isNotEmpty) {
+      return parts.join('\n');
+    }
+
+    return 'لم يتم تحميل أي سورة';
   }
 
   /// Confirms then downloads all missing surahs for this reciter.
@@ -195,11 +257,11 @@ class RecitersScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          downloadVm.wasCancelled
+          downloadVm.wasCancelled ||
+                  count > 0 ||
+                  downloadVm.unavailableCount > 0
               ? _downloadResultMessage(downloadVm, count)
-              : count > 0
-                  ? 'تم تحميل $count سورة بنجاح'
-                  : 'لا توجد سور جديدة للتحميل',
+              : 'لا توجد سور جديدة للتحميل',
         ),
       ),
     );

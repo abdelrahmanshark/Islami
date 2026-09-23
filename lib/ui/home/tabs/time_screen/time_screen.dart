@@ -3,8 +3,9 @@ import 'package:islami/ui/home/tabs/time_screen/time_view_model.dart';
 import 'package:islami/ui/home/tabs/time_screen/widgets/location_qibla_row.dart';
 import 'package:islami/ui/home/tabs/time_screen/widgets/next_prayer_banner.dart';
 import 'package:islami/ui/home/tabs/time_screen/widgets/pray_time.dart';
+import 'package:islami/ui/home/widgets/no_internet_retry_view.dart';
+import 'package:islami/ui/home/widgets/offline_refresh_header.dart';
 import 'package:islami/utils/app_colors.dart';
-import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../utils/app_assets.dart';
@@ -29,7 +30,7 @@ class TimeScreen extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.asset(AppAssets.header),
+                  OfflineRefreshHeader(onRefresh: provider.getTimeResponse),
                   const Expanded(
                     child: Center(
                       child: CircularProgressIndicator(
@@ -45,13 +46,11 @@ class TimeScreen extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.asset(AppAssets.header),
+                  OfflineRefreshHeader(onRefresh: provider.getTimeResponse),
                   Expanded(
-                    child: Center(
-                      child: Text(
-                        provider.timeFailureMsg,
-                        style: AppStyles.primaryBold24,
-                      ),
+                    child: NoInternetRetryView(
+                      message: provider.timeFailureMsg,
+                      onRefresh: provider.getTimeResponse,
                     ),
                   ),
                 ],
@@ -63,7 +62,7 @@ class TimeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.asset(AppAssets.header),
+                  OfflineRefreshHeader(onRefresh: provider.getTimeResponse),
                   const SizedBox(height: 12),
                   const LocationQiblaRow(),
                   const SizedBox(height: 12),

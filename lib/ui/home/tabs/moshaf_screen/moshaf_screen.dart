@@ -54,15 +54,20 @@ class _MoshafScreenState extends State<MoshafScreen> {
     _viewModel.updateVisiblePage(initialIndex);
   }
 
-  /// Saves the bookmark and shows a short confirmation.
+  /// Toggles the bookmark and shows a short confirmation.
   Future<void> _onBookmarkPressed() async {
-    await _viewModel.saveBookmark();
+    final wasBookmarked = _viewModel.isCurrentPageBookmarked;
+    await _viewModel.toggleBookmark();
     if (!mounted) return;
+
+    final message = wasBookmarked
+        ? 'تم إلغاء حفظ الصفحة ${_viewModel.visiblePageNumber}'
+        : 'تم حفظ موضع القراءة عند الصفحة ${_viewModel.visiblePageNumber}';
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'تم حفظ موضع القراءة عند الصفحة ${_viewModel.visiblePageNumber}',
+          message,
           textDirection: TextDirection.rtl,
           style: AppStyles.primaryBold24.copyWith(fontSize: 16),
         ),
@@ -74,23 +79,41 @@ class _MoshafScreenState extends State<MoshafScreen> {
 
   /// Opens the Quran index and jumps to the selected page.
   Future<void> _openIndex() async {
-    final selectedPage = await Navigator.pushNamed(
-      context,
-      AppRoutes.moshafIndexRouteName,
-      arguments: _viewModel.pages,
-    ) as int?;
+    try {
+      final ayahs = await _viewModel.loadAyahMeta();
+      if (!mounted) return;
 
-    if (!mounted || selectedPage == null) return;
-    if (_pageController == null || !_pageController!.hasClients) return;
+      final selectedPage = await Navigator.pushNamed(
+        context,
+        AppRoutes.moshafIndexRouteName,
+        arguments: ayahs,
+      ) as int?;
 
-    final targetIndex =
-        (selectedPage - 1).clamp(0, _viewModel.pages.length - 1);
-    await _pageController!.animateToPage(
-      targetIndex,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-    _viewModel.updateVisiblePage(targetIndex);
+      if (!mounted || selectedPage == null) return;
+      if (_pageController == null || !_pageController!.hasClients) return;
+
+      final targetIndex =
+          (selectedPage - 1).clamp(0, _viewModel.pages.length - 1);
+      await _pageController!.animateToPage(
+        targetIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      _viewModel.updateVisiblePage(targetIndex);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذر فتح الفهرس',
+            textDirection: TextDirection.rtl,
+            style: AppStyles.primaryBold24.copyWith(fontSize: 16),
+          ),
+          backgroundColor: AppColors.blackColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   /// Closes tafsir first; otherwise leaves the Mushaf screen.

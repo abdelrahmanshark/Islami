@@ -38,6 +38,8 @@ class DownloadsView extends StatelessWidget {
       create: (_) => DownloadsViewModel(),
       child: Consumer<DownloadsViewModel>(
         builder: (context, viewModel, child) {
+          final bool hasSelectedReciter = viewModel.selectedReciter != null;
+
           return Container(
             decoration: BoxDecoration(
               image: DecorationImage(
@@ -50,7 +52,7 @@ class DownloadsView extends StatelessWidget {
                 children: [
                   Image.asset(AppAssets.header),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
                       children: [
                         DownloadsRescanButton(
@@ -59,44 +61,54 @@ class DownloadsView extends StatelessWidget {
                         ),
                         Expanded(
                           child: Text(
-                            viewModel.selectedReciter == null
-                                ? 'التحميلات'
-                                : viewModel.selectedReciter!.reciterName,
-                            style: AppStyles.primaryBold24,
+                            hasSelectedReciter
+                                ? viewModel.selectedReciter!.reciterName
+                                : 'التحميلات',
+                            style: hasSelectedReciter
+                                ? AppStyles.primaryBold16
+                                : AppStyles.primaryBold24,
                             textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Keeps the title centered opposite the refresh icon.
-                        const SizedBox(width: 48),
+                        if (hasSelectedReciter)
+                          TextButton.icon(
+                            onPressed: viewModel.clearSelectedReciter,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: Icon(
+                              Icons.arrow_forward,
+                              color: AppColors.primaryColor,
+                              size: 18,
+                            ),
+                            label: Text(
+                              'العودة للقراء',
+                              style: AppStyles.primaryBold14,
+                            ),
+                          )
+                        else
+                          // Keeps the title centered opposite the refresh icon.
+                          const SizedBox(width: 48),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  if (viewModel.selectedReciter != null)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: viewModel.clearSelectedReciter,
-                        icon: Icon(
-                          Icons.arrow_forward,
-                          color: AppColors.primaryColor,
-                        ),
-                        label: Text(
-                          'العودة للقراء',
-                          style: AppStyles.primaryBold16,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 6),
                   SuraSearchBar(
-                    onChanged: viewModel.selectedReciter == null
-                        ? viewModel.filterReciters
-                        : viewModel.filterSuras,
-                    hintText: viewModel.selectedReciter == null
-                        ? 'بحث عن قارئ'
-                        : 'بحث عن سورة',
+                    onChanged: hasSelectedReciter
+                        ? viewModel.filterSuras
+                        : viewModel.filterReciters,
+                    hintText: hasSelectedReciter
+                        ? 'بحث عن سورة'
+                        : 'بحث عن قارئ',
                     textDirection: TextDirection.rtl,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Expanded(
                     child: DownloadsTabContent(viewModel: viewModel),
                   ),

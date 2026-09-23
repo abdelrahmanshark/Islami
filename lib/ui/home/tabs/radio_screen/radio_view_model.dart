@@ -17,6 +17,7 @@ import 'package:islami/models/sharawy_category.dart';
 import 'package:islami/models/sharawy_pillar.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:islami/utils/arabic_utils.dart';
+import 'package:islami/utils/network_utils.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -174,13 +175,22 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   // Plays a specific sura with the given reciter (does not toggle pause).
-  Future<void> playReciterSura(Reciters reciter, int suraNumber) async {
+  // Returns false when blocked by a call, or when offline without a local file.
+  Future<bool> playReciterSura(Reciters reciter, int suraNumber) async {
     try {
+      if (!await _audioService.ensureCanPlay()) {
+        notifyListeners();
+        return false;
+      }
       _setCurrentSura(suraNumber);
       final Uri playbackUri = await _resolveReciterPlaybackUri(
         reciter: reciter,
         suraNumber: suraNumber,
       );
+      if (!await _canPlayUri(playbackUri)) {
+        notifyListeners();
+        return false;
+      }
       await player.setLoopMode(
         isRepeatEnabled ? LoopMode.one : LoopMode.off,
       );
@@ -198,14 +208,16 @@ class RadioViewModel extends ChangeNotifier {
       _setSelectedSermon(null);
       _setSelectedSharawyLecture(null);
       _setSelectedReciter(reciter);
-      isReciterPlaying = true;
       _audioService.currentSura = currentSura;
-      player.play();
+      final bool started = await _audioService.play();
+      isReciterPlaying = started;
+      notifyListeners();
+      return started;
     } catch (e) {
       log(e.toString());
-      rethrow;
+      notifyListeners();
+      return false;
     }
-    notifyListeners();
   }
 
   void changeToggleIndex(int index) {
@@ -276,7 +288,16 @@ class RadioViewModel extends ChangeNotifier {
 
   Future<void> getRadios() async {
     radioIsLoading = true;
+    radioFailureMsg = '';
     notifyListeners();
+
+    if (!await NetworkUtils.hasInternetConnection()) {
+      radioIsLoading = false;
+      radioFailureMsg = NetworkUtils.noInternetMessage;
+      notifyListeners();
+      return;
+    }
+
     try {
       radios = await _radioRepository.getRadios();
       filteredRadios = radios;
@@ -286,14 +307,23 @@ class RadioViewModel extends ChangeNotifier {
     } catch (e) {
       log(e.toString());
       radioIsLoading = false;
-      radioFailureMsg = 'حدث خطأ ما';
+      radioFailureMsg = await NetworkUtils.failureMessageFor(e);
       notifyListeners();
     }
   }
 
   Future<void> getReciters() async {
     reciterIsLoading = true;
+    reciterFailureMsg = '';
     notifyListeners();
+
+    if (!await NetworkUtils.hasInternetConnection()) {
+      reciterIsLoading = false;
+      reciterFailureMsg = NetworkUtils.noInternetMessage;
+      notifyListeners();
+      return;
+    }
+
     try {
       reciters = await _radioRepository.getReciters();
       filteredReciters = reciters;
@@ -307,7 +337,7 @@ class RadioViewModel extends ChangeNotifier {
     } catch (e) {
       log(e.toString());
       reciterIsLoading = false;
-      reciterFailureMsg = 'حدث خطأ ما';
+      reciterFailureMsg = await NetworkUtils.failureMessageFor(e);
       notifyListeners();
     }
   }
@@ -433,44 +463,75 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   // Plays or pauses a Sha'rawy lecture audio (keeps selection on pause).
-  Future<void> playSharawyLecture(QuranStoryLecture lecture) async {
+  // Returns false when blocked by a call, or when offline.
+  Future<bool> playSharawyLecture(QuranStoryLecture lecture) async {
     if (selectedSharawyAudioUrl != null &&
         selectedSharawyAudioUrl == lecture.mp3Url) {
       if (player.playing) {
         await player.pause();
-      } else {
-        await player.play();
+        notifyListeners();
+        return true;
       }
-    } else {
-      try {
-        await player.setLoopMode(LoopMode.off);
-        await player.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(lecture.mp3Url),
-            tag: MediaItem(
-              id: 'sharawy_${lecture.mp3Url}',
-              title: lecture.title,
-              artist: 'الشعراوي',
-            ),
-          ),
-        );
-        await player.setSpeed(playbackSpeed);
-        player.play();
-        _setSelectedRadio(null);
-        _setSelectedReciter(null);
-        _setSelectedSermon(null);
-        _setSelectedSharawyLecture(lecture);
-      } catch (e) {
-        log(e.toString());
-        rethrow;
+      if (!await NetworkUtils.hasInternetConnection()) {
+        notifyListeners();
+        return false;
       }
+      final bool started = await _audioService.play();
+      notifyListeners();
+      return started;
     }
-    notifyListeners();
+
+    if (!await _audioService.ensureCanPlay()) {
+      notifyListeners();
+      return false;
+    }
+
+    if (!await NetworkUtils.hasInternetConnection()) {
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      await player.setLoopMode(LoopMode.off);
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(lecture.mp3Url),
+          tag: MediaItem(
+            id: 'sharawy_${lecture.mp3Url}',
+            title: lecture.title,
+            artist: 'الشعراوي',
+          ),
+        ),
+      );
+      await player.setSpeed(playbackSpeed);
+      final bool started = await _audioService.play();
+      if (!started) {
+        notifyListeners();
+        return false;
+      }
+      _setSelectedRadio(null);
+      _setSelectedReciter(null);
+      _setSelectedSermon(null);
+      _setSelectedSharawyLecture(lecture);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      log(e.toString());
+      notifyListeners();
+      return false;
+    }
   }
 
   // Seeks the currently playing Sha'rawy lecture to [position].
   Future<void> seekSharawyLecture(Duration position) async {
     await player.seek(position);
+  }
+
+  // Stops Sha'rawy audio and clears the current selection.
+  Future<void> stopSharawyLecture() async {
+    await player.stop();
+    _setSelectedSharawyLecture(null);
+    notifyListeners();
   }
 
   // Cycles playback speed: 1x → 1.25x → 1.5x → 2x → 1x.
@@ -491,35 +552,55 @@ class RadioViewModel extends ChangeNotifier {
     return '${playbackSpeed}x';
   }
 
-  Future<void> playRadio(Radios radio) async {
+  /// Plays or pauses a radio station.
+  /// Returns false when blocked by a call, or when offline.
+  Future<bool> playRadio(Radios radio) async {
     if (selectedRadioId != null && selectedRadioId == radio.id) {
       await player.pause();
       _setSelectedRadio(null);
-    } else {
-      try {
-        // Radio should not inherit reciter loop mode.
-        await player.setLoopMode(LoopMode.off);
-        await player.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(radio.url ?? ''),
-            tag: MediaItem(
-              id: 'radio_${radio.id}',
-              title: radio.name ?? 'راديو',
-              artist: 'Islami',
-            ),
-          ),
-        );
-        player.play();
-        _setSelectedReciter(null);
-        _setSelectedSermon(null);
-        _setSelectedSharawyLecture(null);
-        _setSelectedRadio(radio);
-      } catch (e) {
-        log(e.toString());
-        rethrow;
-      }
+      notifyListeners();
+      return true;
     }
-    notifyListeners();
+
+    if (!await _audioService.ensureCanPlay()) {
+      notifyListeners();
+      return false;
+    }
+
+    if (!await NetworkUtils.hasInternetConnection()) {
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      // Radio should not inherit reciter loop mode.
+      await player.setLoopMode(LoopMode.off);
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(radio.url ?? ''),
+          tag: MediaItem(
+            id: 'radio_${radio.id}',
+            title: radio.name ?? 'راديو',
+            artist: 'Islami',
+          ),
+        ),
+      );
+      final bool started = await _audioService.play();
+      if (!started) {
+        notifyListeners();
+        return false;
+      }
+      _setSelectedReciter(null);
+      _setSelectedSermon(null);
+      _setSelectedSharawyLecture(null);
+      _setSelectedRadio(radio);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      log(e.toString());
+      notifyListeners();
+      return false;
+    }
   }
 
   // Listens for track end so auto-next can play the next surah.
@@ -538,7 +619,7 @@ class RadioViewModel extends ChangeNotifier {
           notifyListeners();
         }
       }
-      if (selectedSharawyAudioUrl != null) {
+      if (selectedSharawyAudioUrl != null || selectedSermonAudioUrl != null) {
         notifyListeners();
       }
     });
@@ -595,137 +676,232 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   // Plays or pauses a reciter audio (keeps selection on pause).
-  Future<void> playReciter(Reciters reciter) async {
+  // Returns false when blocked by a call, or when offline without a local file.
+  Future<bool> playReciter(Reciters reciter) async {
     if (selectedReciterId != null && selectedReciterId == reciter.id) {
       if (isReciterPlaying) {
         await player.pause();
         isReciterPlaying = false;
-      } else {
-        // Do not await play() — it completes only when playback ends.
-        player.play();
-        isReciterPlaying = true;
+        notifyListeners();
+        return true;
       }
-    } else {
-      try {
-        final Uri playbackUri = await _resolveReciterPlaybackUri(
-          reciter: reciter,
-          suraNumber: currentSura,
-        );
-        await player.setLoopMode(
-          isRepeatEnabled ? LoopMode.one : LoopMode.off,
-        );
-        await player.setAudioSource(
-          _audioService.buildUriAudioSource(
-            playbackUri,
-            tag: MediaItem(
-              id: 'sura_$currentSura',
-              title: 'سورة $currentSura',
-              artist: reciter.name ?? 'قارئ',
-            ),
-          ),
-        );
-        // Update selection before play so the card UI refreshes immediately.
-        _setSelectedRadio(null);
-        _setSelectedSermon(null);
-        _setSelectedSharawyLecture(null);
-        _setSelectedReciter(reciter);
-        isReciterPlaying = true;
-        _audioService.currentSura = currentSura;
-        // Do not await play() — it completes only when playback ends.
-        player.play();
-      } catch (e) {
-        log(e.toString());
-        rethrow;
+
+      final Uri playbackUri = await _resolveReciterPlaybackUri(
+        reciter: reciter,
+        suraNumber: currentSura,
+      );
+      if (!await _canPlayUri(playbackUri)) {
+        notifyListeners();
+        return false;
       }
+      final bool started = await _audioService.play();
+      isReciterPlaying = started;
+      notifyListeners();
+      return started;
     }
-    notifyListeners();
+
+    try {
+      if (!await _audioService.ensureCanPlay()) {
+        notifyListeners();
+        return false;
+      }
+      final Uri playbackUri = await _resolveReciterPlaybackUri(
+        reciter: reciter,
+        suraNumber: currentSura,
+      );
+      if (!await _canPlayUri(playbackUri)) {
+        notifyListeners();
+        return false;
+      }
+      await player.setLoopMode(
+        isRepeatEnabled ? LoopMode.one : LoopMode.off,
+      );
+      await player.setAudioSource(
+        _audioService.buildUriAudioSource(
+          playbackUri,
+          tag: MediaItem(
+            id: 'sura_$currentSura',
+            title: 'سورة $currentSura',
+            artist: reciter.name ?? 'قارئ',
+          ),
+        ),
+      );
+      // Update selection before play so the card UI refreshes immediately.
+      _setSelectedRadio(null);
+      _setSelectedSermon(null);
+      _setSelectedSharawyLecture(null);
+      _setSelectedReciter(reciter);
+      _audioService.currentSura = currentSura;
+      final bool started = await _audioService.play();
+      isReciterPlaying = started;
+      notifyListeners();
+      return started;
+    } catch (e) {
+      log(e.toString());
+      notifyListeners();
+      return false;
+    }
   }
 
-  // Plays or pauses a sermon audioUrl.
-  Future<void> playSermon(Sermon sermon) async {
+  // Plays or pauses a sermon audio (keeps selection on pause).
+  // Returns false when blocked by a call, or when offline.
+  Future<bool> playSermon(Sermon sermon) async {
     if (selectedSermonAudioUrl != null &&
         selectedSermonAudioUrl == sermon.audioUrl) {
-      await player.pause();
-      _setSelectedSermon(null);
-    } else {
-      try {
-        await player.setLoopMode(LoopMode.off);
-        await player.setAudioSource(
-          AudioSource.uri(
-            Uri.parse(sermon.audioUrl),
-            tag: MediaItem(
-              id: 'sermon_${sermon.audioUrl}',
-              title: sermon.titleAr,
-              artist: 'Islami',
-            ),
-          ),
-        );
-        await player.setSpeed(playbackSpeed);
-        player.play();
-        _setSelectedRadio(null);
-        _setSelectedReciter(null);
-        _setSelectedSharawyLecture(null);
-        _setSelectedSermon(sermon);
-      } catch (e) {
-        log(e.toString());
-        rethrow;
+      if (player.playing) {
+        await player.pause();
+        notifyListeners();
+        return true;
       }
+      if (!await NetworkUtils.hasInternetConnection()) {
+        notifyListeners();
+        return false;
+      }
+      final bool started = await _audioService.play();
+      notifyListeners();
+      return started;
     }
+
+    if (!await _audioService.ensureCanPlay()) {
+      notifyListeners();
+      return false;
+    }
+
+    if (!await NetworkUtils.hasInternetConnection()) {
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      await player.setLoopMode(LoopMode.off);
+      await player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(sermon.audioUrl),
+          tag: MediaItem(
+            id: 'sermon_${sermon.audioUrl}',
+            title: sermon.titleAr,
+            artist: 'Islami',
+          ),
+        ),
+      );
+      await player.setSpeed(playbackSpeed);
+      final bool started = await _audioService.play();
+      if (!started) {
+        notifyListeners();
+        return false;
+      }
+      _setSelectedRadio(null);
+      _setSelectedReciter(null);
+      _setSelectedSharawyLecture(null);
+      _setSelectedSermon(sermon);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      log(e.toString());
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Stops sermon audio and clears the current selection.
+  Future<void> stopSermon() async {
+    await player.stop();
+    _setSelectedSermon(null);
     notifyListeners();
   }
 
-  Future<void> recitersNext(Reciters reciter) async {
-    if (currentSura < 114) {
-      _setCurrentSura(currentSura + 1);
-      final Uri playbackUri = await _resolveReciterPlaybackUri(
-        reciter: reciter,
-        suraNumber: currentSura,
-      );
-      await player.setAudioSource(
-        _audioService.buildUriAudioSource(
-          playbackUri,
-          tag: MediaItem(
-            id: 'sura_$currentSura',
-            title: 'سورة $currentSura',
-            artist: reciter.name ?? 'قارئ',
-          ),
-        ),
-      );
-      player.play();
-      _setSelectedRadio(null);
-      _setSelectedSermon(null);
-      _setSelectedSharawyLecture(null);
-      _setSelectedReciter(reciter);
-      isReciterPlaying = true;
-      notifyListeners();
+  /// Plays the next sura. Returns false when blocked by a call or offline.
+  Future<bool> recitersNext(Reciters reciter) async {
+    if (currentSura >= 114) {
+      return true;
     }
+
+    if (!await _audioService.ensureCanPlay()) {
+      notifyListeners();
+      return false;
+    }
+
+    _setCurrentSura(currentSura + 1);
+    final Uri playbackUri = await _resolveReciterPlaybackUri(
+      reciter: reciter,
+      suraNumber: currentSura,
+    );
+    if (!await _canPlayUri(playbackUri)) {
+      _setCurrentSura(currentSura - 1);
+      notifyListeners();
+      return false;
+    }
+
+    await player.setAudioSource(
+      _audioService.buildUriAudioSource(
+        playbackUri,
+        tag: MediaItem(
+          id: 'sura_$currentSura',
+          title: 'سورة $currentSura',
+          artist: reciter.name ?? 'قارئ',
+        ),
+      ),
+    );
+    final bool started = await _audioService.play();
+    if (!started) {
+      _setCurrentSura(currentSura - 1);
+      notifyListeners();
+      return false;
+    }
+    _setSelectedRadio(null);
+    _setSelectedSermon(null);
+    _setSelectedSharawyLecture(null);
+    _setSelectedReciter(reciter);
+    isReciterPlaying = true;
+    notifyListeners();
+    return true;
   }
 
-  Future<void> recitersBack(Reciters reciter) async {
-    if (currentSura > 1) {
-      _setCurrentSura(currentSura - 1);
-      final Uri playbackUri = await _resolveReciterPlaybackUri(
-        reciter: reciter,
-        suraNumber: currentSura,
-      );
-      await player.setAudioSource(
-        _audioService.buildUriAudioSource(
-          playbackUri,
-          tag: MediaItem(
-            id: 'sura_$currentSura',
-            title: 'سورة $currentSura',
-            artist: reciter.name ?? 'قارئ',
-          ),
-        ),
-      );
-      player.play();
-      _setSelectedRadio(null);
-      _setSelectedSermon(null);
-      _setSelectedSharawyLecture(null);
-      _setSelectedReciter(reciter);
-      isReciterPlaying = true;
-      notifyListeners();
+  /// Plays the previous sura. Returns false when blocked by a call or offline.
+  Future<bool> recitersBack(Reciters reciter) async {
+    if (currentSura <= 1) {
+      return true;
     }
+
+    if (!await _audioService.ensureCanPlay()) {
+      notifyListeners();
+      return false;
+    }
+
+    _setCurrentSura(currentSura - 1);
+    final Uri playbackUri = await _resolveReciterPlaybackUri(
+      reciter: reciter,
+      suraNumber: currentSura,
+    );
+    if (!await _canPlayUri(playbackUri)) {
+      _setCurrentSura(currentSura + 1);
+      notifyListeners();
+      return false;
+    }
+
+    await player.setAudioSource(
+      _audioService.buildUriAudioSource(
+        playbackUri,
+        tag: MediaItem(
+          id: 'sura_$currentSura',
+          title: 'سورة $currentSura',
+          artist: reciter.name ?? 'قارئ',
+        ),
+      ),
+    );
+    final bool started = await _audioService.play();
+    if (!started) {
+      _setCurrentSura(currentSura + 1);
+      notifyListeners();
+      return false;
+    }
+    _setSelectedRadio(null);
+    _setSelectedSermon(null);
+    _setSelectedSharawyLecture(null);
+    _setSelectedReciter(reciter);
+    isReciterPlaying = true;
+    notifyListeners();
+    return true;
   }
 
   /// Prefers a local MediaStore file when available; otherwise the remote URL.
@@ -750,6 +926,28 @@ class RadioViewModel extends ChangeNotifier {
       remoteUrl: remoteUrl,
       localUri: localUri,
     );
+  }
+
+  /// True when [uri] is a local file/content URI.
+  bool _isLocalUri(Uri uri) {
+    return uri.scheme == 'file' || uri.scheme == 'content';
+  }
+
+  /// Allows playback for local files always; remote URLs need internet.
+  Future<bool> _canPlayUri(Uri uri) async {
+    if (_isLocalUri(uri)) {
+      return true;
+    }
+    return NetworkUtils.hasInternetConnection();
+  }
+
+  /// Re-fetches the online list for the current radio tab segment.
+  Future<void> refreshCurrentOnlineData() async {
+    if (toggleSwitchIndex == 0) {
+      await getRadios();
+    } else if (toggleSwitchIndex == 1) {
+      await getReciters();
+    }
   }
 
   Future<void> seekReciter(Duration position) async {

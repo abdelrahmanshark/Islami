@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/models/moshaf_page.dart';
+import 'package:islami/models/hafs_ayah_meta.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/view_model/moshaf_index_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/widget/moshaf_index_item_tile.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/widget/moshaf_index_tab_button.dart';
@@ -8,16 +8,41 @@ import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-class MoshafIndexView extends StatelessWidget {
+class MoshafIndexView extends StatefulWidget {
   const MoshafIndexView({super.key});
 
   @override
+  State<MoshafIndexView> createState() => _MoshafIndexViewState();
+}
+
+class _MoshafIndexViewState extends State<MoshafIndexView> {
+  @override
+  void initState() {
+    super.initState();
+    // Show reminder after the first frame so ScaffoldMessenger is ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'قم بالتحديد على ما قرأت/حفظت حتى تتذكره',
+            textDirection: TextDirection.rtl,
+            style: AppStyles.primaryBold24.copyWith(fontSize: 16),
+          ),
+          backgroundColor: AppColors.blackColor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final pages =
-        ModalRoute.of(context)!.settings.arguments as List<MoshafPage>;
+    final ayahs =
+        ModalRoute.of(context)!.settings.arguments as List<HafsAyahMeta>;
 
     return ChangeNotifierProvider(
-      create: (_) => MoshafIndexViewModel(pages: pages),
+      create: (_) => MoshafIndexViewModel(ayahs: ayahs),
       child: Consumer<MoshafIndexViewModel>(
         builder: (context, provider, child) {
           return Directionality(

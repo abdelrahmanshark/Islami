@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:islami/models/quran_story.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_audio_slider.dart';
+import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -51,8 +52,12 @@ class SharawyLectureCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        onPressed: () {
-                          provider.playSharawyLecture(lecture);
+                        onPressed: () async {
+                          final bool played =
+                              await provider.playSharawyLecture(lecture);
+                          if (!played && context.mounted) {
+                            showPlaybackFailureSnackBar(context);
+                          }
                         },
                         icon: Icon(
                           isLecturePlaying
@@ -77,6 +82,22 @@ class SharawyLectureCard extends StatelessWidget {
                   if (isLectureOn) const SharawyAudioSlider(),
                 ],
               ),
+              // Stop and quit audio when this lecture is active.
+              if (isLectureOn)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: IconButton(
+                    onPressed: () {
+                      provider.stopSharawyLecture();
+                    },
+                    icon: Icon(
+                      Icons.stop_rounded,
+                      color: AppColors.blackColor,
+                      size: 32,
+                    ),
+                  ),
+                ),
             ],
           ),
         );

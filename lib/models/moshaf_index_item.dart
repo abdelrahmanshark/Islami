@@ -7,7 +7,7 @@ class MoshafIndexItem {
   final int pageNumber;
   final MoshafIndexItemType type;
 
-  /// Surah/Juz/Hizb number, or `"hizb-rub"` for a Rub (e.g. `"2-5"`).
+  /// Surah/Juz/Hizb number, or global Rub number (1–240) for a Rub.
   final String id;
 
   const MoshafIndexItem({

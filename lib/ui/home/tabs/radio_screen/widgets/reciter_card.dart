@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/reciters_response.dart';
+import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../utils/app_assets.dart';
@@ -62,8 +63,12 @@ class ReciterCard extends StatelessWidget {
                           },
                         ),
                       IconButton(
-                        onPressed: () {
-                          provider.recitersBack(reciter);
+                        onPressed: () async {
+                          final bool played =
+                              await provider.recitersBack(reciter);
+                          if (!played && context.mounted) {
+                            showPlaybackFailureSnackBar(context);
+                          }
                         },
                         icon: Icon(
                           Icons.skip_previous_rounded,
@@ -72,8 +77,12 @@ class ReciterCard extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          provider.playReciter(reciter);
+                        onPressed: () async {
+                          final bool played =
+                              await provider.playReciter(reciter);
+                          if (!played && context.mounted) {
+                            showPlaybackFailureSnackBar(context);
+                          }
                         },
                         icon: Icon(
                           isReciterPlaying
@@ -84,8 +93,12 @@ class ReciterCard extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          provider.recitersNext(reciter);
+                        onPressed: () async {
+                          final bool played =
+                              await provider.recitersNext(reciter);
+                          if (!played && context.mounted) {
+                            showPlaybackFailureSnackBar(context);
+                          }
                         },
                         icon: Icon(
                           Icons.skip_next_rounded,

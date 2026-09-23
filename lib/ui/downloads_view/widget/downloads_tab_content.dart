@@ -72,9 +72,14 @@ class DownloadsTabContent extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             onPressed: () => _confirmDeleteAll(context),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             icon: const Icon(
               Icons.delete_outline,
               color: AppColors.primaryColor,
+              size: 20,
             ),
             label: Text(
               'حذف كل التحميلات',
@@ -84,7 +89,7 @@ class DownloadsTabContent extends StatelessWidget {
         ),
         Expanded(
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
             itemCount: viewModel.filteredSuras.length,
             itemBuilder: (context, index) {
               final download = viewModel.filteredSuras[index];
@@ -97,8 +102,8 @@ class DownloadsTabContent extends StatelessWidget {
               );
             },
             separatorBuilder: (context, index) => Container(
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              height: 2,
+              margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+              height: 1.5,
               width: double.infinity,
               color: AppColors.whiteColor,
             ),

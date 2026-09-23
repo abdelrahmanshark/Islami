@@ -8,8 +8,9 @@ flutter_native_splash:
   image: native_splash/splash_icon.png
   image_dark: native_splash/splash_icon.png
   android_12:
-    image: native_splash/splash_icon.png
+    # 1152x1152 with logo inside the 768px safe circle so Android does not clip it.
+    image: native_splash/android12_splash_icon.png
     color: "#202020"
     color_dark: "#202020"
-    image_dark: native_splash/splash_icon.png
+    image_dark: native_splash/android12_splash_icon.png
   web: false

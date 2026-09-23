@@ -7,9 +7,10 @@ import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_toggle_switch.dar
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_select_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sermons_list.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_list.dart';
+import 'package:islami/ui/home/widgets/no_internet_retry_view.dart';
+import 'package:islami/ui/home/widgets/offline_refresh_header.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_colors.dart';
-import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../utils/app_assets.dart';
@@ -32,7 +33,9 @@ class RadioScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Image.asset(AppAssets.header),
+                OfflineRefreshHeader(
+                  onRefresh: provider.refreshCurrentOnlineData,
+                ),
                 RadioToggleSwitch(),
                 SizedBox(height: 10),
                 if (provider.toggleSwitchIndex == 0)
@@ -46,11 +49,9 @@ class RadioScreen extends StatelessWidget {
                         )
                       : provider.radioFailureMsg.isNotEmpty
                       ? Expanded(
-                          child: Center(
-                            child: Text(
-                              provider.radioFailureMsg,
-                              style: AppStyles.primaryBold24,
-                            ),
+                          child: NoInternetRetryView(
+                            message: provider.radioFailureMsg,
+                            onRefresh: provider.getRadios,
                           ),
                         )
                       : Expanded(
@@ -87,11 +88,9 @@ class RadioScreen extends StatelessWidget {
                         )
                       : provider.reciterFailureMsg.isNotEmpty
                       ? Expanded(
-                          child: Center(
-                            child: Text(
-                              provider.reciterFailureMsg,
-                              style: AppStyles.primaryBold24,
-                            ),
+                          child: NoInternetRetryView(
+                            message: provider.reciterFailureMsg,
+                            onRefresh: provider.getReciters,
                           ),
                         )
                       : Expanded(

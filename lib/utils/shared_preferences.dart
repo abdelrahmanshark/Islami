@@ -6,6 +6,7 @@ class SharedPreferencesKay {
   static const String moshafLastPage = 'moshafLastPage';
   static const String moshafDarkTheme = 'moshafDarkTheme';
   static const String moshafMemorizedPages = 'moshafMemorizedPages';
+  static const String moshafMemorizedAyahs = 'moshafMemorizedAyahs';
   static const String prayerDate = 'prayerDate';
   static const String prayerFajr = 'prayerFajr';
   static const String prayerDhuhr = 'prayerDhuhr';
@@ -104,6 +105,12 @@ Future<void> saveMoshafLastPage(int page) async {
   await pref.setInt(SharedPreferencesKay.moshafLastPage, page);
 }
 
+/// Clears the saved Moshaf bookmark page.
+Future<void> clearMoshafLastPage() async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.remove(SharedPreferencesKay.moshafLastPage);
+}
+
 /// Returns the saved Moshaf page, or null if none exists.
 Future<int?> getMoshafLastPage() async {
   final pref = await SharedPreferences.getInstance();
@@ -137,6 +144,24 @@ Future<void> saveMoshafMemorizedPages(Set<int> pages) async {
   await pref.setStringList(
     SharedPreferencesKay.moshafMemorizedPages,
     sorted.map((page) => page.toString()).toList(),
+  );
+}
+
+/// Returns Mushaf ayah IDs marked as memorized (empty when none saved).
+Future<Set<int>> getMoshafMemorizedAyahs() async {
+  final pref = await SharedPreferences.getInstance();
+  final saved =
+      pref.getStringList(SharedPreferencesKay.moshafMemorizedAyahs) ?? [];
+  return saved.map(int.parse).toSet();
+}
+
+/// Saves the set of Mushaf ayah IDs marked as memorized.
+Future<void> saveMoshafMemorizedAyahs(Set<int> ayahIds) async {
+  final pref = await SharedPreferences.getInstance();
+  final sorted = ayahIds.toList()..sort();
+  await pref.setStringList(
+    SharedPreferencesKay.moshafMemorizedAyahs,
+    sorted.map((id) => id.toString()).toList(),
   );
 }
 

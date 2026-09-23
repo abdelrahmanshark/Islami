@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:islami/models/sermon.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sermon_audio_slider.dart';
+import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -50,8 +51,12 @@ class SermonCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        onPressed: () {
-                          provider.playSermon(sermon);
+                        onPressed: () async {
+                          final bool played =
+                              await provider.playSermon(sermon);
+                          if (!played && context.mounted) {
+                            showPlaybackFailureSnackBar(context);
+                          }
                         },
                         icon: Icon(
                           isSermonPlaying
@@ -76,6 +81,22 @@ class SermonCard extends StatelessWidget {
                   if (isSermonOn) const SermonAudioSlider(),
                 ],
               ),
+              // Stop and quit audio when this sermon is active.
+              if (isSermonOn)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: IconButton(
+                    onPressed: () {
+                      provider.stopSermon();
+                    },
+                    icon: Icon(
+                      Icons.stop_rounded,
+                      color: AppColors.blackColor,
+                      size: 32,
+                    ),
+                  ),
+                ),
             ],
           ),
         );
