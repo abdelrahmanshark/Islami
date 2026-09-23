@@ -3,7 +3,6 @@ import 'package:islami/models/reciters_response.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../../utils/app_assets.dart';
 import '../../../../../utils/app_colors.dart';
 import '../../../../../utils/app_styles.dart';
 import '../radio_view_model.dart';
@@ -23,118 +22,114 @@ class ReciterCard extends StatelessWidget {
             provider.selectedReciterId != null &&
             provider.selectedReciterId == reciter.id;
         final isReciterPlaying = isReciterOn && provider.isReciterPlaying;
+
         return Container(
-          margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
-          height: MediaQuery.heightOf(context) * (isReciterOn ? 0.22 : 0.14),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.fromLTRB(8, 8, 8, isReciterOn ? 6 : 8),
           width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Stack(
-            alignment: AlignmentGeometry.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              isReciterOn
-                  ? Image.asset(AppAssets.activeRadioCard, fit: BoxFit.cover)
-                  : Image.asset(AppAssets.inActiveRadioCard),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  Expanded(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 36),
                     child: Text(
                       reciter.name ?? '',
-                      style: AppStyles.blackBold18,
-                      maxLines: 2,
+                      style: AppStyles.blackBold16,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
                   ),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isReciterOn)
-                        ReciterModeIconButton(
-                          icon: Icons.repeat_one_rounded,
-                          isActive: provider.isRepeatEnabled,
-                          onPressed: () {
-                            provider.toggleRepeat();
-                          },
+                  // Stop playback when this reciter is active.
+                  if (isReciterOn)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: provider.stopReciter,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
                         ),
-                      IconButton(
-                        onPressed: () async {
-                          final bool played =
-                              await provider.recitersBack(reciter);
-                          if (!played && context.mounted) {
-                            showPlaybackFailureSnackBar(context);
-                          }
-                        },
-                        icon: Icon(
-                          Icons.skip_previous_rounded,
+                        icon: const Icon(
+                          Icons.stop_rounded,
                           color: AppColors.blackColor,
-                          size: 50,
+                          size: 28,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () async {
-                          final bool played =
-                              await provider.playReciter(reciter);
-                          if (!played && context.mounted) {
-                            showPlaybackFailureSnackBar(context);
-                          }
-                        },
-                        icon: Icon(
-                          isReciterPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow_rounded,
-                          color: AppColors.blackColor,
-                          size: 50,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () async {
-                          final bool played =
-                              await provider.recitersNext(reciter);
-                          if (!played && context.mounted) {
-                            showPlaybackFailureSnackBar(context);
-                          }
-                        },
-                        icon: Icon(
-                          Icons.skip_next_rounded,
-                          color: AppColors.blackColor,
-                          size: 50,
-                        ),
-                      ),
-                      if (isReciterOn)
-                        ReciterModeIconButton(
-                          icon: Icons.playlist_play_rounded,
-                          isActive: provider.isAutoNextEnabled,
-                          onPressed: () {
-                            provider.toggleAutoNext();
-                          },
-                        ),
-                    ],
-                  ),
-                  if (isReciterOn) const ReciterAudioSlider(),
+                    ),
                 ],
               ),
-              // Stop and quit audio when this reciter is active.
-              if (isReciterOn)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: IconButton(
-                    onPressed: () {
-                      provider.stopReciter();
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isReciterOn)
+                    ReciterModeIconButton(
+                      icon: Icons.repeat_one_rounded,
+                      isActive: provider.isRepeatEnabled,
+                      onPressed: provider.toggleRepeat,
+                    ),
+                  IconButton(
+                    onPressed: () async {
+                      final bool played = await provider.recitersBack(reciter);
+                      if (!played && context.mounted) {
+                        showPlaybackFailureSnackBar(context);
+                      }
                     },
-                    icon: Icon(
-                      Icons.stop_rounded,
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(
+                      Icons.skip_previous_rounded,
                       color: AppColors.blackColor,
-                      size: 32,
+                      size: 36,
                     ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: () async {
+                      final bool played = await provider.playReciter(reciter);
+                      if (!played && context.mounted) {
+                        showPlaybackFailureSnackBar(context);
+                      }
+                    },
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      isReciterPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow_rounded,
+                      color: AppColors.blackColor,
+                      size: 40,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      final bool played = await provider.recitersNext(reciter);
+                      if (!played && context.mounted) {
+                        showPlaybackFailureSnackBar(context);
+                      }
+                    },
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(
+                      Icons.skip_next_rounded,
+                      color: AppColors.blackColor,
+                      size: 36,
+                    ),
+                  ),
+                  if (isReciterOn)
+                    ReciterModeIconButton(
+                      icon: Icons.playlist_play_rounded,
+                      isActive: provider.isAutoNextEnabled,
+                      onPressed: provider.toggleAutoNext,
+                    ),
+                ],
+              ),
+              if (isReciterOn) const ReciterAudioSlider(),
             ],
           ),
         );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/sharawy_category.dart';
-import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 
@@ -19,29 +18,21 @@ class SharawyCategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
-        height: MediaQuery.heightOf(context) * 0.14,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         width: double.infinity,
         decoration: BoxDecoration(
           color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Stack(
-          alignment: AlignmentGeometry.bottomCenter,
-          children: [
-            Image.asset(AppAssets.inActiveRadioCard),
-            Center(
-              child: Text(
-                category.titleAr,
-                style: AppStyles.blackBold18,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+        child: Text(
+          category.titleAr,
+          style: AppStyles.blackBold16,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
         ),
       ),
     );

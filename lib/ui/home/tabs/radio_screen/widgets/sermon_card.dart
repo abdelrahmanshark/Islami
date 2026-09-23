@@ -3,7 +3,6 @@ import 'package:islami/models/sermon.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sermon_audio_slider.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
-import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
@@ -21,82 +20,82 @@ class SermonCard extends StatelessWidget {
             provider.selectedSermonAudioUrl != null &&
             provider.selectedSermonAudioUrl == sermon.audioUrl;
         final isSermonPlaying = isSermonOn && provider.player.playing;
+
         return Container(
-          margin: EdgeInsetsGeometry.symmetric(horizontal: 20, vertical: 10),
-          height: MediaQuery.heightOf(context) * (isSermonOn ? 0.24 : 0.14),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: EdgeInsets.fromLTRB(8, 8, 8, isSermonOn ? 6 : 8),
           width: double.infinity,
           decoration: BoxDecoration(
             color: AppColors.primaryColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Stack(
-            alignment: AlignmentGeometry.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              isSermonOn
-                  ? Image.asset(AppAssets.activeRadioCard, fit: BoxFit.cover)
-                  : Image.asset(AppAssets.inActiveRadioCard),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  Expanded(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 36),
                     child: Text(
                       sermon.titleAr,
-                      style: AppStyles.blackBold18,
-                      maxLines: 2,
+                      style: AppStyles.blackBold16,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: () async {
-                          final bool played =
-                              await provider.playSermon(sermon);
-                          if (!played && context.mounted) {
-                            showPlaybackFailureSnackBar(context);
-                          }
-                        },
-                        icon: Icon(
-                          isSermonPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow_rounded,
+                  // Stop playback when this sermon is active.
+                  if (isSermonOn)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: provider.stopSermon,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        icon: const Icon(
+                          Icons.stop_rounded,
                           color: AppColors.blackColor,
-                          size: 50,
+                          size: 28,
                         ),
                       ),
-                      if (isSermonOn)
-                        TextButton(
-                          onPressed: () {
-                            provider.cyclePlaybackSpeed();
-                          },
-                          child: Text(
-                            provider.playbackSpeedLabel,
-                            style: AppStyles.blackBold16,
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (isSermonOn) const SermonAudioSlider(),
+                    ),
                 ],
               ),
-              // Stop and quit audio when this sermon is active.
-              if (isSermonOn)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  child: IconButton(
-                    onPressed: () {
-                      provider.stopSermon();
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () async {
+                      final bool played = await provider.playSermon(sermon);
+                      if (!played && context.mounted) {
+                        showPlaybackFailureSnackBar(context);
+                      }
                     },
+                    visualDensity: VisualDensity.compact,
                     icon: Icon(
-                      Icons.stop_rounded,
+                      isSermonPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow_rounded,
                       color: AppColors.blackColor,
-                      size: 32,
+                      size: 40,
                     ),
                   ),
-                ),
+                  if (isSermonOn)
+                    TextButton(
+                      onPressed: provider.cyclePlaybackSpeed,
+                      child: Text(
+                        provider.playbackSpeedLabel,
+                        style: AppStyles.blackBold16,
+                      ),
+                    ),
+                ],
+              ),
+              if (isSermonOn) const SermonAudioSlider(),
             ],
           ),
         );
