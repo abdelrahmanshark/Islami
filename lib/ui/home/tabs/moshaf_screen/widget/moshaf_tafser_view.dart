@@ -3,7 +3,7 @@ import 'package:islami/models/tafser_surah.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 
-/// Tafsir content panel shown inside the Moshaf screen tab.
+/// Tafsir content panel shown from the Mushaf AppBar icon.
 class MoshafTafserView extends StatelessWidget {
   final bool isLoading;
   final String? errorMessage;

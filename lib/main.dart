@@ -6,6 +6,7 @@ import 'package:islami/services/weekly_notification_service.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/azkar_view.dart';
 import 'package:islami/ui/home/home_screen.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/moshaf_index_view.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_screen.dart';
 import 'package:islami/ui/qibla_view/qibla_view.dart';
 import 'package:islami/ui/splash_view/splash_view.dart';
 import 'package:islami/utils/app_routes.dart';
@@ -45,6 +46,11 @@ class Islami extends StatelessWidget {
           AppRoutes.splashRouteName: (context) => const SplashView(),
           AppRoutes.homeRouteName: (context) => HomeScreen(),
           AppRoutes.azkarRouteName: (context) => const AzkarView(),
+          AppRoutes.moshafRouteName: (context) {
+            final startPage =
+                ModalRoute.of(context)?.settings.arguments as int?;
+            return MoshafScreen(startPage: startPage);
+          },
           AppRoutes.moshafIndexRouteName: (context) => const MoshafIndexView(),
           AppRoutes.qiblaRouteName: (context) => const QiblaView(),
         },

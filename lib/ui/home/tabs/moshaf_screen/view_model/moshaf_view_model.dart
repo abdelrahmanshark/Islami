@@ -9,9 +9,6 @@ import 'package:islami/models/tafser_surah.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
-/// Content tabs inside the Moshaf screen.
-enum MoshafContentTab { moshaf, tafser }
-
 class MoshafViewModel extends ChangeNotifier {
   /// Madani coordinate page size used by quran_coordinates JSON.
   static const double coordinatePageWidth = 345;
@@ -41,8 +38,8 @@ class MoshafViewModel extends ChangeNotifier {
   /// Currently highlighted ayah, or null when nothing is selected.
   AyahCoordinate? selectedAyah;
 
-  /// Active content tab: Mushaf pages or Tafsir.
-  MoshafContentTab contentTab = MoshafContentTab.moshaf;
+  /// True when the tafsir panel is shown instead of Mushaf pages.
+  bool isShowingTafser = false;
 
   /// Loaded tafsir for the selected ayah, or null when none.
   TafserAyah? selectedTafserAyah;
@@ -74,7 +71,7 @@ class MoshafViewModel extends ChangeNotifier {
 
   /// AppBar label: selected ayah when set, otherwise the surah title.
   String get appBarTitle {
-    if (contentTab == MoshafContentTab.tafser) {
+    if (isShowingTafser) {
       if (selectedAyah != null) {
         final surahLabel =
             selectedTafserSurahName ?? 'سورة ${selectedAyah!.surahNumber}';
@@ -99,8 +96,8 @@ class MoshafViewModel extends ChangeNotifier {
     return bookmarkedPage != null && bookmarkedPage == visiblePageNumber;
   }
 
-  /// Loads page metadata, builds image pages, and restores the bookmark.
-  Future<void> loadMoshaf() async {
+  /// Loads page metadata, builds image pages, and opens at [startPage] if set.
+  Future<void> loadMoshaf({int? startPage}) async {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -118,7 +115,13 @@ class MoshafViewModel extends ChangeNotifier {
       final savedPage = await getMoshafLastPage();
       bookmarkedPage = savedPage;
 
-      if (savedPage != null && savedPage >= 1 && savedPage <= pages.length) {
+      if (startPage != null &&
+          startPage >= 1 &&
+          startPage <= pages.length) {
+        initialPage = startPage;
+      } else if (savedPage != null &&
+          savedPage >= 1 &&
+          savedPage <= pages.length) {
         initialPage = savedPage;
       } else {
         initialPage = 1;
@@ -139,6 +142,7 @@ class MoshafViewModel extends ChangeNotifier {
   /// Toggles light/dark Mushaf theme and saves the choice.
   Future<void> toggleTheme() async {
     isDarkTheme = !isDarkTheme;
+    selectedAyah = null;
     notifyListeners();
     await saveMoshafDarkTheme(isDarkTheme);
   }
@@ -217,28 +221,38 @@ class MoshafViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Switches to the tafsir tab and loads tafsir for the selected ayah.
+  /// Opens tafsir for the selected ayah (from ayah label).
   Future<void> openTafserForSelectedAyah() async {
     if (selectedAyah == null) return;
-    contentTab = MoshafContentTab.tafser;
-    notifyListeners();
-    await loadTafserForAyah(
-      selectedAyah!.surahNumber,
-      selectedAyah!.ayahNumber,
-    );
+    await openTafser();
   }
 
-  /// Switches the content tab; loads tafsir when opening that tab with a selection.
-  void setContentTab(MoshafContentTab tab) {
-    if (contentTab == tab) return;
-    contentTab = tab;
+  /// Shows the tafsir panel and loads tafsir when an ayah is selected.
+  Future<void> openTafser() async {
+    isShowingTafser = true;
     notifyListeners();
 
-    if (tab == MoshafContentTab.tafser && selectedAyah != null) {
-      loadTafserForAyah(
+    if (selectedAyah != null) {
+      await loadTafserForAyah(
         selectedAyah!.surahNumber,
         selectedAyah!.ayahNumber,
       );
+    }
+  }
+
+  /// Hides the tafsir panel and returns to Mushaf pages.
+  void closeTafser() {
+    if (!isShowingTafser) return;
+    isShowingTafser = false;
+    notifyListeners();
+  }
+
+  /// Toggles between Mushaf pages and the tafsir panel.
+  Future<void> toggleTafser() async {
+    if (isShowingTafser) {
+      closeTafser();
+    } else {
+      await openTafser();
     }
   }
 

@@ -37,44 +37,66 @@ class MoshafPageView extends StatelessWidget {
       page.pageNumber,
       isDark: isDarkTheme,
     );
+    // Pages 1–2 use dark-style coords (no light inset), even in light mode.
+    final useLightCoordPadding =
+        !isDarkTheme && page.pageNumber != 1 && page.pageNumber != 2;
 
     return ColoredBox(
       color: backgroundColor,
       child: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              child: MoshafPageFrame(
-                isDarkTheme: isDarkTheme,
-                child: Stack(
-                  children: [
-                    Image.asset(
-                      imagePath,
-                      key: ValueKey(imagePath),
-                      fit: BoxFit.fitWidth,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text(
-                            'تعذر تحميل الصفحة ${page.pageNumber}',
-                            style: AppStyles.primaryBold16,
-                            textDirection: TextDirection.rtl,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return MoshafPageFrame(
+                  isDarkTheme: isDarkTheme,
+                  pageNumber: page.pageNumber,
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          imagePath,
+                          key: ValueKey(imagePath),
+                          fit: BoxFit.fill,
+                          width: constraints.maxWidth,
+                          height: constraints.maxHeight,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                'تعذر تحميل الصفحة ${page.pageNumber}',
+                                style: AppStyles.primaryBold16,
+                                textDirection: TextDirection.rtl,
+                              ),
+                            );
+                          },
+                        ),
+                        // Light mode (pages 3+): inset ayah hit/highlight layer.
+                        // Pages 1–2 match dark padding (zero inset).
+                        Padding(
+                          padding: useLightCoordPadding
+                              ? const EdgeInsets.only(
+                                  left: 40,
+                                  right: 40,
+                                  top: 40,
+                                  bottom: 40,
+                                )
+                              : EdgeInsets.zero,
+                          child: MoshafAyahOverlay(
+                            ayahs: ayahs,
+                            selectedAyah: selectedAyah,
+                            findAyahAt: findAyahAt,
+                            onAyahTapped: onAyahTapped,
+                            onTafserLabelTapped: onTafserLabelTapped,
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     ),
-                    Positioned.fill(
-                      child: MoshafAyahOverlay(
-                        ayahs: ayahs,
-                        selectedAyah: selectedAyah,
-                        findAyahAt: findAyahAt,
-                        onAyahTapped: onAyahTapped,
-                        onTafserLabelTapped: onTafserLabelTapped,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
           MoshafPageFooter(page: page),

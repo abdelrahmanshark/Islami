@@ -181,10 +181,13 @@ class AppAssets {
   ];
 
   /// Returns the asset path for Quran page [pageNumber] (1–604).
+  /// Light mode uses unpadded PNG names (1.png). Dark mode uses padded WebP (001.webp).
   static String quranPageImage(int pageNumber, {bool isDark = false}) {
-    final padded = pageNumber.toString().padLeft(3, '0');
-    final folder = isDark ? quranImagesDarkFolder : quranImagesFolder;
-    return '$folder/$padded.webp';
+    if (isDark) {
+      final padded = pageNumber.toString().padLeft(3, '0');
+      return '$quranImagesDarkFolder/$padded.webp';
+    }
+    return '$quranImagesFolder/$pageNumber.png';
   }
 
   /// Returns the ayah-polygon JSON path for Quran page [pageNumber] (1–604).

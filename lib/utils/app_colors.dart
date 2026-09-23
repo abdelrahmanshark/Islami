@@ -5,6 +5,7 @@ class AppColors {
   static const Color blackColor = Color(0xFF202020);
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color offWhite = Color(0xFFF5F5F0);
+  static const Color taupe = Color(0xFFA79278);
   static const Color grayColor = Color(0x99202020);
   static const Color transparentColor = Colors.transparent;
 }
