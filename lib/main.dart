@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/services/connectivity_monitor.dart';
+import 'package:islami/services/download_notification_service.dart';
 import 'package:islami/services/prayer_time_notification_service.dart';
+import 'package:islami/services/quran_download_manager.dart';
 import 'package:islami/services/weekly_notification_service.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/azkar_view.dart';
 import 'package:islami/ui/home/home_screen.dart';
@@ -12,6 +14,7 @@ import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/moshaf_index
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_screen.dart';
 import 'package:islami/ui/qibla_view/qibla_view.dart';
 import 'package:islami/ui/splash_view/splash_view.dart';
+import 'package:islami/ui/widgets/download_progress_banner.dart';
 import 'package:islami/utils/app_messenger.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_themes.dart';
@@ -36,8 +39,15 @@ void main() async {
   if (defaultTargetPlatform == TargetPlatform.android) {
     await AndroidAlarmManager.initialize();
   }
-  await WeeklyNotificationService.initAndSchedule();
-  await PrayerTimeNotificationService.init();
+  await WeeklyNotificationService.initAndSchedule(
+    onNotificationResponse: QuranDownloadManager.onNotificationResponse,
+    onBackgroundNotificationResponse: downloadNotificationBackground,
+  );
+  // Keep download action callbacks; do not re-initialize the plugin here.
+  PrayerTimeNotificationService.markAlreadyInitialized();
+  await DownloadNotificationService.init();
+  // Ensure the cancel port is registered before any download starts.
+  QuranDownloadManager.instance;
   await CallAudioGuard.instance.start();
   runApp(const Islami());
 }
@@ -78,8 +88,11 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: ConnectivityMonitor.instance,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: ConnectivityMonitor.instance),
+        ChangeNotifierProvider.value(value: QuranDownloadManager.instance),
+      ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: AppTheme.systemUiOverlayStyle,
         child: MaterialApp(
@@ -100,6 +113,14 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
           },
           theme: AppTheme.lightTheme,
           themeMode: ThemeMode.light,
+          builder: (BuildContext context, Widget? child) {
+            return Stack(
+              children: [
+                child ?? const SizedBox.shrink(),
+                const DownloadProgressBanner(),
+              ],
+            );
+          },
         ),
       ),
     );

@@ -245,12 +245,16 @@ class DownloadsViewModel extends ChangeNotifier {
     await player.seek(position);
   }
 
-  /// Formats a duration as mm:ss for the slider labels.
+  /// Formats as mm:ss, or h:mm:ss when the track is 1 hour or longer.
   String formatAudioTime(Duration duration) {
+    final int hours = duration.inHours;
     final String minutes =
         duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final String seconds =
         duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:$minutes:$seconds';
+    }
     return '$minutes:$seconds';
   }
 

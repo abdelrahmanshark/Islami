@@ -6,6 +6,7 @@ import 'package:islami/models/ayah_coordinate.dart';
 import 'package:islami/models/hafs_ayah_meta.dart';
 import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/models/moshaf_page_marker.dart';
+import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/tafser_surah.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/shared_preferences.dart';
@@ -78,15 +79,25 @@ class MoshafViewModel extends ChangeNotifier {
     if (isShowingTafser) {
       if (selectedAyah != null) {
         final surahLabel =
-            selectedTafserSurahName ?? 'سورة ${selectedAyah!.surahNumber}';
-        return '$surahLabel • آية ${selectedAyah!.ayahNumber}';
+            selectedTafserSurahName ??
+            _surahName(selectedAyah!.surahNumber);
+        return '$surahLabel : ${selectedAyah!.ayahNumber}';
       }
       return 'التفسير';
     }
     if (selectedAyah != null) {
-      return 'سورة ${selectedAyah!.surahNumber} • آية ${selectedAyah!.ayahNumber}';
+      return '${_surahName(selectedAyah!.surahNumber)} : ${selectedAyah!.ayahNumber}';
     }
     return visiblePageTitle;
+  }
+
+  /// Arabic Surah name for a 1-based Surah number.
+  String _surahName(int surahNumber) {
+    if (surahNumber < 1 ||
+        surahNumber > QuranResources.arabicQuranSuras.length) {
+      return 'سورة $surahNumber';
+    }
+    return QuranResources.arabicQuranSuras[surahNumber - 1];
   }
 
   /// Current 1-based page number, or 1 when empty.
@@ -114,7 +125,7 @@ class MoshafViewModel extends ChangeNotifier {
         throw Exception('empty markers');
       }
 
-      pages = markers.map(MoshafPage.fromMarker).toList();
+      pages = MoshafPage.fromMarkers(markers);
 
       final savedPage = await getMoshafLastPage();
       bookmarkedPage = savedPage;

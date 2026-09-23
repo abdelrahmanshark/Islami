@@ -30,6 +30,7 @@ class AppAssets {
   static const String prayTimeBg = "assets/images/pray_time_bg.png";
   static const String azan = 'assets/audio/azan.mp3';
   static const String azkarJson = 'assets/json/azkar.json';
+  static const String msharyJson = 'assets/json/mshary.json';
   static const String sermonsJson = 'assets/data/sermons.json';
   static const String quranStoriesJson =
       'assets/json/sharawe/quran_storys.json';

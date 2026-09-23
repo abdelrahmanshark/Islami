@@ -9,6 +9,8 @@ class SuraDownloadRow extends StatelessWidget {
     required this.suraIndex,
     required this.isSelected,
     required this.isDownloaded,
+    required this.isActiveSura,
+    required this.isPlaying,
     required this.onPlay,
     required this.onToggleSelect,
   });
@@ -18,6 +20,12 @@ class SuraDownloadRow extends StatelessWidget {
 
   final bool isSelected;
   final bool isDownloaded;
+
+  /// Whether this sura is the one currently loaded for playback.
+  final bool isActiveSura;
+
+  /// Whether this sura is actively playing (not paused).
+  final bool isPlaying;
   final VoidCallback onPlay;
   final ValueChanged<bool?> onToggleSelect;
 
@@ -37,6 +45,16 @@ class SuraDownloadRow extends StatelessWidget {
           child: InkWell(
             onTap: onPlay,
             child: SuraBar(index: suraIndex),
+          ),
+        ),
+        IconButton(
+          onPressed: onPlay,
+          icon: Icon(
+            isPlaying ? Icons.pause : Icons.play_arrow_rounded,
+            color: isActiveSura
+                ? AppColors.primaryColor
+                : AppColors.whiteColor,
+            size: 28,
           ),
         ),
         if (isDownloaded)

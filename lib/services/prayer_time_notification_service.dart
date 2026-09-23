@@ -17,6 +17,11 @@ class PrayerTimeNotificationService {
 
   static bool _initialized = false;
 
+  /// Marks the plugin as ready when another service already called initialize.
+  static void markAlreadyInitialized() {
+    _initialized = true;
+  }
+
   /// Initializes the notifications plugin (safe to call from alarm isolate).
   static Future<void> init() async {
     if (_initialized) {

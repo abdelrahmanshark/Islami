@@ -35,10 +35,17 @@ class WeeklyNotificationService {
       'أكثر من الصلاة على النبي، ولا تنسى كهف الجمعة';
 
   /// Initializes the plugin, timezone, and permission, then schedules reminders.
-  static Future<void> initAndSchedule() async {
+  static Future<void> initAndSchedule({
+    DidReceiveNotificationResponseCallback? onNotificationResponse,
+    DidReceiveBackgroundNotificationResponseCallback?
+        onBackgroundNotificationResponse,
+  }) async {
     try {
       await _configureLocalTimeZone();
-      await _initializePlugin();
+      await _initializePlugin(
+        onNotificationResponse: onNotificationResponse,
+        onBackgroundNotificationResponse: onBackgroundNotificationResponse,
+      );
       await _requestPermissions();
       await scheduleWeeklyReminders();
     } catch (e) {
@@ -68,7 +75,11 @@ class WeeklyNotificationService {
   }
 
   /// Sets up flutter_local_notifications for Android and iOS.
-  static Future<void> _initializePlugin() async {
+  static Future<void> _initializePlugin({
+    DidReceiveNotificationResponseCallback? onNotificationResponse,
+    DidReceiveBackgroundNotificationResponseCallback?
+        onBackgroundNotificationResponse,
+  }) async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/launcher_icon');
 
@@ -84,7 +95,12 @@ class WeeklyNotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings: settings);
+    await _plugin.initialize(
+      settings: settings,
+      onDidReceiveNotificationResponse: onNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:
+          onBackgroundNotificationResponse,
+    );
   }
 
   /// Loads IANA zones and sets the device local timezone.

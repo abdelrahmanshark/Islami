@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/downloaded_reciter_summary.dart';
+import 'package:islami/models/quran_resources.dart';
 import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_audio_slider.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_mode_icon_button.dart';
@@ -24,6 +25,14 @@ class DownloadedReciterPlayerCard extends StatelessWidget {
             viewModel.playingReciterId != null &&
             viewModel.playingReciterId == summary.reciterId;
         final bool isReciterPlaying = isReciterOn && viewModel.isPlaying;
+        final int? playingSuraId =
+            isReciterOn ? viewModel.playingSuraId : null;
+        final String? playingSuraName =
+            playingSuraId != null &&
+                    playingSuraId >= 1 &&
+                    playingSuraId <= QuranResources.arabicQuranSuras.length
+                ? QuranResources.arabicQuranSuras[playingSuraId - 1]
+                : null;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -40,7 +49,9 @@ class DownloadedReciterPlayerCard extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 36),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isReciterOn ? 72 : 36,
+                    ),
                     child: Text(
                       summary.reciterName,
                       style: AppStyles.blackBold16,
@@ -65,6 +76,20 @@ class DownloadedReciterPlayerCard extends StatelessWidget {
                           Icons.stop_rounded,
                           color: AppColors.blackColor,
                           size: 28,
+                        ),
+                      ),
+                    ),
+                  // Show current sura name in the top-right corner.
+                  if (playingSuraName != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Text(
+                          playingSuraName,
+                          style: AppStyles.blackBold14,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),

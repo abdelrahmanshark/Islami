@@ -8,18 +8,22 @@ class ReciterDownloadActionsBar extends StatelessWidget {
     super.key,
     required this.selectedCount,
     required this.isDownloading,
+    required this.isDownloadAll,
     required this.progressLabel,
     required this.onDownloadSelected,
     required this.onDownloadAll,
     required this.onCancelDownload,
+    required this.onCancelAllDownloads,
   });
 
   final int selectedCount;
   final bool isDownloading;
+  final bool isDownloadAll;
   final String? progressLabel;
   final VoidCallback onDownloadSelected;
   final VoidCallback onDownloadAll;
   final VoidCallback onCancelDownload;
+  final VoidCallback onCancelAllDownloads;
 
   @override
   Widget build(BuildContext context) {
@@ -67,12 +71,20 @@ class ReciterDownloadActionsBar extends StatelessWidget {
           ),
           if (isDownloading) ...[
             const SizedBox(height: 8),
+            if (progressLabel != null)
+              Text(
+                progressLabel!,
+                style: AppStyles.primaryBold14,
+                textAlign: TextAlign.center,
+              ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (progressLabel != null)
-                  Expanded(
+                if (isDownloadAll)
+                  TextButton(
+                    onPressed: onCancelAllDownloads,
                     child: Text(
-                      progressLabel!,
+                      'إيقاف الكل',
                       style: AppStyles.primaryBold14,
                     ),
                   ),
@@ -83,7 +95,7 @@ class ReciterDownloadActionsBar extends StatelessWidget {
                     color: AppColors.primaryColor,
                   ),
                   label: Text(
-                    'إيقاف التحميل',
+                    isDownloadAll ? 'إيقاف السورة' : 'إيقاف التحميل',
                     style: AppStyles.primaryBold14,
                   ),
                 ),

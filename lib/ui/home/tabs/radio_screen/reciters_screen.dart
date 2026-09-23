@@ -73,6 +73,7 @@ class RecitersScreen extends StatelessWidget {
                   ReciterDownloadActionsBar(
                     selectedCount: downloadVm.selectedCount,
                     isDownloading: downloadVm.isDownloading,
+                    isDownloadAll: downloadVm.isDownloadAll,
                     progressLabel: downloadVm.isDownloading
                         ? 'جاري التحميل ${downloadVm.downloadCompletedCount}/${downloadVm.downloadTotalCount}'
                         : null,
@@ -80,7 +81,10 @@ class RecitersScreen extends StatelessWidget {
                         _downloadSelected(context, downloadVm),
                     onDownloadAll: () =>
                         _confirmDownloadAll(context, downloadVm),
-                    onCancelDownload: downloadVm.cancelDownload,
+                    onCancelDownload: downloadVm.isDownloadAll
+                        ? downloadVm.cancelCurrentSuraDownload
+                        : downloadVm.cancelDownload,
+                    onCancelAllDownloads: downloadVm.cancelAllDownloads,
                   ),
                   const SizedBox(height: 12),
                   SuraSearchBar(
@@ -103,18 +107,27 @@ class RecitersScreen extends StatelessWidget {
                               final int suraIndex =
                                   radioVm.filterSearch[index];
                               final int suraId = suraIndex + 1;
+                              final bool isActiveSura =
+                                  radioVm.selectedReciterId ==
+                                      reciter.id &&
+                                  radioVm.currentSura == suraId;
+                              final bool isPlaying = isActiveSura &&
+                                  radioVm.isReciterPlaying;
                               return SuraDownloadRow(
                                 suraIndex: suraIndex,
                                 isSelected:
                                     downloadVm.isSuraSelected(suraId),
                                 isDownloaded:
                                     downloadVm.isSuraDownloaded(suraId),
+                                isActiveSura: isActiveSura,
+                                isPlaying: isPlaying,
                                 onPlay: () async {
-                                  final bool played =
-                                      await radioVm.playReciterSura(
-                                    reciter,
-                                    suraId,
-                                  );
+                                  final bool played = isActiveSura
+                                      ? await radioVm.playReciter(reciter)
+                                      : await radioVm.playReciterSura(
+                                          reciter,
+                                          suraId,
+                                        );
                                   if (!played && context.mounted) {
                                     showPlaybackFailureSnackBar(context);
                                   }
@@ -163,13 +176,21 @@ class RecitersScreen extends StatelessWidget {
     BuildContext context,
     ReciterDownloadViewModel downloadVm,
   ) async {
+    // Global manager shows the finish snackbar; only warn when nothing starts.
     final int count = await downloadVm.downloadSelected();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_downloadResultMessage(downloadVm, count)),
-      ),
-    );
+    if (count == 0 &&
+        !downloadVm.wasCancelled &&
+        downloadVm.skippedAlreadyDownloadedCount == 0 &&
+        downloadVm.unavailableCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لم يتم تحميل أي سورة')),
+      );
+    } else if (count == 0 && downloadVm.skippedAlreadyDownloadedCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_downloadResultMessage(downloadVm, count))),
+      );
+    }
   }
 
   /// Builds the snackbar text after a download batch finishes.
@@ -254,16 +275,13 @@ class RecitersScreen extends StatelessWidget {
 
     final int count = await downloadVm.downloadAllSuras();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          downloadVm.wasCancelled ||
-                  count > 0 ||
-                  downloadVm.unavailableCount > 0
-              ? _downloadResultMessage(downloadVm, count)
-              : 'لا توجد سور جديدة للتحميل',
-        ),
-      ),
-    );
+    // Finish snackbar is shown by QuranDownloadManager after navigation too.
+    if (count == 0 &&
+        !downloadVm.wasCancelled &&
+        downloadVm.unavailableCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد سور جديدة للتحميل')),
+      );
+    }
   }
 }

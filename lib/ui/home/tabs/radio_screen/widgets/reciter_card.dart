@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +23,12 @@ class ReciterCard extends StatelessWidget {
             provider.selectedReciterId != null &&
             provider.selectedReciterId == reciter.id;
         final isReciterPlaying = isReciterOn && provider.isReciterPlaying;
+        final String? playingSuraName = isReciterOn &&
+                provider.currentSura >= 1 &&
+                provider.currentSura <=
+                    QuranResources.arabicQuranSuras.length
+            ? QuranResources.arabicQuranSuras[provider.currentSura - 1]
+            : null;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -38,7 +45,9 @@ class ReciterCard extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 36),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isReciterOn ? 72 : 36,
+                    ),
                     child: Text(
                       reciter.name ?? '',
                       style: AppStyles.blackBold16,
@@ -63,6 +72,20 @@ class ReciterCard extends StatelessWidget {
                           Icons.stop_rounded,
                           color: AppColors.blackColor,
                           size: 28,
+                        ),
+                      ),
+                    ),
+                  // Show current sura name in the top-right corner.
+                  if (playingSuraName != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Text(
+                          playingSuraName,
+                          style: AppStyles.blackBold14,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),

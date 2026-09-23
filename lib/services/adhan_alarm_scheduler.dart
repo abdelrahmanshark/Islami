@@ -239,7 +239,8 @@ class AdhanAlarmScheduler {
         fajrCallback = prayer.callback;
       }
 
-      if (todayTime.isAfter(now)) {
+      // Keep future prayers, and the prayer still in this minute after refresh.
+      if (_shouldKeepPrayerAlarm(todayTime, now)) {
         result.add((
           id: prayer.id,
           time: todayTime,
@@ -258,6 +259,19 @@ class AdhanAlarmScheduler {
     }
 
     return result;
+  }
+
+  /// True when [prayerTime] is still ahead, or shares the current clock minute.
+  static bool _shouldKeepPrayerAlarm(DateTime prayerTime, DateTime now) {
+    if (prayerTime.isAfter(now)) {
+      return true;
+    }
+
+    return prayerTime.year == now.year &&
+        prayerTime.month == now.month &&
+        prayerTime.day == now.day &&
+        prayerTime.hour == now.hour &&
+        prayerTime.minute == now.minute;
   }
 
   /// Schedules one exact alarm that wakes the device.

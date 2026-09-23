@@ -87,9 +87,11 @@ class QuranAudioDownloadService {
   }
 
   /// Downloads one sura for [reciter] into Music/Islami/Quran/{reciterName}.
+  /// [onProgress] reports bytes received and optional total content length.
   Future<DownloadedAudio> downloadSura({
     required Reciters reciter,
     required int suraId,
+    void Function(int receivedBytes, int? totalBytes)? onProgress,
   }) async {
     final int? reciterId = reciter.id;
     final String? server = reciter.server;
@@ -201,6 +203,7 @@ class QuranAudioDownloadService {
       }
 
       final IOSink sink = tempFile.openWrite();
+      int receivedBytes = 0;
       try {
         await response.stream
             .timeout(
@@ -215,7 +218,11 @@ class QuranAudioDownloadService {
                 );
               },
             )
-            .listen(sink.add)
+            .listen((List<int> chunk) {
+              sink.add(chunk);
+              receivedBytes += chunk.length;
+              onProgress?.call(receivedBytes, contentLength);
+            })
             .asFuture<void>();
       } on http.RequestAbortedException {
         _throwForAbort();
