@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/services/connectivity_monitor.dart';
 import 'package:islami/services/quran_audio_download_service.dart';
@@ -7,6 +8,7 @@ import 'package:islami/ui/home/tabs/radio_screen/view_model/reciter_download_vie
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_card.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_download_actions_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sura_download_row.dart';
+import 'package:islami/ui/home/widgets/active_audio_list_view.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/utils/app_assets.dart';
@@ -98,7 +100,12 @@ class RecitersScreen extends StatelessWidget {
                           style: AppStyles.whiteBold20,
                         )
                       : Expanded(
-                          child: ListView.separated(
+                          child: ActiveAudioListView(
+                            activeIndex: radioVm.activeSuraIndexFor(reciter),
+                            scrollRequested: radioVm.shouldScrollToActive(
+                              ActiveAudioType.reciter,
+                            ),
+                            onScrollHandled: radioVm.onScrolledToActive,
                             padding: const EdgeInsets.symmetric(
                               vertical: 10,
                               horizontal: 12,

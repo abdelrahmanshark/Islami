@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 
 import '../../../../../utils/app_colors.dart';
 
@@ -22,23 +23,26 @@ class ReciterModeIconButton extends StatelessWidget {
 
     return IconButton(
       onPressed: onPressed,
-      icon: SizedBox(
-        width: 32,
-        height: 32,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(icon, color: iconColor, size: 28),
-            if (!isActive)
-              Transform.rotate(
-                angle: -0.8,
-                child: Container(
-                  width: 28,
-                  height: 2,
-                  color: AppColors.blackColor,
+      icon: AnimatedIconSwitcher(
+        child: SizedBox(
+          key: ValueKey(isActive),
+          width: 32,
+          height: 32,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: 28),
+              if (!isActive)
+                Transform.rotate(
+                  angle: -0.8,
+                  child: Container(
+                    width: 28,
+                    height: 2,
+                    color: AppColors.blackColor,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

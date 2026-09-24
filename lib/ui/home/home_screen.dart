@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/home_screen_view_model.dart';
 import 'package:islami/ui/home/widgets/bottom_navigation_bar_Item.dart';
+import 'package:islami/ui/home/widgets/mini_audio_player.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:provider/provider.dart';
 
@@ -24,25 +25,55 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Scaffold(
               resizeToAvoidBottomInset: false,
               body: homeScreenViewModel.tabs[homeScreenViewModel.selectedIndex],
-              bottomNavigationBar: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                currentIndex: homeScreenViewModel.selectedIndex,
-                onTap: (index) {
-                  homeScreenViewModel.updateIndex(index);
-                },
-                items: [
-                  bottomNavBarItem(0, 'مصحف', AppAssets.quranIc,
-                      homeScreenViewModel.selectedIndex),
-                  bottomNavBarItem(1, 'حديث', AppAssets.hadithIc,
-                      homeScreenViewModel.selectedIndex),
-                  bottomNavBarItem(2, 'سبحة', AppAssets.sebhaIc,
-                      homeScreenViewModel.selectedIndex),
-                  bottomNavBarItem(3, 'راديو', AppAssets.radioIc,
-                      homeScreenViewModel.selectedIndex),
-                  bottomNavBarItem(4, 'تحميلات', AppAssets.downloadIc,
-                      homeScreenViewModel.selectedIndex),
-                  bottomNavBarItem(5, 'مواقيت', AppAssets.timeIc,
-                      homeScreenViewModel.selectedIndex),
+              bottomNavigationBar: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const MiniAudioPlayer(),
+                  BottomNavigationBar(
+                    type: BottomNavigationBarType.fixed,
+                    currentIndex: homeScreenViewModel.selectedIndex,
+                    onTap: (index) {
+                      homeScreenViewModel.updateIndex(index);
+                    },
+                    items: [
+                      bottomNavBarItem(
+                        0,
+                        'مصحف',
+                        AppAssets.quranIc,
+                        homeScreenViewModel.selectedIndex,
+                      ),
+                      bottomNavBarItem(
+                        1,
+                        'حديث',
+                        AppAssets.hadithIc,
+                        homeScreenViewModel.selectedIndex,
+                      ),
+                      bottomNavBarItem(
+                        2,
+                        'سبحة',
+                        AppAssets.sebhaIc,
+                        homeScreenViewModel.selectedIndex,
+                      ),
+                      bottomNavBarItem(
+                        3,
+                        'راديو',
+                        AppAssets.radioIc,
+                        homeScreenViewModel.selectedIndex,
+                      ),
+                      bottomNavBarItem(
+                        4,
+                        'تحميلات',
+                        AppAssets.downloadIc,
+                        homeScreenViewModel.selectedIndex,
+                      ),
+                      bottomNavBarItem(
+                        5,
+                        'مواقيت',
+                        AppAssets.timeIc,
+                        homeScreenViewModel.selectedIndex,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

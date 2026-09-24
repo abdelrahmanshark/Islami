@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:islami/models/reciters_response.dart';
+import 'package:islami/providers/app_providers.dart';
 import 'package:islami/services/adhan_alarm_scheduler.dart';
 import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/services/connectivity_monitor.dart';
 import 'package:islami/services/download_notification_service.dart';
 import 'package:islami/services/quran_download_manager.dart';
 import 'package:islami/services/weekly_notification_service.dart';
+import 'package:islami/ui/home/tabs/radio_screen/reciters_screen.dart';
+import 'package:islami/ui/home/tabs/radio_screen/view_model/reciter_download_view_model.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/azkar_view.dart';
 import 'package:islami/ui/home/home_screen.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/moshaf_index_view.dart';
@@ -93,11 +97,7 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: ConnectivityMonitor.instance),
-        ChangeNotifierProvider.value(value: QuranDownloadManager.instance),
-      ],
+    return AppProviders(
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: AppTheme.systemUiOverlayStyle,
         child: MaterialApp(
@@ -107,6 +107,14 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
           routes: {
             AppRoutes.splashRouteName: (context) => const SplashView(),
             AppRoutes.homeRouteName: (context) => HomeScreen(),
+            AppRoutes.recitersRouteName: (context) {
+              final Reciters reciter =
+                  ModalRoute.of(context)!.settings.arguments as Reciters;
+              return ChangeNotifierProvider(
+                create: (_) => ReciterDownloadViewModel(reciter: reciter),
+                child: RecitersScreen(reciter: reciter),
+              );
+            },
             AppRoutes.azkarRouteName: (context) => const AzkarView(),
             AppRoutes.moshafRouteName: (context) {
               final startPage =

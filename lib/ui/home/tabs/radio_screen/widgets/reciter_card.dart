@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/reciters_response.dart';
+import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
+import 'package:islami/ui/home/widgets/playback_speed_button.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../utils/app_colors.dart';
@@ -23,10 +25,10 @@ class ReciterCard extends StatelessWidget {
             provider.selectedReciterId != null &&
             provider.selectedReciterId == reciter.id;
         final isReciterPlaying = isReciterOn && provider.isReciterPlaying;
-        final String? playingSuraName = isReciterOn &&
+        final String? playingSuraName =
+            isReciterOn &&
                 provider.currentSura >= 1 &&
-                provider.currentSura <=
-                    QuranResources.arabicQuranSuras.length
+                provider.currentSura <= QuranResources.arabicQuranSuras.length
             ? QuranResources.arabicQuranSuras[provider.currentSura - 1]
             : null;
 
@@ -91,66 +93,82 @@ class ReciterCard extends StatelessWidget {
                     ),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isReciterOn)
-                    ReciterModeIconButton(
-                      icon: Icons.repeat_one_rounded,
-                      isActive: provider.isRepeatEnabled,
-                      onPressed: provider.toggleRepeat,
+              // Shrinks the buttons on narrow screens instead of overflowing.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isReciterOn)
+                      ReciterModeIconButton(
+                        icon: Icons.repeat_one_rounded,
+                        isActive: provider.isRepeatEnabled,
+                        onPressed: provider.toggleRepeat,
+                      ),
+                    IconButton(
+                      onPressed: () async {
+                        final bool played = await provider.recitersBack(
+                          reciter,
+                        );
+                        if (!played && context.mounted) {
+                          showPlaybackFailureSnackBar(context);
+                        }
+                      },
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.skip_previous_rounded,
+                        color: AppColors.blackColor,
+                        size: 36,
+                      ),
                     ),
-                  IconButton(
-                    onPressed: () async {
-                      final bool played = await provider.recitersBack(reciter);
-                      if (!played && context.mounted) {
-                        showPlaybackFailureSnackBar(context);
-                      }
-                    },
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.skip_previous_rounded,
-                      color: AppColors.blackColor,
-                      size: 36,
+                    IconButton(
+                      onPressed: () async {
+                        final bool played = await provider.playReciter(reciter);
+                        if (!played && context.mounted) {
+                          showPlaybackFailureSnackBar(context);
+                        }
+                      },
+                      visualDensity: VisualDensity.compact,
+                      icon: AnimatedIconSwitcher(
+                        child: Icon(
+                          isReciterPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow_rounded,
+                          key: ValueKey(isReciterPlaying),
+                          color: AppColors.blackColor,
+                          size: 40,
+                        ),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () async {
-                      final bool played = await provider.playReciter(reciter);
-                      if (!played && context.mounted) {
-                        showPlaybackFailureSnackBar(context);
-                      }
-                    },
-                    visualDensity: VisualDensity.compact,
-                    icon: Icon(
-                      isReciterPlaying
-                          ? Icons.pause
-                          : Icons.play_arrow_rounded,
-                      color: AppColors.blackColor,
-                      size: 40,
+                    IconButton(
+                      onPressed: () async {
+                        final bool played = await provider.recitersNext(
+                          reciter,
+                        );
+                        if (!played && context.mounted) {
+                          showPlaybackFailureSnackBar(context);
+                        }
+                      },
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.skip_next_rounded,
+                        color: AppColors.blackColor,
+                        size: 36,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () async {
-                      final bool played = await provider.recitersNext(reciter);
-                      if (!played && context.mounted) {
-                        showPlaybackFailureSnackBar(context);
-                      }
-                    },
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.skip_next_rounded,
-                      color: AppColors.blackColor,
-                      size: 36,
-                    ),
-                  ),
-                  if (isReciterOn)
-                    ReciterModeIconButton(
-                      icon: Icons.playlist_play_rounded,
-                      isActive: provider.isAutoNextEnabled,
-                      onPressed: provider.toggleAutoNext,
-                    ),
-                ],
+                    if (isReciterOn)
+                      ReciterModeIconButton(
+                        icon: Icons.playlist_play_rounded,
+                        isActive: provider.isAutoNextEnabled,
+                        onPressed: provider.toggleAutoNext,
+                      ),
+                    if (isReciterOn)
+                      PlaybackSpeedButton(
+                        label: provider.playbackSpeedLabel,
+                        onPressed: provider.cyclePlaybackSpeed,
+                      ),
+                  ],
+                ),
               ),
               if (isReciterOn) const ReciterAudioSlider(),
             ],

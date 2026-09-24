@@ -4,16 +4,15 @@ import 'package:islami/models/quran_resources.dart';
 import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_audio_slider.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_mode_icon_button.dart';
+import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
+import 'package:islami/ui/home/widgets/playback_speed_button.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
 /// Compact player card for a downloaded reciter (no radio card backgrounds).
 class DownloadedReciterPlayerCard extends StatelessWidget {
-  const DownloadedReciterPlayerCard({
-    super.key,
-    required this.summary,
-  });
+  const DownloadedReciterPlayerCard({super.key, required this.summary});
 
   final DownloadedReciterSummary summary;
 
@@ -25,14 +24,13 @@ class DownloadedReciterPlayerCard extends StatelessWidget {
             viewModel.playingReciterId != null &&
             viewModel.playingReciterId == summary.reciterId;
         final bool isReciterPlaying = isReciterOn && viewModel.isPlaying;
-        final int? playingSuraId =
-            isReciterOn ? viewModel.playingSuraId : null;
+        final int? playingSuraId = isReciterOn ? viewModel.playingSuraId : null;
         final String? playingSuraName =
             playingSuraId != null &&
-                    playingSuraId >= 1 &&
-                    playingSuraId <= QuranResources.arabicQuranSuras.length
-                ? QuranResources.arabicQuranSuras[playingSuraId - 1]
-                : null;
+                playingSuraId >= 1 &&
+                playingSuraId <= QuranResources.arabicQuranSuras.length
+            ? QuranResources.arabicQuranSuras[playingSuraId - 1]
+            : null;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -95,51 +93,63 @@ class DownloadedReciterPlayerCard extends StatelessWidget {
                     ),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isReciterOn)
-                    ReciterModeIconButton(
-                      icon: Icons.repeat_one_rounded,
-                      isActive: viewModel.isRepeatEnabled,
-                      onPressed: viewModel.toggleRepeat,
+              // Shrinks the buttons on narrow screens instead of overflowing.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isReciterOn)
+                      ReciterModeIconButton(
+                        icon: Icons.repeat_one_rounded,
+                        isActive: viewModel.isRepeatEnabled,
+                        onPressed: viewModel.toggleRepeat,
+                      ),
+                    IconButton(
+                      onPressed: viewModel.playPreviousDownload,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.skip_previous_rounded,
+                        color: AppColors.blackColor,
+                        size: 36,
+                      ),
                     ),
-                  IconButton(
-                    onPressed: viewModel.playPreviousDownload,
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.skip_previous_rounded,
-                      color: AppColors.blackColor,
-                      size: 36,
+                    IconButton(
+                      onPressed: viewModel.playSelectedReciter,
+                      visualDensity: VisualDensity.compact,
+                      icon: AnimatedIconSwitcher(
+                        child: Icon(
+                          isReciterPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow_rounded,
+                          key: ValueKey(isReciterPlaying),
+                          color: AppColors.blackColor,
+                          size: 40,
+                        ),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: viewModel.playSelectedReciter,
-                    visualDensity: VisualDensity.compact,
-                    icon: Icon(
-                      isReciterPlaying
-                          ? Icons.pause
-                          : Icons.play_arrow_rounded,
-                      color: AppColors.blackColor,
-                      size: 40,
+                    IconButton(
+                      onPressed: viewModel.playNextDownload,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.skip_next_rounded,
+                        color: AppColors.blackColor,
+                        size: 36,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: viewModel.playNextDownload,
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(
-                      Icons.skip_next_rounded,
-                      color: AppColors.blackColor,
-                      size: 36,
-                    ),
-                  ),
-                  if (isReciterOn)
-                    ReciterModeIconButton(
-                      icon: Icons.playlist_play_rounded,
-                      isActive: viewModel.isAutoNextEnabled,
-                      onPressed: viewModel.toggleAutoNext,
-                    ),
-                ],
+                    if (isReciterOn)
+                      ReciterModeIconButton(
+                        icon: Icons.playlist_play_rounded,
+                        isActive: viewModel.isAutoNextEnabled,
+                        onPressed: viewModel.toggleAutoNext,
+                      ),
+                    if (isReciterOn)
+                      PlaybackSpeedButton(
+                        label: viewModel.playbackSpeedLabel,
+                        onPressed: viewModel.cyclePlaybackSpeed,
+                      ),
+                  ],
+                ),
               ),
               if (isReciterOn) const DownloadedAudioSlider(),
             ],

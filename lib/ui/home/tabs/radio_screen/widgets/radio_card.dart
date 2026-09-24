@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/radio_response.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
+import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -18,9 +19,6 @@ class RadioCard extends StatelessWidget {
         final bool isRadioOn =
             provider.selectedRadioId != null &&
             provider.selectedRadioId == radio.id;
-        final bool isSoundON =
-            provider.selectedRadioForSoundId == null ||
-            provider.selectedRadioForSoundId != radio.id;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -54,21 +52,13 @@ class RadioCard extends StatelessWidget {
                       }
                     },
                     visualDensity: VisualDensity.compact,
-                    icon: Icon(
-                      isRadioOn ? Icons.pause : Icons.play_arrow_rounded,
-                      color: AppColors.blackColor,
-                      size: 40,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      provider.muteSound(radio);
-                    },
-                    visualDensity: VisualDensity.compact,
-                    icon: Icon(
-                      isSoundON ? Icons.volume_up : Icons.volume_off,
-                      color: AppColors.blackColor,
-                      size: 32,
+                    icon: AnimatedIconSwitcher(
+                      child: Icon(
+                        isRadioOn ? Icons.pause : Icons.play_arrow_rounded,
+                        key: ValueKey(isRadioOn),
+                        color: AppColors.blackColor,
+                        size: 40,
+                      ),
                     ),
                   ),
                 ],

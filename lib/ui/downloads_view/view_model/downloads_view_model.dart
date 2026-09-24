@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:islami/data/quran_download/downloaded_audio_repository.dart';
 import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
+import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/models/downloaded_reciter_summary.dart';
 import 'package:islami/models/quran_resources.dart';
@@ -13,6 +14,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
 /// State for the Downloads tab (reciters with offline surahs).
+///
+/// Lives for the whole app; the tab calls [onTabOpened] to load downloads.
 class DownloadsViewModel extends ChangeNotifier {
   DownloadsViewModel({
     DownloadedAudioRepository? downloadedAudioRepository,
@@ -20,7 +23,7 @@ class DownloadsViewModel extends ChangeNotifier {
             downloadedAudioRepository ?? DownloadedAudioRepositoryImpl() {
     _restorePlaybackState();
     _listenForPlayerState();
-    loadDownloads();
+    _audioService.addListener(_onActiveAudioChanged);
   }
 
   final DownloadedAudioRepository _downloadedAudioRepository;
@@ -42,6 +45,9 @@ class DownloadsViewModel extends ChangeNotifier {
   /// Sura currently selected for offline playback.
   int? playingSuraId;
 
+  /// Reciter name of the playing offline sura (for the mini player title).
+  String playingReciterName = '';
+
   /// Whether the selected offline sura is actively playing.
   bool isPlaying = false;
 
@@ -51,8 +57,63 @@ class DownloadsViewModel extends ChangeNotifier {
   /// Auto-play next downloaded sura when the current one ends.
   bool isAutoNextEnabled = false;
 
+  // Set by a mini player tap; cleared once the sura list scrolled.
+  bool _scrollToPlayingPending = false;
+
   /// Shared audio player used by the downloads player card.
   AudioPlayer get player => _audioService.player;
+
+  /// Title of the playing offline sura, shown in the mini player.
+  String get playingAudioTitle {
+    final int? suraId = playingSuraId;
+    if (suraId == null) return '';
+    return 'سورة ${_suraTitle(suraId)} - $playingReciterName';
+  }
+
+  /// Called each time the Downloads tab opens: re-reads settings shared with
+  /// the Radio tab and reloads files (new ones may come from the Radio tab).
+  Future<void> onTabOpened() async {
+    isRepeatEnabled = _audioService.isRepeatEnabled;
+    isAutoNextEnabled = _audioService.isAutoNextEnabled;
+    await loadDownloads();
+  }
+
+  /// Opens the reciter whose offline sura is playing (mini player tap),
+  /// then asks the sura list to scroll to the playing sura.
+  /// The reciter is only reopened when the playing sura is not already listed.
+  void showPlayingReciter() {
+    final int? reciterId = playingReciterId;
+    if (reciterId == null) return;
+    final bool isPlayingSuraListed =
+        selectedReciter?.reciterId == reciterId && playingSuraIndex != null;
+    if (!isPlayingSuraListed) {
+      for (final DownloadedReciterSummary summary
+          in buildReciterSummaries(_allDownloads)) {
+        if (summary.reciterId == reciterId) {
+          selectedReciter = summary;
+          _applySelectedReciter(reciterId);
+          break;
+        }
+      }
+    }
+    _scrollToPlayingPending = true;
+    notifyListeners();
+  }
+
+  /// True when the sura list should scroll to the playing sura.
+  bool get shouldScrollToPlaying => _scrollToPlayingPending;
+
+  /// Called by the sura list once it scrolled to the playing sura.
+  void onScrolledToPlaying() {
+    _scrollToPlayingPending = false;
+  }
+
+  /// Index of the playing sura in [filteredSuras] (matched by reciter/sura id).
+  int? get playingSuraIndex {
+    final int index = filteredSuras.indexWhere(isSelectedDownload);
+    if (index < 0) return null;
+    return index;
+  }
 
   /// Loads valid downloads and builds the reciter list.
   Future<void> loadDownloads() async {
@@ -143,9 +204,19 @@ class DownloadsViewModel extends ChangeNotifier {
       await _startDownload(download);
     } catch (e) {
       log(e.toString());
+      _clearPlayingSelection();
+    }
+    notifyListeners();
+  }
+
+  /// Pauses or resumes the playing offline sura (mini player button).
+  Future<void> togglePlayback() async {
+    if (playingSuraId == null) return;
+    if (isPlaying) {
+      await player.pause();
       isPlaying = false;
-      playingReciterId = null;
-      playingSuraId = null;
+    } else {
+      isPlaying = await _audioService.play();
     }
     notifyListeners();
   }
@@ -158,14 +229,7 @@ class DownloadsViewModel extends ChangeNotifier {
     final bool isSameReciter = playingReciterId == reciterId;
 
     if (isSameReciter && playingSuraId != null) {
-      if (isPlaying) {
-        await player.pause();
-        isPlaying = false;
-      } else {
-        final bool started = await _audioService.play();
-        isPlaying = started;
-      }
-      notifyListeners();
+      await togglePlayback();
       return;
     }
 
@@ -230,13 +294,19 @@ class DownloadsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cycles playback speed: 1x → 1.25x → 1.5x → 2x → 1x.
+  Future<void> cyclePlaybackSpeed() async {
+    await _audioService.cyclePlaybackSpeed();
+    notifyListeners();
+  }
+
+  /// Current speed label for the speed button, e.g. "1.5x".
+  String get playbackSpeedLabel => _audioService.playbackSpeedLabel;
+
   /// Stops playback and clears the downloads selection.
   Future<void> stopPlayback() async {
     await player.stop();
-    isPlaying = false;
-    playingReciterId = null;
-    playingSuraId = null;
-    _audioService.selectedReciterId = null;
+    _clearPlayingSelection();
     notifyListeners();
   }
 
@@ -275,10 +345,7 @@ class DownloadsViewModel extends ChangeNotifier {
       // Stop playback if this track is currently playing.
       if (isSelectedDownload(download)) {
         await player.stop();
-        isPlaying = false;
-        playingReciterId = null;
-        playingSuraId = null;
-        _audioService.selectedReciterId = null;
+        _clearPlayingSelection();
       }
 
       await _downloadedAudioRepository.removeDownload(
@@ -324,10 +391,7 @@ class DownloadsViewModel extends ChangeNotifier {
       for (final DownloadedAudio download in toDelete) {
         if (isSelectedDownload(download)) {
           await player.stop();
-          isPlaying = false;
-          playingReciterId = null;
-          playingSuraId = null;
-          _audioService.selectedReciterId = null;
+          _clearPlayingSelection();
         }
 
         await _downloadedAudioRepository.removeDownload(
@@ -372,6 +436,7 @@ class DownloadsViewModel extends ChangeNotifier {
         ),
       ),
     );
+    await _audioService.applyPlaybackSpeed();
 
     // Clear other audio modes so only this download is active.
     _audioService.selectedRadioId = null;
@@ -383,9 +448,36 @@ class DownloadsViewModel extends ChangeNotifier {
 
     playingReciterId = download.reciterId;
     playingSuraId = download.suraId;
+    playingReciterName = download.reciterName;
+    _audioService.setActiveAudioType(ActiveAudioType.download);
 
     final bool started = await _audioService.play();
     isPlaying = started;
+  }
+
+  /// Clears the offline play selection and hides the mini player.
+  void _clearPlayingSelection() {
+    isPlaying = false;
+    playingReciterId = null;
+    playingSuraId = null;
+    playingReciterName = '';
+    _audioService.selectedReciterId = null;
+    if (_audioService.activeAudioType == ActiveAudioType.download) {
+      _audioService.setActiveAudioType(null);
+    }
+  }
+
+  /// Clears the downloads selection when Radio-tab audio starts playing.
+  void _onActiveAudioChanged() {
+    final ActiveAudioType? activeType = _audioService.activeAudioType;
+    if (activeType == null || activeType == ActiveAudioType.download) return;
+    if (playingReciterId == null && playingSuraId == null) return;
+
+    isPlaying = false;
+    playingReciterId = null;
+    playingSuraId = null;
+    playingReciterName = '';
+    notifyListeners();
   }
 
   /// Finds next or previous downloaded sura for the playing reciter.
@@ -426,8 +518,11 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Restores play selection from the shared audio service.
   void _restorePlaybackState() {
-    playingReciterId = _audioService.selectedReciterId;
-    playingSuraId = _audioService.currentSura;
+    // selectedReciterId is shared with online reciters; restore only downloads.
+    if (_audioService.activeAudioType == ActiveAudioType.download) {
+      playingReciterId = _audioService.selectedReciterId;
+      playingSuraId = _audioService.currentSura;
+    }
     isPlaying = playingReciterId != null && player.playing;
     isRepeatEnabled = _audioService.isRepeatEnabled;
     isAutoNextEnabled = _audioService.isAutoNextEnabled;
@@ -477,6 +572,7 @@ class DownloadsViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _playerStateSubscription?.cancel();
+    _audioService.removeListener(_onActiveAudioChanged);
     super.dispose();
   }
 }

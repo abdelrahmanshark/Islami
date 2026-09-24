@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/utils/app_messenger.dart';
 import 'package:just_audio/just_audio.dart';
@@ -9,13 +11,32 @@ enum PlaybackBlockReason {
 
 /// Shared app audio player. Keep [handleInterruptions] enabled so Quran /
 /// lectures pause on phone calls / other apps and resume when focus returns.
-class AudioPlayerService {
+///
+/// Also notifies listeners when [activeAudioType] changes (drives the mini player).
+class AudioPlayerService extends ChangeNotifier {
   AudioPlayerService._();
 
   static final AudioPlayerService instance = AudioPlayerService._();
 
   /// just_audio pauses on interruption and resumes when appropriate.
   final AudioPlayer player = AudioPlayer();
+
+  /// Which audio is selected in [player]; null means nothing is active.
+  ActiveAudioType? activeAudioType;
+
+  /// Last non-null [activeAudioType]. Keeps the right mini player mounted
+  /// so it can animate out after the audio stops.
+  ActiveAudioType? lastActiveAudioType;
+
+  /// Updates [activeAudioType] and notifies listeners only when it changes.
+  void setActiveAudioType(ActiveAudioType? type) {
+    if (activeAudioType == type) return;
+    activeAudioType = type;
+    if (type != null) {
+      lastActiveAudioType = type;
+    }
+    notifyListeners();
+  }
 
   /// Set when [ensureCanPlay] blocks because of an active call.
   PlaybackBlockReason? lastBlockReason;
@@ -30,6 +51,30 @@ class AudioPlayerService {
   int currentSura = 1;
   bool isRepeatEnabled = false;
   bool isAutoNextEnabled = false;
+
+  static const List<double> _playbackSpeeds = [1.0, 1.25, 1.5, 2.0];
+
+  /// Cycles playback speed: 1x → 1.25x → 1.5x → 2x → 1x, and applies it.
+  Future<void> cyclePlaybackSpeed() async {
+    final int currentIndex = _playbackSpeeds.indexOf(playbackSpeed);
+    final int nextIndex =
+        currentIndex < 0 ? 0 : (currentIndex + 1) % _playbackSpeeds.length;
+    playbackSpeed = _playbackSpeeds[nextIndex];
+    await applyPlaybackSpeed();
+  }
+
+  /// Applies the chosen [playbackSpeed] to the player.
+  Future<void> applyPlaybackSpeed() async {
+    await player.setSpeed(playbackSpeed);
+  }
+
+  /// Label for the speed buttons, e.g. "1x" or "1.25x".
+  String get playbackSpeedLabel {
+    if (playbackSpeed == playbackSpeed.roundToDouble()) {
+      return '${playbackSpeed.toInt()}x';
+    }
+    return '${playbackSpeed}x';
+  }
 
   /// Returns false and shows a snackbar when a phone call is active.
   Future<bool> ensureCanPlay() async {

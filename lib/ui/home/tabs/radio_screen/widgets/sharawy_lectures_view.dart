@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:islami/models/active_audio_type.dart';
+import 'package:islami/ui/home/widgets/active_audio_list_view.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_lecture_card.dart';
@@ -67,13 +69,18 @@ class SharawyLecturesView extends StatelessWidget {
                       style: AppStyles.whiteBold20,
                     ),
                   )
-                : ListView.builder(
+                : ActiveAudioListView(
                     itemBuilder: (context, index) {
                       return SharawyLectureCard(
                         lecture: provider.filteredSharawyLectures[index],
                       );
                     },
                     itemCount: provider.filteredSharawyLectures.length,
+                    activeIndex: provider.activeSharawyLectureIndex,
+                    scrollRequested: provider.shouldScrollToActive(
+                      ActiveAudioType.sharawy,
+                    ),
+                    onScrollHandled: provider.onScrolledToActive,
                   ),
           ),
         ],

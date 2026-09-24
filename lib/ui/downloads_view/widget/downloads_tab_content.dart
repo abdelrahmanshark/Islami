@@ -4,6 +4,7 @@ import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_reciter_card.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_reciter_player_card.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_sura_row.dart';
+import 'package:islami/ui/home/widgets/active_audio_list_view.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 
@@ -88,7 +89,10 @@ class DownloadsTabContent extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: ListView.separated(
+          child: ActiveAudioListView(
+            activeIndex: viewModel.playingSuraIndex,
+            scrollRequested: viewModel.shouldScrollToPlaying,
+            onScrollHandled: viewModel.onScrolledToPlaying,
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
             itemCount: viewModel.filteredSuras.length,
             itemBuilder: (context, index) {

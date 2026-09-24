@@ -173,7 +173,8 @@ class WeeklyNotificationService {
       body: body,
       scheduledDate: scheduledDate,
       notificationDetails: details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      // Inexact works without the exact-alarm permission; a few minutes late is fine.
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
 

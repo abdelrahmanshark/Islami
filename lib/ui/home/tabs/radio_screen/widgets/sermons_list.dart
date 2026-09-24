@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:islami/models/active_audio_type.dart';
+import 'package:islami/ui/home/widgets/active_audio_list_view.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sermon_card.dart';
@@ -41,11 +43,16 @@ class SermonsList extends StatelessWidget {
                 textDirection: TextDirection.rtl,
               ),
               Expanded(
-                child: ListView.builder(
+                child: ActiveAudioListView(
                   itemBuilder: (context, index) {
                     return SermonCard(sermon: provider.filteredSermons[index]);
                   },
                   itemCount: provider.filteredSermons.length,
+                  activeIndex: provider.activeSermonIndex,
+                  scrollRequested: provider.shouldScrollToActive(
+                    ActiveAudioType.sermon,
+                  ),
+                  onScrollHandled: provider.onScrolledToActive,
                 ),
               ),
             ],

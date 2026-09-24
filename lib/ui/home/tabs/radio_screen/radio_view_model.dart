@@ -8,6 +8,7 @@ import 'package:islami/data/sermons/sermons_local_data_source.dart';
 import 'package:islami/data/sharawy/sharawy_local_data_source.dart';
 import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/domain/repositories/radio_repository.dart';
+import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/models/quran_story.dart';
 import 'package:islami/models/radio_response.dart';
@@ -43,6 +44,7 @@ class RadioViewModel extends ChangeNotifier {
     getSermons();
     getSharawyCategories();
     _listenForReciterCompletion();
+    _audioService.addListener(_onActiveAudioChanged);
   }
 
   final RadioRepository _radioRepository;
@@ -51,8 +53,6 @@ class RadioViewModel extends ChangeNotifier {
   final DownloadedAudioRepository _downloadedAudioRepository;
   final AudioPlayerService _audioService = AudioPlayerService.instance;
   StreamSubscription<PlayerState>? _playerStateSubscription;
-
-  static const List<double> _playbackSpeeds = [1.0, 1.25, 1.5, 2.0];
 
   List<int> filterSearch = List.generate(114, (index) => index);
   bool radioIsLoading = false;
@@ -90,7 +90,6 @@ class RadioViewModel extends ChangeNotifier {
   int? selectedReciterId; // source of truth for playing reciter
   String? selectedSermonAudioUrl; // source of truth for playing sermon
   String? selectedSharawyAudioUrl; // source of truth for playing sha'rawy
-  double playbackSpeed = 1.0;
   int currentSura = 1;
   late final player = _audioService.player;
   int toggleSwitchIndex = 0;
@@ -98,14 +97,24 @@ class RadioViewModel extends ChangeNotifier {
   bool isAutoNextEnabled = false;
   bool isReciterPlaying = false; // drives play/pause icon on reciter cards
 
+  // Where the playing Sha'rawy lecture lives, so the mini player can reopen it.
+  SharawyCategory? _playingSharawyCategory;
+  SharawyPillar? _playingSharawyPillar;
+  QuranStorySection? _playingSharawySection;
+
+  // Audio type whose list should scroll to its playing card (mini player tap).
+  ActiveAudioType? _pendingScrollType;
+
   // Restore ids from the singleton so UI survives leaving the Radio tab.
   void _restorePlaybackState() {
-    selectedRadioId = _audioService.selectedRadioId;
+    // A playing download also uses selectedReciterId, so skip it here.
+    if (_audioService.activeAudioType != ActiveAudioType.download) {
+      selectedRadioId = _audioService.selectedRadioId;
+      selectedReciterId = _audioService.selectedReciterId;
+      selectedSermonAudioUrl = _audioService.selectedSermonAudioUrl;
+      selectedSharawyAudioUrl = _audioService.selectedSharawyAudioUrl;
+    }
     selectedRadioForSoundId = _audioService.selectedRadioForSoundId;
-    selectedReciterId = _audioService.selectedReciterId;
-    selectedSermonAudioUrl = _audioService.selectedSermonAudioUrl;
-    selectedSharawyAudioUrl = _audioService.selectedSharawyAudioUrl;
-    playbackSpeed = _audioService.playbackSpeed;
     currentSura = _audioService.currentSura;
     isRepeatEnabled = _audioService.isRepeatEnabled;
     isAutoNextEnabled = _audioService.isAutoNextEnabled;
@@ -113,11 +122,53 @@ class RadioViewModel extends ChangeNotifier {
         selectedReciterId != null && _audioService.player.playing;
   }
 
+  // Tells the shared service which Radio-tab audio is active (drives the mini player).
+  void _syncActiveAudioType() {
+    ActiveAudioType? type;
+    if (selectedRadioId != null) {
+      type = ActiveAudioType.radio;
+    } else if (selectedReciterId != null) {
+      type = ActiveAudioType.reciter;
+    } else if (selectedSermonAudioUrl != null) {
+      type = ActiveAudioType.sermon;
+    } else if (selectedSharawyAudioUrl != null) {
+      type = ActiveAudioType.sharawy;
+    }
+    // Nothing selected here: do not clear a download owned by the Downloads tab.
+    if (type == null &&
+        _audioService.activeAudioType == ActiveAudioType.download) {
+      return;
+    }
+    _audioService.setActiveAudioType(type);
+  }
+
+  // Clears the Radio-tab selection when a downloaded sura starts playing.
+  void _onActiveAudioChanged() {
+    if (_audioService.activeAudioType != ActiveAudioType.download) return;
+    final bool hasSelection = selectedRadioId != null ||
+        selectedReciterId != null ||
+        selectedSermonAudioUrl != null ||
+        selectedSharawyAudioUrl != null;
+    if (!hasSelection) return;
+
+    selectedRadio = null;
+    selectedRadioId = null;
+    selectedReciter = null;
+    selectedReciterId = null;
+    isReciterPlaying = false;
+    selectedSermon = null;
+    selectedSermonAudioUrl = null;
+    selectedSharawyLecture = null;
+    selectedSharawyAudioUrl = null;
+    notifyListeners();
+  }
+
   // Persist radio play selection on the singleton.
   void _setSelectedRadio(Radios? radio) {
     selectedRadio = radio;
     selectedRadioId = radio?.id;
     _audioService.selectedRadioId = radio?.id;
+    _syncActiveAudioType();
   }
 
   // Persist mute selection on the singleton.
@@ -135,6 +186,7 @@ class RadioViewModel extends ChangeNotifier {
     if (reciter == null) {
       isReciterPlaying = false;
     }
+    _syncActiveAudioType();
   }
 
   // Persist sermon play selection on the singleton.
@@ -142,6 +194,7 @@ class RadioViewModel extends ChangeNotifier {
     selectedSermon = sermon;
     selectedSermonAudioUrl = sermon?.audioUrl;
     _audioService.selectedSermonAudioUrl = sermon?.audioUrl;
+    _syncActiveAudioType();
   }
 
   // Persist sha'rawy play selection on the singleton.
@@ -149,18 +202,156 @@ class RadioViewModel extends ChangeNotifier {
     selectedSharawyLecture = lecture;
     selectedSharawyAudioUrl = lecture?.mp3Url;
     _audioService.selectedSharawyAudioUrl = lecture?.mp3Url;
+    _syncActiveAudioType();
+  }
+
+  /// Called each time the Radio tab opens. Its search bars start empty, so
+  /// show full lists again, and re-read settings shared with the Downloads tab.
+  /// Does not notify because it runs right before the tab builds.
+  void onTabOpened() {
+    filteredRadios = radios;
+    filteredReciters = reciters;
+    filteredSermons = sermons;
+    filteredSharawyCategories = sharawyCategories;
+    filteredSharawyPillars = sharawyPillars;
+    filteredSharawySections = sharawySections;
+    filteredSharawyLectures = sharawyLectures;
+    isRepeatEnabled = _audioService.isRepeatEnabled;
+    isAutoNextEnabled = _audioService.isAutoNextEnabled;
+  }
+
+  /// Arabic name of [currentSura], e.g. "سورة الفاتحة".
+  String get currentSuraName {
+    if (currentSura < 1 || currentSura > QuranResources.arabicQuranSuras.length) {
+      return 'سورة $currentSura';
+    }
+    return 'سورة ${QuranResources.arabicQuranSuras[currentSura - 1]}';
+  }
+
+  /// Title of the selected Radio-tab audio, shown in the mini player.
+  String get activeAudioTitle {
+    if (selectedRadio != null) {
+      return selectedRadio!.name ?? 'راديو';
+    }
+    if (selectedReciter != null) {
+      return '$currentSuraName - ${selectedReciter!.name ?? ''}';
+    }
+    if (selectedSermon != null) {
+      return selectedSermon!.titleAr;
+    }
+    if (selectedSharawyLecture != null) {
+      return selectedSharawyLecture!.title;
+    }
+    return '';
+  }
+
+  /// Opens the Radio-tab segment that holds the active audio (mini player tap),
+  /// then asks its list to scroll to the playing card.
+  /// Each level is skipped when it is already showing.
+  Future<void> showActiveAudio() async {
+    final ActiveAudioType? activeType = _audioService.activeAudioType;
+    if (activeType == ActiveAudioType.radio) {
+      await _openToggleIndex(0);
+    } else if (activeType == ActiveAudioType.reciter) {
+      resetSuraSearch();
+      await _openToggleIndex(1);
+    } else if (activeType == ActiveAudioType.sermon) {
+      await _openToggleIndex(2);
+    } else if (activeType == ActiveAudioType.sharawy) {
+      await _openToggleIndex(3);
+      await _openPlayingSharawySection();
+      // No lectures list to scroll (the playing section is unknown).
+      if (selectedSharawySection == null) return;
+    } else {
+      return;
+    }
+    _pendingScrollType = activeType;
+    notifyListeners();
+  }
+
+  // Switches the segment only when needed, then waits until it is built.
+  Future<void> _openToggleIndex(int index) async {
+    if (toggleSwitchIndex == index) return;
+    changeToggleIndex(index);
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
+  /// True when the list of [type] audio should scroll to its playing card.
+  bool shouldScrollToActive(ActiveAudioType type) {
+    return _pendingScrollType == type;
+  }
+
+  /// Called by the list once it scrolled to the playing card.
+  void onScrolledToActive() {
+    _pendingScrollType = null;
+  }
+
+  /// Index of the playing radio in [filteredRadios] (matched by API id).
+  int? get activeRadioIndex {
+    if (selectedRadioId == null) return null;
+    return _indexOrNull(
+      filteredRadios.indexWhere((radio) => radio.id == selectedRadioId),
+    );
+  }
+
+  /// Index of the playing sermon in [filteredSermons] (matched by audio url).
+  int? get activeSermonIndex {
+    if (selectedSermonAudioUrl == null) return null;
+    return _indexOrNull(
+      filteredSermons.indexWhere(
+        (sermon) => sermon.audioUrl == selectedSermonAudioUrl,
+      ),
+    );
+  }
+
+  /// Index of the playing lecture in [filteredSharawyLectures] (by mp3 url).
+  int? get activeSharawyLectureIndex {
+    if (selectedSharawyAudioUrl == null) return null;
+    return _indexOrNull(
+      filteredSharawyLectures.indexWhere(
+        (lecture) => lecture.mp3Url == selectedSharawyAudioUrl,
+      ),
+    );
+  }
+
+  /// Index of the playing sura in [filterSearch] when [reciter] is playing.
+  int? activeSuraIndexFor(Reciters reciter) {
+    if (selectedReciterId == null || selectedReciterId != reciter.id) {
+      return null;
+    }
+    return _indexOrNull(filterSearch.indexOf(currentSura - 1));
+  }
+
+  // indexWhere / indexOf return -1 when not found; use null instead.
+  int? _indexOrNull(int index) {
+    if (index < 0) return null;
+    return index;
+  }
+
+  // Reopens category → (pillar) → section of the playing Sha'rawy lecture.
+  Future<void> _openPlayingSharawySection() async {
+    final SharawyCategory? category = _playingSharawyCategory;
+    final QuranStorySection? section = _playingSharawySection;
+    if (category == null || section == null) return;
+    // Already inside the section that holds the playing lecture.
+    final bool isSectionOpen = selectedSharawySection != null &&
+        sharawyLectures.any(
+          (lecture) => lecture.mp3Url == selectedSharawyAudioUrl,
+        );
+    if (isSectionOpen) return;
+
+    await openSharawyCategory(category);
+    final SharawyPillar? pillar = _playingSharawyPillar;
+    if (pillar != null) {
+      openSharawyPillar(pillar);
+    }
+    openSharawySection(section);
   }
 
   // Persist current sura on the singleton.
   void _setCurrentSura(int sura) {
     currentSura = sura;
     _audioService.currentSura = sura;
-  }
-
-  // Persist playback speed on the singleton.
-  void _setPlaybackSpeed(double speed) {
-    playbackSpeed = speed;
-    _audioService.playbackSpeed = speed;
   }
 
   // Called when user picks a sura for the current reciter.
@@ -204,6 +395,7 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
+      await _audioService.applyPlaybackSpeed();
       _setSelectedRadio(null);
       _setSelectedSermon(null);
       _setSelectedSharawyLecture(null);
@@ -503,7 +695,7 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
-      await player.setSpeed(playbackSpeed);
+      await _audioService.applyPlaybackSpeed();
       final bool started = await _audioService.play();
       if (!started) {
         notifyListeners();
@@ -513,6 +705,9 @@ class RadioViewModel extends ChangeNotifier {
       _setSelectedReciter(null);
       _setSelectedSermon(null);
       _setSelectedSharawyLecture(lecture);
+      _playingSharawyCategory = selectedSharawyCategory;
+      _playingSharawyPillar = selectedSharawyPillar;
+      _playingSharawySection = selectedSharawySection;
       notifyListeners();
       return true;
     } catch (e) {
@@ -536,21 +731,12 @@ class RadioViewModel extends ChangeNotifier {
 
   // Cycles playback speed: 1x → 1.25x → 1.5x → 2x → 1x.
   Future<void> cyclePlaybackSpeed() async {
-    final currentIndex = _playbackSpeeds.indexOf(playbackSpeed);
-    final nextIndex =
-        currentIndex < 0 ? 0 : (currentIndex + 1) % _playbackSpeeds.length;
-    _setPlaybackSpeed(_playbackSpeeds[nextIndex]);
-    await player.setSpeed(playbackSpeed);
+    await _audioService.cyclePlaybackSpeed();
     notifyListeners();
   }
 
-  // Formats the current speed label for the speed button.
-  String get playbackSpeedLabel {
-    if (playbackSpeed == playbackSpeed.roundToDouble()) {
-      return '${playbackSpeed.toInt()}x';
-    }
-    return '${playbackSpeed}x';
-  }
+  // Current speed label for the speed button, e.g. "1.5x".
+  String get playbackSpeedLabel => _audioService.playbackSpeedLabel;
 
   /// Plays or pauses a radio station.
   /// Returns false when blocked by a call, or when offline.
@@ -573,8 +759,9 @@ class RadioViewModel extends ChangeNotifier {
     }
 
     try {
-      // Radio should not inherit reciter loop mode.
+      // Radio should not inherit reciter loop mode or lecture speed.
       await player.setLoopMode(LoopMode.off);
+      await player.setSpeed(1.0);
       await player.setAudioSource(
         AudioSource.uri(
           Uri.parse(radio.url ?? ''),
@@ -726,6 +913,7 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
+      await _audioService.applyPlaybackSpeed();
       // Update selection before play so the card UI refreshes immediately.
       _setSelectedRadio(null);
       _setSelectedSermon(null);
@@ -784,7 +972,7 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
-      await player.setSpeed(playbackSpeed);
+      await _audioService.applyPlaybackSpeed();
       final bool started = await _audioService.play();
       if (!started) {
         notifyListeners();
@@ -842,6 +1030,7 @@ class RadioViewModel extends ChangeNotifier {
         ),
       ),
     );
+    await _audioService.applyPlaybackSpeed();
     final bool started = await _audioService.play();
     if (!started) {
       _setCurrentSura(currentSura - 1);
@@ -889,6 +1078,7 @@ class RadioViewModel extends ChangeNotifier {
         ),
       ),
     );
+    await _audioService.applyPlaybackSpeed();
     final bool started = await _audioService.play();
     if (!started) {
       _setCurrentSura(currentSura + 1);
@@ -1089,6 +1279,7 @@ class RadioViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _playerStateSubscription?.cancel();
+    _audioService.removeListener(_onActiveAudioChanged);
     super.dispose();
   }
 }

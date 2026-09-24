@@ -8,6 +8,9 @@ import '../../../utils/app_styles.dart';
 typedef OnChanged = void Function(String newText);
 
 class SuraSearchBar extends StatelessWidget {
+  /// Increases each time any search bar is tapped, so lists can scroll to top.
+  static final ValueNotifier<int> activationCount = ValueNotifier<int>(0);
+
   String? hintText;
   TextDirection? textDirection;
 
@@ -21,6 +24,9 @@ class SuraSearchBar extends StatelessWidget {
           horizontal: 10
       ),
       child: TextField(
+        onTap: () {
+          activationCount.value++;
+        },
         onChanged: (newText) {
           onChanged(newText);
         },
