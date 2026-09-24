@@ -92,10 +92,13 @@ class TimeViewModel extends ChangeNotifier {
 
     if (!isAzanEnabled) {
       await AdhanAlarmScheduler.cancelAll();
-    } else if (timing != null) {
-      await AdhanAlarmScheduler.scheduleFromTimings(timing!);
     } else {
-      await AdhanAlarmScheduler.rescheduleFromSaved();
+      await AdhanAlarmScheduler.requestExactAlarmPermission();
+      if (timing != null) {
+        await AdhanAlarmScheduler.scheduleFromTimings(timing!);
+      } else {
+        await AdhanAlarmScheduler.rescheduleFromSaved();
+      }
     }
 
     notifyListeners();
@@ -125,13 +128,18 @@ class TimeViewModel extends ChangeNotifier {
       isTimeLoading = false;
       _updateNextPrayer(pushWidget: true);
       _startCountdownTimer();
-
-      // Schedule background Adhan alarms from fetched prayer times.
-      if (timing != null) {
-        await AdhanAlarmScheduler.scheduleFromTimings(timing!);
-      }
-
       notifyListeners();
+
+      // Schedule background Adhan alarms (next days) from fresh prayer times.
+      if (timing != null) {
+        if (await getAzanEnabled()) {
+          await AdhanAlarmScheduler.requestExactAlarmPermission();
+        }
+        await AdhanAlarmScheduler.scheduleFromTimings(
+          timing!,
+          refreshUpcoming: true,
+        );
+      }
     } catch (e) {
       log(e.toString());
       isTimeLoading = false;

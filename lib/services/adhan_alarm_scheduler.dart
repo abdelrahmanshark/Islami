@@ -1,97 +1,93 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:ui';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:islami/data/time/time_repository.dart';
-import 'package:islami/services/adhan_player.dart';
-import 'package:islami/services/call_audio_guard.dart';
+import 'package:islami/models/adhan_alarm_entry.dart';
+import 'package:islami/models/user_location.dart';
 import 'package:islami/services/prayer_widget_updater.dart';
+import 'package:islami/services/user_location_service.dart';
 import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/prayer.dart';
 import 'package:islami/utils/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Fixed alarm IDs for the five daily prayers and the daily refresh.
+/// Alarm IDs used with android_alarm_manager_plus.
 class AdhanAlarmIds {
-  static const int fajr = 1;
-  static const int dhuhr = 2;
-  static const int asr = 3;
-  static const int maghrib = 4;
-  static const int isha = 5;
+  // Per-prayer alarms from older builds; cancelled so they never fire twice.
+  static const List<int> legacyPrayerIds = [1, 2, 3, 4, 5];
   static const int dailyRefresh = 99;
-
-  static const List<int> all = [
-    fajr,
-    dhuhr,
-    asr,
-    maghrib,
-    isha,
-    dailyRefresh,
-  ];
 }
 
-/// Plays Fajr Adhan when the Fajr alarm fires.
-@pragma('vm:entry-point')
-Future<void> fajrAdhanCallback() => _runAdhanAlarm('الفجر');
-
-/// Plays Dhuhr Adhan when the Dhuhr alarm fires.
-@pragma('vm:entry-point')
-Future<void> dhuhrAdhanCallback() => _runAdhanAlarm('الظهر');
-
-/// Plays Asr Adhan when the Asr alarm fires.
-@pragma('vm:entry-point')
-Future<void> asrAdhanCallback() => _runAdhanAlarm('العصر');
-
-/// Plays Maghrib Adhan when the Maghrib alarm fires.
-@pragma('vm:entry-point')
-Future<void> maghribAdhanCallback() => _runAdhanAlarm('المغرب');
-
-/// Plays Isha Adhan when the Isha alarm fires.
-@pragma('vm:entry-point')
-Future<void> ishaAdhanCallback() => _runAdhanAlarm('العشاء');
-
-/// Shared Adhan alarm body (runs in a background isolate).
-Future<void> _runAdhanAlarm(String prayerName) async {
-  DartPluginRegistrant.ensureInitialized();
-
-  final bool enabled = await getAzanEnabled();
-  if (!enabled) {
-    return;
-  }
-
-  // Refresh call state in this isolate before deciding to play.
-  await CallAudioGuard.instance.isPhoneCallActive();
-  await AdhanPlayer.play(prayerName: prayerName);
-}
-
-/// Refetches prayer times after midnight and reschedules alarms.
+/// Refetches prayer times after midnight and saves a fresh Adhan schedule.
 @pragma('vm:entry-point')
 Future<void> adhanRefreshCallback() async {
   DartPluginRegistrant.ensureInitialized();
+  // This isolate stays alive between alarms, so re-read what the app saved.
+  await reloadPreferences();
 
   try {
-    final timeResponse = await TimeRepositoryImpl().getTimeResponse();
-    final Timings? timings = timeResponse.data?.timings;
-    if (timings == null) {
-      return;
+    // Without a saved location we would need GPS permission, which needs the UI.
+    final UserLocation? location =
+        await UserLocationService().getSavedLocation();
+    if (location != null) {
+      final timeResponse = await TimeRepositoryImpl().getTimeResponse();
+      final Timings? timings = timeResponse.data?.timings;
+      if (timings != null) {
+        await AdhanAlarmScheduler.scheduleFromTimings(
+          timings,
+          refreshUpcoming: true,
+        );
+        await AdhanAlarmScheduler.updateHomeWidgetFromTimings(timings);
+      }
     }
-
-    await AdhanAlarmScheduler.persistTimings(timings);
-    await AdhanAlarmScheduler.scheduleFromTimings(timings);
-    await AdhanAlarmScheduler.updateHomeWidgetFromTimings(timings);
   } catch (e) {
     log('adhanRefreshCallback error: $e');
+  } finally {
+    // Keep the daily refresh chain alive even when this refresh failed.
+    if (await getAzanEnabled()) {
+      await AdhanAlarmScheduler.scheduleDailyRefresh();
+    }
   }
 }
 
-/// Schedules exact Adhan alarms via Android AlarmManager.
+/// Builds the Adhan schedule in Flutter and hands it to Android to fire.
+///
+/// Android (AdhanScheduler.kt / AdhanPlaybackService.kt) only fires the saved
+/// times and plays the Adhan, so it works while the app is closed.
 class AdhanAlarmScheduler {
   AdhanAlarmScheduler._();
 
-  /// Requests exact-alarm permission, then schedules from [timings].
-  static Future<void> scheduleFromTimings(Timings timings) async {
+  /// How many days of Adhan alarms are kept scheduled ahead.
+  static const int _daysAhead = 7;
+
+  static const MethodChannel _channel =
+      MethodChannel('com.example.islami/adhan');
+
+  /// Asks for exact-alarm access. Call only from UI code (it opens a settings
+  /// screen), never from background isolates.
+  static Future<void> requestExactAlarmPermission() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+
+    final PermissionStatus status = await Permission.scheduleExactAlarm.status;
+    if (status.isGranted) {
+      return;
+    }
+    await Permission.scheduleExactAlarm.request();
+  }
+
+  /// Saves the next [_daysAhead] days of Adhan times and asks Android to
+  /// schedule them. Never requests permissions (safe from background).
+  static Future<void> scheduleFromTimings(
+    Timings timings, {
+    bool refreshUpcoming = false,
+  }) async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
@@ -102,40 +98,37 @@ class AdhanAlarmScheduler {
       return;
     }
 
-    final bool hasPermission = await _ensureExactAlarmPermission();
-    if (!hasPermission) {
-      log('Exact alarm permission not granted');
-      return;
-    }
-
     await persistTimings(timings);
-    await cancelAll();
 
-    final DateTime now = DateTime.now();
-    final List<({int id, DateTime time, Function callback})> prayerAlarms =
-        _buildPrayerAlarms(
-      timings,
-      now,
-    );
-
-    for (final alarm in prayerAlarms) {
-      await _scheduleOneShot(alarm.time, alarm.id, alarm.callback);
+    List<PrayerData> upcomingDays = [];
+    try {
+      upcomingDays = await TimeRepositoryImpl().getUpcomingPrayerDays(
+        days: _daysAhead,
+        forceRefresh: refreshUpcoming,
+      );
+    } catch (e) {
+      log('Could not load upcoming prayer days: $e');
     }
 
-    // Refresh times shortly after local midnight.
-    final DateTime refreshAt = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).add(const Duration(days: 1, minutes: 1));
-    await _scheduleOneShot(
-      refreshAt,
-      AdhanAlarmIds.dailyRefresh,
-      adhanRefreshCallback,
+    final List<AdhanAlarmEntry> entries = _buildAlarmEntries(
+      upcomingDays,
+      timings,
+      DateTime.now(),
     );
+    final List<Map<String, dynamic>> entriesJson = [];
+    for (final AdhanAlarmEntry entry in entries) {
+      entriesJson.add(entry.toJson());
+    }
+    await saveAdhanSchedule(jsonEncode(entriesJson));
+
+    for (final int id in AdhanAlarmIds.legacyPrayerIds) {
+      await AndroidAlarmManager.cancel(id);
+    }
+    await _rescheduleNative();
+    await scheduleDailyRefresh();
   }
 
-  /// Reschedules from SharedPreferences after mute is turned back on.
+  /// Reschedules from saved times (app startup, or after unmuting Adhan).
   static Future<void> rescheduleFromSaved() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;
@@ -157,15 +150,40 @@ class AdhanAlarmScheduler {
     await scheduleFromTimings(timings);
   }
 
-  /// Cancels all Adhan and refresh alarms.
+  /// Cancels all Adhan alarms and the daily refresh.
   static Future<void> cancelAll() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
 
-    for (final int id in AdhanAlarmIds.all) {
+    try {
+      await _channel.invokeMethod<void>('cancelAll');
+    } on MissingPluginException {
+      // Background isolate: Android checks the Adhan setting before playing.
+    } catch (e) {
+      log('Native Adhan cancel failed: $e');
+    }
+
+    await AndroidAlarmManager.cancel(AdhanAlarmIds.dailyRefresh);
+    for (final int id in AdhanAlarmIds.legacyPrayerIds) {
       await AndroidAlarmManager.cancel(id);
     }
+  }
+
+  /// Schedules the next background refresh shortly after local midnight.
+  static Future<void> scheduleDailyRefresh() async {
+    final DateTime now = DateTime.now();
+    final DateTime refreshAt = DateTime(now.year, now.month, now.day + 1, 0, 5);
+
+    // Inexact is fine here: the Adhan alarms are already scheduled days ahead.
+    await AndroidAlarmManager.oneShotAt(
+      refreshAt,
+      AdhanAlarmIds.dailyRefresh,
+      adhanRefreshCallback,
+      wakeup: true,
+      allowWhileIdle: true,
+      rescheduleOnReboot: true,
+    );
   }
 
   /// Saves raw salah times so alarms can be restored later.
@@ -205,112 +223,62 @@ class AdhanAlarmScheduler {
     );
   }
 
-  /// Builds future prayer alarm times from API timings.
-  static List<({int id, DateTime time, Function callback})> _buildPrayerAlarms(
-    Timings timings,
+  /// Asks Android to schedule alarms from the saved Adhan schedule.
+  static Future<void> _rescheduleNative() async {
+    try {
+      await _channel.invokeMethod<void>('reschedule');
+    } on MissingPluginException {
+      // Background isolate: Android re-reads the schedule at the next Adhan.
+    } catch (e) {
+      log('Native Adhan reschedule failed: $e');
+    }
+  }
+
+  /// Builds future Adhan times for the next [_daysAhead] days.
+  /// Days missing from [upcomingDays] reuse [latestTimings] (a few minutes off
+  /// at most), so the Adhan never goes silent just because we are offline.
+  static List<AdhanAlarmEntry> _buildAlarmEntries(
+    List<PrayerData> upcomingDays,
+    Timings latestTimings,
     DateTime now,
   ) {
-    final List<({int id, String? raw, Function callback})> prayers = [
-      (id: AdhanAlarmIds.fajr, raw: timings.fajr, callback: fajrAdhanCallback),
-      (id: AdhanAlarmIds.dhuhr, raw: timings.dhuhr, callback: dhuhrAdhanCallback),
-      (id: AdhanAlarmIds.asr, raw: timings.asr, callback: asrAdhanCallback),
-      (
-        id: AdhanAlarmIds.maghrib,
-        raw: timings.maghrib,
-        callback: maghribAdhanCallback,
-      ),
-      (id: AdhanAlarmIds.isha, raw: timings.isha, callback: ishaAdhanCallback),
-    ];
-
-    final List<({int id, DateTime time, Function callback})> result = [];
-    DateTime? fajrToday;
-    Function? fajrCallback;
-
-    for (final prayer in prayers) {
-      final String cleaned = NextPrayerCalculator.cleanTime(prayer.raw);
-      final DateTime? todayTime =
-          NextPrayerCalculator.toTodayDateTime(cleaned, now);
-      if (todayTime == null) {
-        continue;
-      }
-
-      if (prayer.id == AdhanAlarmIds.fajr) {
-        fajrToday = todayTime;
-        fajrCallback = prayer.callback;
-      }
-
-      // Keep future prayers, and the prayer still in this minute after refresh.
-      if (_shouldKeepPrayerAlarm(todayTime, now)) {
-        result.add((
-          id: prayer.id,
-          time: todayTime,
-          callback: prayer.callback,
-        ));
+    final Map<String, Timings> timingsByDay = {};
+    for (final PrayerData day in upcomingDays) {
+      final DateTime? date =
+          NextPrayerCalculator.parseApiDate(day.date?.gregorian?.date);
+      final Timings? timings = day.timings;
+      if (date != null && timings != null) {
+        timingsByDay[_dayKey(date)] = timings;
       }
     }
 
-    // After Isha, schedule tomorrow's Fajr using today's Fajr + 1 day.
-    if (result.isEmpty && fajrToday != null && fajrCallback != null) {
-      result.add((
-        id: AdhanAlarmIds.fajr,
-        time: fajrToday.add(const Duration(days: 1)),
-        callback: fajrCallback,
-      ));
+    final List<AdhanAlarmEntry> entries = [];
+    for (int offset = 0; offset < _daysAhead; offset++) {
+      final DateTime day = DateTime(now.year, now.month, now.day + offset);
+      final Timings timings = timingsByDay[_dayKey(day)] ?? latestTimings;
+
+      final List<({String name, String? raw})> salahTimes = [
+        (name: 'الفجر', raw: timings.fajr),
+        (name: 'الظهر', raw: timings.dhuhr),
+        (name: 'العصر', raw: timings.asr),
+        (name: 'المغرب', raw: timings.maghrib),
+        (name: 'العشاء', raw: timings.isha),
+      ];
+
+      for (final salah in salahTimes) {
+        final String cleaned = NextPrayerCalculator.cleanTime(salah.raw);
+        final DateTime? time = NextPrayerCalculator.toTodayDateTime(cleaned, day);
+        if (time != null && time.isAfter(now)) {
+          entries.add(AdhanAlarmEntry(time: time, prayerName: salah.name));
+        }
+      }
     }
 
-    return result;
+    return entries;
   }
 
-  /// True when [prayerTime] is still ahead, or shares the current clock minute.
-  static bool _shouldKeepPrayerAlarm(DateTime prayerTime, DateTime now) {
-    if (prayerTime.isAfter(now)) {
-      return true;
-    }
-
-    return prayerTime.year == now.year &&
-        prayerTime.month == now.month &&
-        prayerTime.day == now.day &&
-        prayerTime.hour == now.hour &&
-        prayerTime.minute == now.minute;
-  }
-
-  /// Schedules one exact alarm that wakes the device.
-  static Future<void> _scheduleOneShot(
-    DateTime time,
-    int id,
-    Function callback,
-  ) async {
-    final bool scheduled = await AndroidAlarmManager.oneShotAt(
-      time,
-      id,
-      callback,
-      exact: true,
-      wakeup: true,
-      allowWhileIdle: true,
-      alarmClock: true,
-      rescheduleOnReboot: true,
-    );
-    log('Scheduled alarm $id at $time → $scheduled');
-  }
-
-  /// Requests SCHEDULE_EXACT_ALARM permission when needed.
-  static Future<bool> _ensureExactAlarmPermission() async {
-    PermissionStatus status = await Permission.scheduleExactAlarm.status;
-    if (status.isGranted) {
-      return true;
-    }
-
-    status = await Permission.scheduleExactAlarm.request();
-    if (status.isGranted) {
-      return true;
-    }
-
-    // Open settings only when the OS blocks further in-app prompts.
-    if (status.isPermanentlyDenied) {
-      await openAppSettings();
-      status = await Permission.scheduleExactAlarm.status;
-    }
-
-    return status.isGranted;
+  /// Map key for one calendar day, e.g. "2026-9-24".
+  static String _dayKey(DateTime date) {
+    return '${date.year}-${date.month}-${date.day}';
   }
 }

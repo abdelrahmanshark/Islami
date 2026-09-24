@@ -20,5 +20,6 @@ class MainActivity : AudioServiceActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         QuranStorageChannel.register(flutterEngine, this)
+        AdhanChannel.register(flutterEngine, this)
     }
 }

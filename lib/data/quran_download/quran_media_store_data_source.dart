@@ -15,6 +15,21 @@ class QuranMediaStoreDataSource {
   /// Relative Music path used when inserting MediaStore audio rows.
   static const String quranAudioRelativePath = 'Music/Islami/Quran';
 
+  /// True on Android 9 and older, where saving into Music/ needs storage permission.
+  Future<bool> needsLegacyStoragePermission() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+
+    try {
+      final bool? result =
+          await _channel.invokeMethod<bool>('needsLegacyStoragePermission');
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
   /// True when [contentUri] still points to a readable MediaStore file.
   Future<bool> mediaExists(String contentUri) async {
     if (defaultTargetPlatform != TargetPlatform.android) {

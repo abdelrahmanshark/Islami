@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:islami/services/adhan_alarm_scheduler.dart';
 import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/services/connectivity_monitor.dart';
 import 'package:islami/services/download_notification_service.dart';
-import 'package:islami/services/prayer_time_notification_service.dart';
 import 'package:islami/services/quran_download_manager.dart';
 import 'package:islami/services/weekly_notification_service.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/azkar_view.dart';
@@ -38,15 +41,17 @@ void main() async {
   );
   if (defaultTargetPlatform == TargetPlatform.android) {
     await AndroidAlarmManager.initialize();
+    // Keep the next days of Adhan alarms scheduled even if the Time tab is never opened.
+    unawaited(AdhanAlarmScheduler.rescheduleFromSaved());
   }
   await WeeklyNotificationService.initAndSchedule(
     onNotificationResponse: QuranDownloadManager.onNotificationResponse,
     onBackgroundNotificationResponse: downloadNotificationBackground,
   );
-  // Keep download action callbacks; do not re-initialize the plugin here.
-  PrayerTimeNotificationService.markAlreadyInitialized();
   await DownloadNotificationService.init();
-  // Ensure the cancel port is registered before any download starts.
+  // Receives progress from the download foreground-service isolate.
+  FlutterForegroundTask.initCommunicationPort();
+  // Ensure the cancel port and task listener exist before any download starts.
   QuranDownloadManager.instance;
   await CallAudioGuard.instance.start();
   runApp(const Islami());

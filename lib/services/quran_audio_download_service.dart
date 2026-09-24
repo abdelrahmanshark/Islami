@@ -104,8 +104,6 @@ class QuranAudioDownloadService {
       throw ArgumentError('suraId must be between 1 and 114');
     }
 
-    await _ensureLegacyStoragePermission();
-
     final bool alreadyDownloaded =
         await _downloadedAudioRepository.isDownloaded(
       suraId: suraId,
@@ -285,14 +283,15 @@ class QuranAudioDownloadService {
     }
   }
 
-  /// Requests WRITE_EXTERNAL_STORAGE on older Android when still needed.
-  Future<void> _ensureLegacyStoragePermission() async {
-    if (!Platform.isAndroid) return;
+  /// Asks for storage permission only on Android 9 and older (Android 10+
+  /// MediaStore writes need none). Call from UI code only: the dialog needs a
+  /// visible screen and would block forever in the background.
+  Future<bool> requestLegacyStoragePermissionIfNeeded() async {
+    final bool needed =
+        await _mediaStoreDataSource.needsLegacyStoragePermission();
+    if (!needed) return true;
 
-    final PermissionStatus status = await Permission.storage.status;
-    if (status.isGranted || status.isLimited) return;
-
-    // On Android 10+ MediaStore writes do not need this permission.
-    await Permission.storage.request();
+    final PermissionStatus status = await Permission.storage.request();
+    return status.isGranted;
   }
 }

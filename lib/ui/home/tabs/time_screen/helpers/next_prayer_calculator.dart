@@ -152,6 +152,27 @@ class NextPrayerCalculator {
     return DateTime(now.year, now.month, now.day, hour, minute);
   }
 
+  /// Parses an Aladhan date ("DD-MM-YYYY") into a local midnight DateTime.
+  static DateTime? parseApiDate(String? apiDate) {
+    if (apiDate == null) {
+      return null;
+    }
+
+    List<String> parts = apiDate.split('-');
+    if (parts.length != 3) {
+      return null;
+    }
+
+    int? day = int.tryParse(parts[0]);
+    int? month = int.tryParse(parts[1]);
+    int? year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) {
+      return null;
+    }
+
+    return DateTime(year, month, day);
+  }
+
   /// Formats remaining time as HH:MM:SS.
   static String formatRemainingHms(Duration remaining) {
     String hours = remaining.inHours.toString().padLeft(2, '0');

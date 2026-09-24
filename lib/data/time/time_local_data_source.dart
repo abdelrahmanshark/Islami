@@ -12,6 +12,21 @@ class TimeLocalDataSource {
     await pref.setString(SharedPreferencesKay.cachedTimeResponse, rawJson);
   }
 
+  /// Saves the raw multi-day calendar JSON used for Adhan scheduling.
+  Future<void> saveUpcomingRawJson(String rawJson) async {
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString(
+      SharedPreferencesKay.cachedUpcomingPrayerDays,
+      rawJson,
+    );
+  }
+
+  /// Returns the cached calendar JSON, or null if nothing was saved yet.
+  Future<String?> loadUpcomingRawJson() async {
+    final pref = await SharedPreferences.getInstance();
+    return pref.getString(SharedPreferencesKay.cachedUpcomingPrayerDays);
+  }
+
   /// Returns the cached response, or null if nothing was saved yet.
   Future<TimeResponse?> loadCachedResponse() async {
     final pref = await SharedPreferences.getInstance();

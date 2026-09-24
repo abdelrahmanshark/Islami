@@ -1,39 +1,45 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:islami/data/quran_download/downloaded_audio_repository.dart';
-import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/reciters_response.dart';
+import 'package:islami/services/download_foreground_task.dart';
 import 'package:islami/services/download_notification_service.dart';
 import 'package:islami/services/quran_audio_download_service.dart';
 import 'package:islami/utils/app_messenger.dart';
 import 'package:islami/utils/network_utils.dart';
+import 'package:islami/utils/shared_preferences.dart';
 
 /// App-wide Quran download state that survives leaving the reciter screen.
+///
+/// The downloads themselves run in [DownloadForegroundTaskHandler] (a foreground
+/// service), so the queue keeps going after the app is left or swiped away.
 class QuranDownloadManager extends ChangeNotifier {
-  QuranDownloadManager._({
-    DownloadedAudioRepository? downloadedAudioRepository,
-    QuranAudioDownloadService? downloadService,
-  }) : _downloadedAudioRepository =
-            downloadedAudioRepository ?? DownloadedAudioRepositoryImpl() {
-    _downloadService = downloadService ??
-        QuranAudioDownloadService(
-          downloadedAudioRepository: _downloadedAudioRepository,
-        );
+  QuranDownloadManager._({QuranAudioDownloadService? downloadService})
+      : _downloadService = downloadService ?? QuranAudioDownloadService() {
     _registerCancelPort();
+    FlutterForegroundTask.addTaskDataCallback(_onTaskData);
   }
 
   static final QuranDownloadManager instance = QuranDownloadManager._();
 
-  final DownloadedAudioRepository _downloadedAudioRepository;
-  late final QuranAudioDownloadService _downloadService;
+  static const String storagePermissionMessage =
+      'يجب السماح بصلاحية التخزين لتحميل السور';
+  static const String serviceStartFailedMessage =
+      'تعذر بدء التحميل، حاول مرة أخرى';
+
+  final QuranAudioDownloadService _downloadService;
 
   ReceivePort? _cancelReceivePort;
+
+  /// Completes with the success count when the running batch finishes.
+  Completer<int>? _jobCompleter;
 
   bool isDownloading = false;
   bool isDownloadAll = false;
@@ -48,10 +54,6 @@ class QuranDownloadManager extends ChangeNotifier {
   int? lastCompletedSuraId;
   int? currentFileProgressPercent;
   String? downloadErrorMessage;
-
-  bool _cancelAllRequested = false;
-  bool _skipCurrentRequested = false;
-  DateTime? _lastNotificationUpdate;
 
   /// Handles notification action taps on the main isolate.
   static void onNotificationResponse(NotificationResponse response) {
@@ -87,7 +89,8 @@ class QuranDownloadManager extends ChangeNotifier {
     return '$base • سورة ${_suraName(currentSuraId!)}';
   }
 
-  /// Starts sequential downloads for [suraIds] of [reciter].
+  /// Starts sequential downloads for [suraIds] of [reciter] in the foreground
+  /// service. Completes with the success count when the batch ends.
   Future<int> downloadSuras({
     required Reciters reciter,
     required List<int> suraIds,
@@ -99,14 +102,23 @@ class QuranDownloadManager extends ChangeNotifier {
     final int? reciterId = reciter.id;
     if (reciterId == null) return 0;
 
+    // Asked here (user tap) because the background task cannot show dialogs.
+    final bool hasStorageAccess =
+        await _downloadService.requestLegacyStoragePermissionIfNeeded();
+    if (!hasStorageAccess) {
+      unavailableCount = suraIds.length;
+      downloadErrorMessage = storagePermissionMessage;
+      AppMessenger.showSnackBar(storagePermissionMessage);
+      notifyListeners();
+      return 0;
+    }
+
     // Re-register in case a hot restart dropped the isolate port.
     _registerCancelPort();
 
     isDownloading = true;
     isDownloadAll = downloadAll;
     wasCancelled = false;
-    _cancelAllRequested = false;
-    _skipCurrentRequested = false;
     downloadCompletedCount = 0;
     downloadTotalCount = suraIds.length;
     skippedAlreadyDownloadedCount = alreadySkippedCount;
@@ -120,7 +132,6 @@ class QuranDownloadManager extends ChangeNotifier {
     lastCompletedSuraId = null;
     currentFileProgressPercent = null;
     notifyListeners();
-    await _updateNotification(force: true);
 
     if (!await NetworkUtils.hasInternetConnection()) {
       isDownloading = false;
@@ -129,95 +140,27 @@ class QuranDownloadManager extends ChangeNotifier {
       currentSuraId = null;
       currentFileProgressPercent = null;
       notifyListeners();
-      await DownloadNotificationService.dismiss();
       return 0;
     }
 
-    int successCount = 0;
+    // Set before starting so an instant "finished" message is not missed.
+    final Completer<int> completer = Completer<int>();
+    _jobCompleter = completer;
 
-    try {
-      for (final int suraId in suraIds) {
-        if (_cancelAllRequested) {
-          wasCancelled = true;
-          break;
-        }
-
-        currentSuraId = suraId;
-        currentFileProgressPercent = 0;
-        _skipCurrentRequested = false;
-        notifyListeners();
-        await _updateNotification(force: true);
-
-        try {
-          await _downloadService.downloadSura(
-            reciter: reciter,
-            suraId: suraId,
-            onProgress: (int received, int? total) {
-              // Keep aborting if the user already requested stop from notification.
-              if (_cancelAllRequested || _skipCurrentRequested) {
-                _downloadService.cancelActiveDownload();
-              }
-              if (total != null && total > 0) {
-                currentFileProgressPercent =
-                    ((received / total) * 100).clamp(0, 100).round();
-              } else {
-                currentFileProgressPercent = null;
-              }
-              notifyListeners();
-              _updateNotification();
-            },
-          );
-          successCount++;
-          lastCompletedSuraId = suraId;
-          notifyListeners();
-        } on DownloadCancelledException {
-          if (_cancelAllRequested) {
-            wasCancelled = true;
-            break;
-          }
-          // Skip only the current sura, then continue the batch.
-          if (_skipCurrentRequested) {
-            log('Skipped current sura download: $suraId');
-          }
-        } on AlreadyDownloadedException {
-          skippedAlreadyDownloadedCount++;
-          lastCompletedSuraId = suraId;
-          notifyListeners();
-        } on AudioUnavailableException catch (e) {
-          log('Audio unavailable for sura $suraId: $e');
-          unavailableCount++;
-          downloadErrorMessage = AudioUnavailableException.userMessage;
-        } catch (e) {
-          if (_cancelAllRequested) {
-            wasCancelled = true;
-            break;
-          }
-          log('Failed to download sura $suraId: $e');
-          unavailableCount++;
-          downloadErrorMessage = NetworkUtils.isNetworkError(e)
-              ? NetworkUtils.noInternetMessage
-              : AudioUnavailableException.userMessage;
-        }
-
-        downloadCompletedCount++;
-        currentFileProgressPercent = null;
-        notifyListeners();
-        await _updateNotification(force: true);
-      }
-    } finally {
-      final bool cancelled = wasCancelled;
-      final int finishedCount = successCount;
-      isDownloading = false;
-      _cancelAllRequested = false;
-      _skipCurrentRequested = false;
-      currentSuraId = null;
-      currentFileProgressPercent = null;
-      notifyListeners();
-      await DownloadNotificationService.dismiss();
-      _showFinishedSnackBar(finishedCount, cancelled: cancelled);
+    final bool started = await _startDownloadService(
+      reciter: reciter,
+      suraIds: suraIds,
+      downloadAll: downloadAll,
+      alreadySkippedCount: alreadySkippedCount,
+    );
+    if (!started) {
+      downloadErrorMessage = serviceStartFailedMessage;
+      unavailableCount = suraIds.length;
+      AppMessenger.showSnackBar(serviceStartFailedMessage);
+      _finishJob(0, showSnackBar: false);
     }
 
-    return successCount;
+    return completer.future;
   }
 
   /// Stops the whole remaining batch (used by in-app stop and "إيقاف الكل").
@@ -232,10 +175,8 @@ class QuranDownloadManager extends ChangeNotifier {
       return;
     }
     log('Cancelling all downloads');
-    _cancelAllRequested = true;
-    _skipCurrentRequested = false;
     wasCancelled = true;
-    _downloadService.cancelActiveDownload();
+    FlutterForegroundTask.sendDataToTask(DownloadTaskButtons.cancelAll);
     notifyListeners();
   }
 
@@ -251,9 +192,141 @@ class QuranDownloadManager extends ChangeNotifier {
       return;
     }
     log('Skipping current sura download');
-    _skipCurrentRequested = true;
-    _downloadService.cancelActiveDownload();
+    FlutterForegroundTask.sendDataToTask(DownloadTaskButtons.cancelCurrent);
+  }
+
+  /// Saves the job for the task isolate and starts the foreground service.
+  Future<bool> _startDownloadService({
+    required Reciters reciter,
+    required List<int> suraIds,
+    required bool downloadAll,
+    required int alreadySkippedCount,
+  }) async {
+    // Android 13+ hides the progress notification without this permission.
+    final NotificationPermission notificationPermission =
+        await FlutterForegroundTask.checkNotificationPermission();
+    if (notificationPermission != NotificationPermission.granted) {
+      await FlutterForegroundTask.requestNotificationPermission();
+    }
+
+    await FlutterForegroundTask.saveData(
+      key: DownloadTaskKeys.reciterId,
+      value: reciter.id!,
+    );
+    await FlutterForegroundTask.saveData(
+      key: DownloadTaskKeys.reciterName,
+      value: activeReciterName ?? 'قارئ',
+    );
+    await FlutterForegroundTask.saveData(
+      key: DownloadTaskKeys.reciterServer,
+      value: reciter.server ?? '',
+    );
+    await FlutterForegroundTask.saveData(
+      key: DownloadTaskKeys.suraIds,
+      value: jsonEncode(suraIds),
+    );
+    await FlutterForegroundTask.saveData(
+      key: DownloadTaskKeys.downloadAll,
+      value: downloadAll,
+    );
+    await FlutterForegroundTask.saveData(
+      key: DownloadTaskKeys.alreadySkipped,
+      value: alreadySkippedCount,
+    );
+
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'quran_download_service',
+        channelName: 'تحميل القرآن',
+        channelDescription: 'حالة وتقدم تحميل سور القرآن مع إمكانية الإيقاف',
+        onlyAlertOnce: true,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(
+        showNotification: false,
+      ),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.nothing(),
+        allowWakeLock: true,
+        allowWifiLock: true,
+      ),
+    );
+
+    final ServiceRequestResult result = await FlutterForegroundTask.startService(
+      notificationTitle: 'تحميل: ${activeReciterName ?? 'قارئ'}',
+      notificationText: 'جاري التحضير...',
+      callback: downloadForegroundStartCallback,
+    );
+
+    if (result is ServiceRequestFailure) {
+      log('Could not start download service: ${result.error}');
+      return false;
+    }
+    return true;
+  }
+
+  /// Receives progress / finished messages from the download task isolate.
+  void _onTaskData(Object data) {
+    if (data is! Map) return;
+
+    final Object? type = data['type'];
+    if (type == DownloadTaskMessages.progress) {
+      _applyProgress(data);
+    } else if (type == DownloadTaskMessages.finished) {
+      _applyFinished(data);
+    }
+  }
+
+  /// Mirrors live task progress (also restores state after the app reopens).
+  void _applyProgress(Map data) {
+    isDownloading = true;
+    isDownloadAll = data['downloadAll'] as bool? ?? isDownloadAll;
+    activeReciterId = data['reciterId'] as int? ?? activeReciterId;
+    activeReciterName = data['reciterName'] as String? ?? activeReciterName;
+    downloadCompletedCount = data['completed'] as int? ?? downloadCompletedCount;
+    downloadTotalCount = data['total'] as int? ?? downloadTotalCount;
+    skippedAlreadyDownloadedCount =
+        data['skipped'] as int? ?? skippedAlreadyDownloadedCount;
+    unavailableCount = data['unavailable'] as int? ?? unavailableCount;
+    currentSuraId = data['currentSuraId'] as int?;
+    currentFileProgressPercent = data['filePercent'] as int?;
+
+    final int? completedSuraId = data['lastCompletedSuraId'] as int?;
+    if (completedSuraId != null) {
+      lastCompletedSuraId = completedSuraId;
+    }
     notifyListeners();
+  }
+
+  /// Applies the batch result sent when the task finishes.
+  Future<void> _applyFinished(Map data) async {
+    wasCancelled = data['wasCancelled'] as bool? ?? false;
+    skippedAlreadyDownloadedCount =
+        data['skipped'] as int? ?? skippedAlreadyDownloadedCount;
+    unavailableCount = data['unavailable'] as int? ?? unavailableCount;
+    downloadErrorMessage = data['errorMessage'] as String?;
+
+    // The task isolate saved the new downloads; refresh this isolate's cache.
+    await reloadPreferences();
+
+    _finishJob(data['successCount'] as int? ?? 0);
+  }
+
+  /// Resets running state, shows the result, and completes the waiting call.
+  void _finishJob(int successCount, {bool showSnackBar = true}) {
+    isDownloading = false;
+    currentSuraId = null;
+    currentFileProgressPercent = null;
+    notifyListeners();
+
+    if (showSnackBar) {
+      _showFinishedSnackBar(successCount, cancelled: wasCancelled);
+    }
+
+    final Completer<int>? completer = _jobCompleter;
+    _jobCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(successCount);
+    }
   }
 
   /// Registers a receive port so notification actions can cancel downloads.
@@ -278,30 +351,6 @@ class QuranDownloadManager extends ChangeNotifier {
         applyNotificationAction(message);
       }
     });
-  }
-
-  /// Updates the system notification (throttled unless [force] is true).
-  Future<void> _updateNotification({bool force = false}) async {
-    if (!isDownloading) return;
-
-    final DateTime now = DateTime.now();
-    if (!force &&
-        _lastNotificationUpdate != null &&
-        now.difference(_lastNotificationUpdate!) <
-            const Duration(milliseconds: 400)) {
-      return;
-    }
-    _lastNotificationUpdate = now;
-
-    final int? suraId = currentSuraId;
-    await DownloadNotificationService.showProgress(
-      reciterName: activeReciterName ?? 'قارئ',
-      suraLabel: suraId == null ? '...' : _suraName(suraId),
-      completed: downloadCompletedCount,
-      total: downloadTotalCount,
-      isDownloadAll: isDownloadAll,
-      fileProgressPercent: currentFileProgressPercent,
-    );
   }
 
   /// Shows a global snackbar when a batch ends (works after navigation).
@@ -346,6 +395,7 @@ class QuranDownloadManager extends ChangeNotifier {
 
   @override
   void dispose() {
+    FlutterForegroundTask.removeTaskDataCallback(_onTaskData);
     _cancelReceivePort?.close();
     IsolateNameServer.removePortNameMapping(downloadCancelPortName);
     super.dispose();

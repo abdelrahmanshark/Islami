@@ -1,6 +1,7 @@
 package com.example.islami
 
 import android.content.Context
+import android.os.Build
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -19,6 +20,11 @@ object QuranStorageChannel {
             CHANNEL_NAME,
         ).setMethodCallHandler { call, result ->
             when (call.method) {
+                "needsLegacyStoragePermission" -> {
+                    // Android 9 and older need WRITE_EXTERNAL_STORAGE to save into Music/.
+                    result.success(Build.VERSION.SDK_INT <= Build.VERSION_CODES.P)
+                }
+
                 "getAvailableBytes" -> {
                     try {
                         result.success(QuranStorageHelper.getAvailableBytes())

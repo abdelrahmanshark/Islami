@@ -14,11 +14,26 @@ class SharedPreferencesKay {
   static const String prayerMaghrib = 'prayerMaghrib';
   static const String prayerIsha = 'prayerIsha';
   static const String cachedTimeResponse = 'cachedTimeResponse';
+  static const String cachedUpcomingPrayerDays = 'cachedUpcomingPrayerDays';
+  // Read by Android (AdhanScheduler.kt) as "flutter.adhanSchedule".
+  static const String adhanSchedule = 'adhanSchedule';
   static const String userLatitude = 'userLatitude';
   static const String userLongitude = 'userLongitude';
   static const String userCity = 'userCity';
   static const String userCountry = 'userCountry';
   static const String downloadedQuranAudio = 'downloadedQuranAudio';
+}
+
+/// Re-reads values written by another isolate (background alarm / download task).
+Future<void> reloadPreferences() async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.reload();
+}
+
+/// Saves the Adhan alarm list (JSON) that Android schedules natively.
+Future<void> saveAdhanSchedule(String scheduleJson) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setString(SharedPreferencesKay.adhanSchedule, scheduleJson);
 }
 
 /// Returns whether azan sound is enabled. Defaults to true when unset.
