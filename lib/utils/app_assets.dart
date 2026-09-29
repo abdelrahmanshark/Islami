@@ -29,8 +29,9 @@ class AppAssets {
   static const String sebhaTitle = "assets/images/sebha_title.png";
   static const String prayTimeBg = "assets/images/pray_time_bg.png";
   static const String azan = 'assets/audio/azan.mp3';
-  static const String azkarJson = 'assets/json/azkar.json';
+  static const String azkarAndDuaaJson = 'assets/json/azkar_and_duaa.json';
   static const String msharyJson = 'assets/json/mshary.json';
+  static const String riyadAssalihinJson = 'assets/json/riyad_assalihin.json';
   static const String sermonsJson = 'assets/data/sermons.json';
   static const String quranStoriesJson =
       'assets/json/sharawe/quran_storys.json';
@@ -53,14 +54,12 @@ class AppAssets {
   static const String quranWithJuzHizbRubJson =
       'assets/json/quran_with_juz_hizb_rub.json';
   static const String hafsAyahMetaJson = 'assets/json/hafs-ayah-meta.json';
+  static const String asbabJson = 'assets/json/asbab.json';
   static const String quranImagesFolder = 'assets/quran_images';
   static const String quranImagesDarkFolder = 'assets/quran_images_dark';
   static const String quranCoordinatesFolder =
       'assets/json/quran_coordinates';
   static const String tafserFolder = 'assets/json/tafser';
-  static const String morningAzkar = 'assets/images/morning_azkar.png';
-  static const String eveningAzkar = 'assets/images/evening_azkar.png';
-
   /// Surah tafsir file names ordered by surah number (1–114).
   static const List<String> _tafserFileNames = [
     '001_al-fatiha.json',

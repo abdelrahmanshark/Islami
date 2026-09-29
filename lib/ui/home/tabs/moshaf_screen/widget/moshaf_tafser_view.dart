@@ -49,7 +49,7 @@ class MoshafTafserView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'اختر آية من المصحف ثم اضغط على تفسير',
+            'اضغط ضغطة مطولة على الآية لعرض تفسيرها',
             style: AppStyles.primaryBold16,
             textAlign: TextAlign.center,
             textDirection: TextDirection.rtl,

@@ -6,4 +6,5 @@ class AppRoutes {
   static const String moshafRouteName = 'MoshafScreen';
   static const String moshafIndexRouteName = 'MoshafIndexScreen';
   static const String qiblaRouteName = 'QiblaScreen';
+  static const String riyadChapterRouteName = 'RiyadChapterScreen';
 }

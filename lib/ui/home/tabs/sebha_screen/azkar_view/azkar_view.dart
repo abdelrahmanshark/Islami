@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:islami/models/azkar_type.dart';
+import 'package:islami/models/azkar_response.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/view_model/azkar_view_model.dart';
 import 'package:islami/ui/home/tabs/sebha_screen/azkar_view/widget/azkar_item_card.dart';
 import 'package:islami/utils/app_assets.dart';
@@ -12,21 +12,13 @@ class AzkarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final azkarType = ModalRoute.of(context)!.settings.arguments as AzkarType;
+    final category =
+        ModalRoute.of(context)!.settings.arguments as AzkarCategory;
 
     return ChangeNotifierProvider(
-      create: (context) => AzkarViewModel(azkarType: azkarType),
+      create: (context) => AzkarViewModel(category: category),
       child: Consumer<AzkarViewModel>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return Scaffold(
-              backgroundColor: AppColors.grayColor,
-              body: Center(
-                child: CircularProgressIndicator(color: AppColors.primaryColor),
-              ),
-            );
-          }
-
           return Scaffold(
             backgroundColor: AppColors.grayColor,
             appBar: AppBar(
@@ -35,7 +27,7 @@ class AzkarView extends StatelessWidget {
               backgroundColor: AppColors.grayColor,
               iconTheme: const IconThemeData(color: AppColors.primaryColor),
               title: Text(
-                azkarType.title,
+                'أذكار وأدعية',
                 style: AppStyles.primaryBold24,
               ),
               centerTitle: true,
@@ -51,30 +43,27 @@ class AzkarView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 30),
-                  Text(
-                    azkarType.title,
-                    style: AppStyles.primaryBold24,
-                    textAlign: TextAlign.center,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      category.title,
+                      style: AppStyles.primaryBold24,
+                      textAlign: TextAlign.center,
+                      textDirection: TextDirection.rtl,
+                    ),
                   ),
                   const SizedBox(height: 30),
                   Expanded(
-                    child: provider.failureMsg.isNotEmpty
-                        ? Center(
-                            child: Text(
-                              provider.failureMsg,
-                              style: AppStyles.primaryBold20,
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: provider.azkarList.length,
-                            itemBuilder: (context, index) {
-                              return AzkarItemCard(
-                                item: provider.azkarList[index],
-                                remaining: provider.remainingCounts[index],
-                                onTap: () => provider.onAzkarTapped(index),
-                              );
-                            },
-                          ),
+                    child: ListView.builder(
+                      itemCount: category.items.length,
+                      itemBuilder: (context, index) {
+                        return AzkarItemCard(
+                          item: category.items[index],
+                          remaining: provider.remainingCounts[index],
+                          onTap: () => provider.onAzkarTapped(index),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),

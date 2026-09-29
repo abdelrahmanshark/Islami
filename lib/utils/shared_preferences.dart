@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SharedPreferencesKay {
   static const String azanEnabled = 'azanEnabled';
   static const String moshafLastPage = 'moshafLastPage';
+  static const String moshafLastReadPage = 'moshafLastReadPage';
   static const String moshafDarkTheme = 'moshafDarkTheme';
   static const String moshafMemorizedPages = 'moshafMemorizedPages';
   static const String moshafMemorizedAyahs = 'moshafMemorizedAyahs';
@@ -25,6 +26,8 @@ class SharedPreferencesKay {
   static const String downloadedQuranAudio = 'downloadedQuranAudio';
   static const String favoriteRadioIds = 'favoriteRadioIds';
   static const String favoriteReciterIds = 'favoriteReciterIds';
+  static const String favoriteHadithIds = 'favoriteHadithIds';
+  static const String favoriteAzkarCategories = 'favoriteAzkarCategories';
 }
 
 /// Re-reads values written by another isolate (background alarm / download task).
@@ -135,6 +138,18 @@ Future<int?> getMoshafLastPage() async {
   return pref.getInt(SharedPreferencesKay.moshafLastPage);
 }
 
+/// Saves the page the user was on when leaving the Mushaf (auto-saved).
+Future<void> saveMoshafLastReadPage(int page) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setInt(SharedPreferencesKay.moshafLastReadPage, page);
+}
+
+/// Returns the last page the user was reading, or null if none exists.
+Future<int?> getMoshafLastReadPage() async {
+  final pref = await SharedPreferences.getInstance();
+  return pref.getInt(SharedPreferencesKay.moshafLastReadPage);
+}
+
 /// Returns whether Mushaf dark theme is on. Defaults to light (false).
 Future<bool> getMoshafDarkTheme() async {
   final pref = await SharedPreferences.getInstance();
@@ -201,6 +216,28 @@ Future<List<int>> getFavoriteReciterIds() async {
 /// Saves favorite reciter ids, newest first.
 Future<void> saveFavoriteReciterIds(List<int> ids) async {
   await _saveIdList(SharedPreferencesKay.favoriteReciterIds, ids);
+}
+
+/// Returns favorite hadith ids, newest first (empty when none saved).
+Future<List<int>> getFavoriteHadithIds() async {
+  return _getIdList(SharedPreferencesKay.favoriteHadithIds);
+}
+
+/// Saves favorite hadith ids, newest first.
+Future<void> saveFavoriteHadithIds(List<int> ids) async {
+  await _saveIdList(SharedPreferencesKay.favoriteHadithIds, ids);
+}
+
+/// Returns favorite azkar category titles, newest first (empty when none saved).
+Future<List<String>> getFavoriteAzkarCategories() async {
+  final pref = await SharedPreferences.getInstance();
+  return pref.getStringList(SharedPreferencesKay.favoriteAzkarCategories) ?? [];
+}
+
+/// Saves favorite azkar category titles, newest first.
+Future<void> saveFavoriteAzkarCategories(List<String> titles) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setStringList(SharedPreferencesKay.favoriteAzkarCategories, titles);
 }
 
 /// Reads a list of ids saved as strings under [key].

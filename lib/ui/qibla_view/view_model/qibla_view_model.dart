@@ -5,6 +5,7 @@ import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'package:flutter_compass_v2/flutter_compass_v2.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:islami/services/device_sensor_service.dart';
 import 'package:islami/utils/qibla_calculator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -15,6 +16,9 @@ enum QiblaUiState {
   permissionDenied,
   locationDisabled,
   sensorUnavailable,
+
+  /// The device has no magnetometer, so Qibla direction cannot work at all.
+  sensorNotSupported,
   error,
 }
 
@@ -31,13 +35,43 @@ class QiblaViewModel extends ChangeNotifier {
   /// Angle from north to Qibla (degrees).
   double offset = 0;
 
+  final DeviceSensorService _sensorService = DeviceSensorService();
+
   StreamSubscription<CompassEvent>? _compassSubscription;
   Timer? _compassTimeout;
   bool _isInitializing = false;
   bool _receivedHeading = false;
 
+  late final AppLifecycleListener _lifecycleListener;
+
+  /// True after sending the user to Location/App settings.
+  bool _isWaitingForSettings = false;
+
   QiblaViewModel() {
+    _lifecycleListener = AppLifecycleListener(onResume: _onAppResumed);
     initQibla();
+  }
+
+  /// Rechecks location when the app returns to the foreground, including
+  /// when the user fixed Location manually without pressing the button.
+  Future<void> _onAppResumed() async {
+    if (_isWaitingForSettings) {
+      _isWaitingForSettings = false;
+      await initQibla();
+      return;
+    }
+
+    if (uiState == QiblaUiState.locationDisabled) {
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) await initQibla();
+    } else if (uiState == QiblaUiState.permissionDenied) {
+      // Only reload when granted, so a denied permission dialog is not re-shown.
+      final LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        await initQibla();
+      }
+    }
   }
 
   /// True when the phone is roughly facing the Qibla.
@@ -46,6 +80,9 @@ class QiblaViewModel extends ChangeNotifier {
     final distanceToZero = angle > 180 ? 360 - angle : angle;
     return distanceToZero <= 5;
   }
+
+  /// Retrying is useless when the device has no magnetometer.
+  bool get canRetry => uiState != QiblaUiState.sensorNotSupported;
 
   /// Qibla offset text shown under the compass.
   String get offsetText => '${offset.toStringAsFixed(1)}°';
@@ -64,7 +101,8 @@ class QiblaViewModel extends ChangeNotifier {
   /// Needle rotation in radians (Qibla relative to device).
   double get needleRadians => qibla * (pi / 180) * -1;
 
-  /// Checks location permission, reads GPS, then starts the compass stream.
+  /// Checks the magnetometer, then location permission, reads GPS,
+  /// then starts the compass stream.
   Future<void> initQibla() async {
     if (_isInitializing) return;
     _isInitializing = true;
@@ -75,6 +113,16 @@ class QiblaViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Stop here before touching location when the hardware is missing.
+      final bool hasMagnetometer = await _sensorService.hasMagnetometer();
+      if (!hasMagnetometer) {
+        uiState = QiblaUiState.sensorNotSupported;
+        errorMessage =
+            'عذرًا، هذا الجهاز لا يحتوي على مستشعر البوصلة (المجال المغناطيسي) اللازم لتحديد اتجاه القبلة';
+        notifyListeners();
+        return;
+      }
+
       final bool serviceEnabled =
           await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -118,15 +166,22 @@ class QiblaViewModel extends ChangeNotifier {
     }
   }
 
-  /// Retries after opening system settings when needed.
+  /// Opens the needed system settings, or retries directly when none is needed.
+  /// After settings open, the recheck happens in [_onAppResumed].
   Future<void> retry() async {
     if (uiState == QiblaUiState.locationDisabled) {
-      await Geolocator.openLocationSettings();
+      _isWaitingForSettings = true;
+      final bool opened = await Geolocator.openLocationSettings();
+      if (opened) return;
+      _isWaitingForSettings = false;
     } else if (uiState == QiblaUiState.permissionDenied) {
       final LocationPermission permission =
           await Geolocator.checkPermission();
       if (permission == LocationPermission.deniedForever) {
-        await openAppSettings();
+        _isWaitingForSettings = true;
+        final bool opened = await openAppSettings();
+        if (opened) return;
+        _isWaitingForSettings = false;
       }
     }
 
@@ -201,6 +256,7 @@ class QiblaViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _lifecycleListener.dispose();
     _compassTimeout?.cancel();
     _compassSubscription?.cancel();
     super.dispose();

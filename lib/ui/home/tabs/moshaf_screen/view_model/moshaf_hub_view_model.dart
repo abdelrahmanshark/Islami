@@ -11,6 +11,10 @@ import 'package:islami/utils/shared_preferences.dart';
 /// Handles Mushaf hub menu actions and saved-page state.
 class MoshafHubViewModel extends ChangeNotifier {
   int? savedPage;
+
+  /// Page the user was on when they last closed the Mushaf.
+  int? lastReadPage;
+
   bool isLoadingIndex = false;
   String? errorMessage;
 
@@ -19,9 +23,13 @@ class MoshafHubViewModel extends ChangeNotifier {
   /// True when a bookmarked page exists.
   bool get hasSavedPage => savedPage != null;
 
-  /// Loads the saved bookmark page (if any).
+  /// True when an auto-saved last read page exists.
+  bool get hasLastReadPage => lastReadPage != null;
+
+  /// Loads the saved bookmark page and the last read page (if any).
   Future<void> loadSavedPage() async {
     savedPage = await getMoshafLastPage();
+    lastReadPage = await getMoshafLastReadPage();
     notifyListeners();
   }
 
@@ -70,6 +78,12 @@ class MoshafHubViewModel extends ChangeNotifier {
   Future<void> openSavedPage(BuildContext context) async {
     if (savedPage == null) return;
     await openMoshaf(context, startPage: savedPage);
+  }
+
+  /// Opens the Mushaf at the last page the user was reading.
+  Future<void> openLastReadPage(BuildContext context) async {
+    if (lastReadPage == null) return;
+    await openMoshaf(context, startPage: lastReadPage);
   }
 
   /// Asks for a page number, then opens the Mushaf at that page.

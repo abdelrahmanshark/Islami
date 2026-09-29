@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:islami/models/reciters_response.dart';
+import 'package:islami/models/riyad_hadith_position.dart';
 import 'package:islami/providers/app_providers.dart';
 import 'package:islami/services/adhan_alarm_scheduler.dart';
 import 'package:islami/services/call_audio_guard.dart';
@@ -20,6 +21,8 @@ import 'package:islami/ui/home/home_screen.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/moshaf_index_view.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_screen.dart';
 import 'package:islami/ui/qibla_view/qibla_view.dart';
+import 'package:islami/ui/riyad_chapter_view/riyad_chapter_view.dart';
+import 'package:islami/ui/riyad_chapter_view/view_model/riyad_chapter_view_model.dart';
 import 'package:islami/ui/splash_view/splash_view.dart';
 import 'package:islami/ui/widgets/download_progress_banner.dart';
 import 'package:islami/utils/app_messenger.dart';
@@ -36,8 +39,6 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   SystemChrome.setSystemUIOverlayStyle(AppTheme.systemUiOverlayStyle);
-  // Keep the screen on while the app is open.
-  await WakelockPlus.enable();
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
     androidNotificationChannelName: 'تشغيل الصوت',
@@ -74,6 +75,10 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     ConnectivityMonitor.instance.start();
+    // Keep the screen on once the UI is ready (needs an attached Activity).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _enableWakelock();
+    });
   }
 
   @override
@@ -87,11 +92,30 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      WakelockPlus.enable();
+      _enableWakelock();
       ConnectivityMonitor.instance.checkNow();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      WakelockPlus.disable();
+      _disableWakelock();
+    }
+  }
+
+  /// Keeps the screen on. Ignores errors when no Activity is attached
+  /// (e.g. the engine was started by the background audio service).
+  Future<void> _enableWakelock() async {
+    try {
+      await WakelockPlus.enable();
+    } catch (e) {
+      debugPrint('WakelockPlus.enable failed: $e');
+    }
+  }
+
+  /// Allows the screen to sleep. Ignores errors when no Activity is attached.
+  Future<void> _disableWakelock() async {
+    try {
+      await WakelockPlus.disable();
+    } catch (e) {
+      debugPrint('WakelockPlus.disable failed: $e');
     }
   }
 
@@ -123,6 +147,15 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
             },
             AppRoutes.moshafIndexRouteName: (context) => const MoshafIndexView(),
             AppRoutes.qiblaRouteName: (context) => const QiblaView(),
+            AppRoutes.riyadChapterRouteName: (context) {
+              final RiyadHadithPosition position =
+                  ModalRoute.of(context)!.settings.arguments
+                      as RiyadHadithPosition;
+              return ChangeNotifierProvider(
+                create: (_) => RiyadChapterViewModel(position: position),
+                child: const RiyadChapterView(),
+              );
+            },
           },
           theme: AppTheme.lightTheme,
           themeMode: ThemeMode.light,

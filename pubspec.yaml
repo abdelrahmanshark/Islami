@@ -94,7 +94,6 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/files/
-    - assets/hadith/
     - assets/json/
     - assets/json/sharawe/
     - assets/json/quran_coordinates/

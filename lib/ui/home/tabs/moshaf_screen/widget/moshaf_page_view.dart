@@ -17,6 +17,9 @@ class MoshafPageView extends StatelessWidget {
   final AyahCoordinate? Function(Offset localPosition, Size size) findAyahAt;
   final ValueChanged<AyahCoordinate> onAyahTapped;
   final VoidCallback? onTafserLabelTapped;
+  final VoidCallback? onAsbabLabelTapped;
+  final bool isFooterVisible;
+  final VoidCallback? onPageTapped;
 
   const MoshafPageView({
     super.key,
@@ -27,12 +30,16 @@ class MoshafPageView extends StatelessWidget {
     required this.findAyahAt,
     required this.onAyahTapped,
     this.onTafserLabelTapped,
+    this.onAsbabLabelTapped,
+    this.isFooterVisible = false,
+    this.onPageTapped,
   });
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor =
-        isDarkTheme ? AppColors.blackColor : AppColors.offWhite;
+    final backgroundColor = isDarkTheme
+        ? AppColors.blackColor
+        : AppColors.offWhite;
     final imagePath = AppAssets.quranPageImage(
       page.pageNumber,
       isDark: isDarkTheme,
@@ -43,67 +50,91 @@ class MoshafPageView extends StatelessWidget {
 
     return ColoredBox(
       color: backgroundColor,
-      child: Column(
-        children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return MoshafPageFrame(
-                  isDarkTheme: isDarkTheme,
-                  pageNumber: page.pageNumber,
-                  child: SizedBox(
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          imagePath,
-                          key: ValueKey(imagePath),
-                          fit: BoxFit.fill,
-                          width: constraints.maxWidth,
-                          height: constraints.maxHeight,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                'تعذر تحميل الصفحة ${page.pageNumber}',
-                                style: AppStyles.primaryBold16,
-                                textDirection: TextDirection.rtl,
-                              ),
-                            );
-                          },
-                        ),
-                        // Light mode (pages 3+): inset ayah hit/highlight layer.
-                        // Pages 1–2 match dark padding (zero inset).
-                        Padding(
-                          padding: useLightCoordPadding
-                              ? const EdgeInsets.only(
-                                  left: 40,
-                                  right: 40,
-                                  top: 40,
-                                  bottom: 40,
-                                )
-                              : EdgeInsets.zero,
-                          child: MoshafAyahOverlay(
-                            ayahs: ayahs,
-                            selectedAyah: selectedAyah,
-                            findAyahAt: findAyahAt,
-                            onAyahTapped: onAyahTapped,
-                            onTafserLabelTapped: onTafserLabelTapped,
+      // Catches taps outside the ayah layer (margins, frame, footer).
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onPageTapped,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return MoshafPageFrame(
+                    isDarkTheme: isDarkTheme,
+                    pageNumber: page.pageNumber,
+                    child: SizedBox(
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            imagePath,
+                            key: ValueKey(imagePath),
+                            fit: BoxFit.fill,
+                            width: constraints.maxWidth,
+                            height: constraints.maxHeight,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Text(
+                                  'تعذر تحميل الصفحة ${page.pageNumber}',
+                                  style: AppStyles.primaryBold16,
+                                  textDirection: TextDirection.rtl,
+                                ),
+                              );
+                            },
                           ),
-                        ),
-                      ],
+                          // Light mode (pages 3+): inset ayah hit/highlight layer.
+                          // Pages 1–2 match dark padding (zero inset).
+                          Padding(
+                            padding: useLightCoordPadding
+                                ? const EdgeInsets.only(
+                                    left: 40,
+                                    right: 40,
+                                    top: 40,
+                                    bottom: 40,
+                                  )
+                                : EdgeInsets.zero,
+                            child: MoshafAyahOverlay(
+                              ayahs: ayahs,
+                              selectedAyah: selectedAyah,
+                              findAyahAt: findAyahAt,
+                              onAyahTapped: onAyahTapped,
+                              onTafserLabelTapped: onTafserLabelTapped,
+                              onAsbabLabelTapped: onAsbabLabelTapped,
+                              onPageTapped: onPageTapped,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: AnimatedSlide(
+                offset: isFooterVisible ? Offset.zero : const Offset(0, 1),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: AnimatedOpacity(
+                  opacity: isFooterVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: ColoredBox(
+                    color: backgroundColor,
+                    child: MoshafPageFooter(
+                      page: page,
+                      isDarkTheme: isDarkTheme,
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
-          ),
-          MoshafPageFooter(
-            page: page,
-            isDarkTheme: isDarkTheme,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

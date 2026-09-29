@@ -37,14 +37,15 @@ class AzkarItemCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  item.content ?? '',
+                  item.text,
                   style: AppStyles.blackBold18,
                   textAlign: TextAlign.center,
+                  textDirection: TextDirection.rtl,
                 ),
               ),
               const SizedBox(width: 12),
               SegmentedCircularProgress(
-                total: item.countAsInt,
+                total: item.count,
                 remaining: remaining,
               ),
             ],

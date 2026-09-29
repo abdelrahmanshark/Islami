@@ -21,5 +21,6 @@ class MainActivity : AudioServiceActivity() {
         super.configureFlutterEngine(flutterEngine)
         QuranStorageChannel.register(flutterEngine, this)
         AdhanChannel.register(flutterEngine, this)
+        DeviceSensorChannel.register(flutterEngine, this)
     }
 }

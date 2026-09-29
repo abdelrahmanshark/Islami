@@ -13,7 +13,7 @@ class HomeScreenViewModel extends ChangeNotifier {
   int selectedIndex = 0;
   List<Widget> tabs = [
     const MoshafHubView(),
-    HadithScreen(),
+    const HadithScreen(),
     SebhaScreen(),
     RadioScreen(),
     DownloadsView(),

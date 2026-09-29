@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_view_model.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_asbab_view.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_view.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_tafser_view.dart';
 import 'package:islami/utils/app_assets.dart';
@@ -44,8 +45,10 @@ class _MoshafScreenState extends State<MoshafScreen> {
     if (!mounted || _pageController != null) return;
     if (_viewModel.isLoading || _viewModel.pages.isEmpty) return;
 
-    final initialIndex =
-        (_viewModel.initialPage - 1).clamp(0, _viewModel.pages.length - 1);
+    final initialIndex = (_viewModel.initialPage - 1).clamp(
+      0,
+      _viewModel.pages.length - 1,
+    );
 
     setState(() {
       _pageController = PageController(initialPage: initialIndex);
@@ -54,6 +57,22 @@ class _MoshafScreenState extends State<MoshafScreen> {
     _viewModel.markPageRestored();
     _viewModel.updateVisiblePage(initialIndex);
     _precacheNeighborPages(initialIndex);
+    _showUsageHint();
+  }
+
+  /// Tells the user how to show the controls and open tafsir.
+  void _showUsageHint() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'اضغط على الصفحة لإظهار الأدوات، واضغط مطولاً على الآية لعرض تفسيرها',
+          textDirection: TextDirection.rtl,
+          style: AppStyles.primaryBold24.copyWith(fontSize: 16),
+        ),
+        backgroundColor: AppColors.blackColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   /// Called when the user swipes to another page.
@@ -106,17 +125,21 @@ class _MoshafScreenState extends State<MoshafScreen> {
       final ayahs = await _viewModel.loadAyahMeta();
       if (!mounted) return;
 
-      final selectedPage = await Navigator.pushNamed(
-        context,
-        AppRoutes.moshafIndexRouteName,
-        arguments: ayahs,
-      ) as int?;
+      final selectedPage =
+          await Navigator.pushNamed(
+                context,
+                AppRoutes.moshafIndexRouteName,
+                arguments: ayahs,
+              )
+              as int?;
 
       if (!mounted || selectedPage == null) return;
       if (_pageController == null || !_pageController!.hasClients) return;
 
-      final targetIndex =
-          (selectedPage - 1).clamp(0, _viewModel.pages.length - 1);
+      final targetIndex = (selectedPage - 1).clamp(
+        0,
+        _viewModel.pages.length - 1,
+      );
       await _pageController!.animateToPage(
         targetIndex,
         duration: const Duration(milliseconds: 300),
@@ -165,71 +188,99 @@ class _MoshafScreenState extends State<MoshafScreen> {
               textDirection: TextDirection.rtl,
               child: Scaffold(
                 backgroundColor: AppColors.blackColor,
-                appBar: AppBar(
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  backgroundColor: AppColors.blackColor,
-                  toolbarHeight: 48,
-                  leading: BackButton(
-                    color: AppColors.primaryColor,
-                    onPressed: _onBackPressed,
-                  ),
-                  centerTitle: true,
-                  title: Text(
-                    provider.isLoading ? 'المصحف' : provider.appBarTitle,
-                    style: AppStyles.primaryBold16,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  actions: [
-                    IconButton(
-                      onPressed:
-                          provider.isLoading ? null : provider.toggleTafser,
-                      icon: Icon(
-                        provider.isShowingTafser
-                            ? Icons.menu_book
-                            : Icons.menu_book_outlined,
-                        color: AppColors.primaryColor,
+                // AppBar overlays the page so hiding it never resizes the page.
+                body: Stack(
+                  children: [
+                    SafeArea(child: _buildBody(provider)),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: IgnorePointer(
+                        ignoring: !provider.isAppBarVisible,
+                        child: AnimatedSlide(
+                          offset: provider.isAppBarVisible
+                              ? Offset.zero
+                              : const Offset(0, -1),
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: AnimatedOpacity(
+                            opacity: provider.isAppBarVisible ? 1 : 0,
+                            duration: const Duration(milliseconds: 250),
+                            child: AppBar(
+                              surfaceTintColor: Colors.transparent,
+                              elevation: 0,
+                              backgroundColor: AppColors.blackColor,
+                              toolbarHeight: 48,
+                              leading: BackButton(
+                                color: AppColors.primaryColor,
+                                onPressed: _onBackPressed,
+                              ),
+                              centerTitle: true,
+                              title: Text(
+                                provider.isLoading
+                                    ? 'المصحف'
+                                    : provider.appBarTitle,
+                                style: AppStyles.primaryBold16,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              actions: [
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : provider.toggleTafser,
+                                  icon: Icon(
+                                    provider.isShowingTafser
+                                        ? Icons.menu_book
+                                        : Icons.menu_book_outlined,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'التفسير',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : provider.toggleTheme,
+                                  icon: Icon(
+                                    provider.isDarkTheme
+                                        ? Icons.light_mode
+                                        : Icons.dark_mode,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: provider.isDarkTheme
+                                      ? 'الوضع الفاتح'
+                                      : 'الوضع الداكن',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : _openIndex,
+                                  icon: const Icon(
+                                    Icons.list_alt,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'الفهرس',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : _onBookmarkPressed,
+                                  icon: Icon(
+                                    provider.isCurrentPageBookmarked
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'حفظ الصفحة',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      tooltip: 'التفسير',
-                    ),
-                    IconButton(
-                      onPressed:
-                          provider.isLoading ? null : provider.toggleTheme,
-                      icon: Icon(
-                        provider.isDarkTheme
-                            ? Icons.light_mode
-                            : Icons.dark_mode,
-                        color: AppColors.primaryColor,
-                      ),
-                      tooltip: provider.isDarkTheme
-                          ? 'الوضع الفاتح'
-                          : 'الوضع الداكن',
-                    ),
-                    IconButton(
-                      onPressed: provider.isLoading ? null : _openIndex,
-                      icon: const Icon(
-                        Icons.list_alt,
-                        color: AppColors.primaryColor,
-                      ),
-                      tooltip: 'الفهرس',
-                    ),
-                    IconButton(
-                      onPressed:
-                          provider.isLoading ? null : _onBookmarkPressed,
-                      icon: Icon(
-                        provider.isCurrentPageBookmarked
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        color: AppColors.primaryColor,
-                      ),
-                      tooltip: 'حفظ الصفحة',
                     ),
                   ],
-                ),
-                body: SafeArea(
-                  top: false,
-                  child: _buildBody(provider),
                 ),
               ),
             ),
@@ -268,14 +319,23 @@ class _MoshafScreenState extends State<MoshafScreen> {
       index: provider.isShowingTafser ? 1 : 0,
       children: [
         _buildMoshafPages(provider),
-        MoshafTafserView(
-          isLoading: provider.isTafserLoading,
-          errorMessage: provider.tafserErrorMessage,
-          surahName: provider.selectedTafserSurahName,
-          ayah: provider.selectedTafserAyah,
-          surahNumber: provider.selectedAyah?.surahNumber,
-          ayahNumber: provider.selectedAyah?.ayahNumber,
-        ),
+        if (provider.isShowingAsbab)
+          MoshafAsbabView(
+            surahName: provider.selectedSurahName,
+            ayahNumber: provider.selectedAyah?.ayahNumber,
+            reasons: provider.selectedAsbabReasons,
+            selectedSourceIndex: provider.selectedAsbabSourceIndex,
+            onSourceSelected: provider.selectAsbabSource,
+          )
+        else
+          MoshafTafserView(
+            isLoading: provider.isTafserLoading,
+            errorMessage: provider.tafserErrorMessage,
+            surahName: provider.selectedTafserSurahName,
+            ayah: provider.selectedTafserAyah,
+            surahNumber: provider.selectedAyah?.surahNumber,
+            ayahNumber: provider.selectedAyah?.ayahNumber,
+          ),
       ],
     );
   }
@@ -298,6 +358,11 @@ class _MoshafScreenState extends State<MoshafScreen> {
           findAyahAt: provider.findAyahAt,
           onAyahTapped: provider.onAyahTapped,
           onTafserLabelTapped: provider.openTafserForSelectedAyah,
+          onAsbabLabelTapped: provider.selectedAyahHasAsbab
+              ? provider.openAsbabForSelectedAyah
+              : null,
+          isFooterVisible: provider.isUiVisible,
+          onPageTapped: provider.toggleUiVisibility,
         );
       },
     );

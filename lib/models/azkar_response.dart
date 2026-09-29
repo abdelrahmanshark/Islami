@@ -1,38 +1,40 @@
-/// Single azkar entry from the local JSON asset.
+/// Single zikr or duaa inside a category.
 class AzkarItem {
-  AzkarItem({this.content, this.count});
+  AzkarItem({required this.text, required this.count});
 
-  AzkarItem.fromJson(dynamic json) {
-    content = json['content'];
-    count = json['count'];
-  }
+  AzkarItem.fromJson(dynamic json)
+      : text = json['text'] ?? '',
+        count = json['count'] ?? 1;
 
-  String? content;
-  String? count;
+  final String text;
 
-  /// Parses count as an int (defaults to 1).
-  int get countAsInt => int.tryParse(count ?? '1') ?? 1;
+  /// How many times this zikr should be repeated.
+  final int count;
 }
 
-/// Parsed morning and evening azkar lists.
+/// A category of azkar/duaa (e.g. "أذكار الصباح") with its items.
+class AzkarCategory {
+  AzkarCategory({required this.title, required this.items});
+
+  AzkarCategory.fromJson(dynamic json)
+      : title = json['category'] ?? '',
+        items = (json['items'] as List? ?? [])
+            .map((item) => AzkarItem.fromJson(item))
+            .toList();
+
+  /// Category name, also used as its unique id for favorites.
+  final String title;
+  final List<AzkarItem> items;
+}
+
+/// All azkar categories parsed from azkar_and_duaa.json.
 class AzkarResponse {
-  static const String morningKey = 'أذكار الصباح';
-  static const String eveningKey = 'أذكار المساء';
+  AzkarResponse({required this.categories});
 
-  AzkarResponse({this.morningAzkar, this.eveningAzkar});
+  /// Builds the response from the JSON list of categories.
+  AzkarResponse.fromJson(List<dynamic> json)
+      : categories =
+            json.map((category) => AzkarCategory.fromJson(category)).toList();
 
-  /// Builds response from the azkar.json map.
-  AzkarResponse.fromJson(Map<String, dynamic> json) {
-    morningAzkar = _parseList(json[morningKey]);
-    eveningAzkar = _parseList(json[eveningKey]);
-  }
-
-  List<AzkarItem>? morningAzkar;
-  List<AzkarItem>? eveningAzkar;
-
-  /// Converts a JSON list into AzkarItem objects.
-  List<AzkarItem> _parseList(dynamic list) {
-    if (list == null) return [];
-    return (list as List).map((item) => AzkarItem.fromJson(item)).toList();
-  }
+  final List<AzkarCategory> categories;
 }

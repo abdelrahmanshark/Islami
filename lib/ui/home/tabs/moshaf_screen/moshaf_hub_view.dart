@@ -75,11 +75,11 @@ class _MoshafHubViewState extends State<MoshafHubView> {
                                   ],
                                   MoshafOptionCard(
                                     title: 'فتح المصحف',
-                                    subtitle: 'ابدأ قراءة المصحف من البداية',
+                                    subtitle: 'افتح المصحف',
                                     icon: Icons.menu_book_rounded,
                                     onTap: () => provider.openMoshaf(
                                       context,
-                                      startPage: 1,
+                                      startPage: provider.lastReadPage ?? 1,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -97,6 +97,17 @@ class _MoshafHubViewState extends State<MoshafHubView> {
                                     icon: Icons.find_in_page_rounded,
                                     onTap: () => provider.openByPage(context),
                                   ),
+                                  if (provider.hasLastReadPage) ...[
+                                    const SizedBox(height: 16),
+                                    MoshafOptionCard(
+                                      title: 'آخر صفحة قرأتها',
+                                      subtitle:
+                                          'متابعة القراءة من الصفحة ${provider.lastReadPage}',
+                                      icon: Icons.history_rounded,
+                                      onTap: () =>
+                                          provider.openLastReadPage(context),
+                                    ),
+                                  ],
                                   if (provider.hasSavedPage) ...[
                                     const SizedBox(height: 16),
                                     MoshafOptionCard(

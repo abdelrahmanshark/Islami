@@ -48,7 +48,7 @@ class QiblaView extends StatelessWidget {
                 return QiblaStatusView(
                   isLoading: false,
                   message: provider.errorMessage,
-                  onRetry: provider.retry,
+                  onRetry: provider.canRetry ? provider.retry : null,
                 );
               }
 

@@ -11,12 +11,24 @@ class SuraSearchBar extends StatelessWidget {
   /// Increases each time any search bar is tapped, so lists can scroll to top.
   static final ValueNotifier<int> activationCount = ValueNotifier<int>(0);
 
-  String? hintText;
-  TextDirection? textDirection;
+  final String? hintText;
+  final TextDirection? textDirection;
 
-  SuraSearchBar(
-      {super.key, required this.onChanged, this.hintText, this.textDirection});
-  OnChanged onChanged;
+  /// Optional widget shown at the end of the field (e.g. a menu).
+  final Widget? suffixIcon;
+
+  /// Optional SVG icon at the start of the field. Defaults to the Quran icon.
+  final String? iconAsset;
+
+  const SuraSearchBar({
+    super.key,
+    required this.onChanged,
+    this.hintText,
+    this.textDirection,
+    this.suffixIcon,
+    this.iconAsset,
+  });
+  final OnChanged onChanged;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -53,10 +65,14 @@ class SuraSearchBar extends StatelessWidget {
             borderSide: BorderSide(color: AppColors.primaryColor),
           ),
           prefixIcon: SvgPicture.asset(
-            AppAssets.quranIc,
-            color: AppColors.primaryColor,
+            iconAsset ?? AppAssets.quranIc,
+            colorFilter: const ColorFilter.mode(
+              AppColors.primaryColor,
+              BlendMode.srcIn,
+            ),
             fit: BoxFit.scaleDown,
           ),
+          suffixIcon: suffixIcon,
         ),
       ),
     );

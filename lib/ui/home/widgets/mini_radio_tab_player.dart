@@ -64,8 +64,11 @@ class MiniRadioTabPlayer extends StatelessWidget {
         Widget? controls;
         if (radio != null) {
           controls = MiniRadioControls(
+            isPlaying: viewModel.player.playing,
             isSoundOn: viewModel.selectedRadioForSoundId != radio.id,
-            onPause: () => _play(context, () => viewModel.playRadio(radio)),
+            onStop: viewModel.stopRadio,
+            onPlayPause: () =>
+                _play(context, () => viewModel.playRadio(radio)),
             onToggleSound: () => viewModel.muteSound(radio),
           );
         } else if (reciter != null) {

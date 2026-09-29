@@ -756,14 +756,22 @@ class RadioViewModel extends ChangeNotifier {
   // Current speed label for the speed button, e.g. "1.5x".
   String get playbackSpeedLabel => _audioService.playbackSpeedLabel;
 
-  /// Plays or pauses a radio station.
+  /// Plays or pauses a radio station (keeps selection on pause).
   /// Returns false when blocked by a call, or when offline.
   Future<bool> playRadio(Radios radio) async {
     if (selectedRadioId != null && selectedRadioId == radio.id) {
-      await player.pause();
-      _setSelectedRadio(null);
+      if (player.playing) {
+        await player.pause();
+        notifyListeners();
+        return true;
+      }
+      if (!await NetworkUtils.hasInternetConnection()) {
+        notifyListeners();
+        return false;
+      }
+      final bool started = await _audioService.play();
       notifyListeners();
-      return true;
+      return started;
     }
 
     if (!await _audioService.ensureCanPlay()) {
@@ -777,6 +785,12 @@ class RadioViewModel extends ChangeNotifier {
     }
 
     try {
+      // Live radio streams all report the same track info (index 0, no
+      // duration), so the notification keeps the old title unless the
+      // background player is reset before loading the new station.
+      if (selectedRadioId != null) {
+        await player.stop();
+      }
       // Radio should not inherit reciter loop mode or lecture speed.
       await player.setLoopMode(LoopMode.off);
       await player.setSpeed(1.0);
@@ -808,6 +822,13 @@ class RadioViewModel extends ChangeNotifier {
     }
   }
 
+  // Stops the radio stream and clears the current selection.
+  Future<void> stopRadio() async {
+    await player.stop();
+    _setSelectedRadio(null);
+    notifyListeners();
+  }
+
   // Listens for track end so auto-next can play the next surah.
   void _listenForReciterCompletion() {
     _playerStateSubscription = player.playerStateStream.listen((state) {
@@ -824,7 +845,9 @@ class RadioViewModel extends ChangeNotifier {
           notifyListeners();
         }
       }
-      if (selectedSharawyAudioUrl != null || selectedSermonAudioUrl != null) {
+      if (selectedRadioId != null ||
+          selectedSharawyAudioUrl != null ||
+          selectedSermonAudioUrl != null) {
         notifyListeners();
       }
     });

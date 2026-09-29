@@ -20,6 +20,7 @@ class RadioCard extends StatelessWidget {
         final bool isRadioOn =
             provider.selectedRadioId != null &&
             provider.selectedRadioId == radio.id;
+        final bool isRadioPlaying = isRadioOn && provider.player.playing;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -57,6 +58,16 @@ class RadioCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (isRadioOn)
+                    IconButton(
+                      onPressed: provider.stopRadio,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.stop_rounded,
+                        color: AppColors.blackColor,
+                        size: 32,
+                      ),
+                    ),
                   IconButton(
                     onPressed: () async {
                       final bool played = await provider.playRadio(radio);
@@ -67,8 +78,8 @@ class RadioCard extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     icon: AnimatedIconSwitcher(
                       child: Icon(
-                        isRadioOn ? Icons.pause : Icons.play_arrow_rounded,
-                        key: ValueKey(isRadioOn),
+                        isRadioPlaying ? Icons.pause : Icons.play_arrow_rounded,
+                        key: ValueKey(isRadioPlaying),
                         color: AppColors.blackColor,
                         size: 40,
                       ),

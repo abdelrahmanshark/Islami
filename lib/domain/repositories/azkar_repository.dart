@@ -1,6 +1,6 @@
 import 'package:islami/models/azkar_response.dart';
 
-/// Contract for loading morning and evening azkar.
+/// Contract for loading the azkar and duaa categories.
 abstract class AzkarRepository {
   Future<AzkarResponse> getAzkar();
 }

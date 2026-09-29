@@ -7,12 +7,12 @@ import 'package:islami/utils/app_assets.dart';
 
 /// Loads azkar from the local JSON asset.
 class AzkarLocalDataSource {
-  /// Reads and parses assets/json/azkar.json.
+  /// Reads and parses assets/json/azkar_and_duaa.json.
   Future<AzkarResponse> fetchAzkar() async {
     try {
-      final jsonString = await rootBundle.loadString(AppAssets.azkarJson);
-      final Map<String, dynamic> jsonMap = jsonDecode(jsonString);
-      return AzkarResponse.fromJson(jsonMap);
+      final jsonString = await rootBundle.loadString(AppAssets.azkarAndDuaaJson);
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      return AzkarResponse.fromJson(jsonList);
     } catch (e) {
       log(e.toString());
       rethrow;

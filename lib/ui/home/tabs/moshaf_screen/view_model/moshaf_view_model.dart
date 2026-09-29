@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:islami/models/asbab_nuzul.dart';
 import 'package:islami/models/ayah_coordinate.dart';
 import 'package:islami/models/hafs_ayah_meta.dart';
 import 'package:islami/models/moshaf_page.dart';
@@ -46,6 +48,13 @@ class MoshafViewModel extends ChangeNotifier {
   /// True when the tafsir panel is shown instead of Mushaf pages.
   bool isShowingTafser = false;
 
+  /// True when the AppBar and page footer are shown (hidden = fullscreen).
+  bool isUiVisible = false;
+
+  /// Keeps the AppBar visible on tafsir/error so the user can always leave.
+  bool get isAppBarVisible =>
+      isUiVisible || isShowingTafser || errorMessage != null;
+
   /// Loaded tafsir for the selected ayah, or null when none.
   TafserAyah? selectedTafserAyah;
 
@@ -64,6 +73,31 @@ class MoshafViewModel extends ChangeNotifier {
   /// Cache of surah number → parsed tafsir surah.
   final Map<int, TafserSurah> _tafserCache = {};
 
+  /// True when the panel shows أسباب النزول instead of the tafsir.
+  bool isShowingAsbab = false;
+
+  /// Index of the selected source tab (الواحدي / المحرر) in the asbab panel.
+  int selectedAsbabSourceIndex = 0;
+
+  /// Reasons of revelation keyed by "surah:ayah", filled once from asbab.json.
+  Map<String, List<AsbabReason>> _asbabByAyah = {};
+
+  /// True when the selected ayah has at least one reason of revelation.
+  bool get selectedAyahHasAsbab => selectedAsbabReasons.isNotEmpty;
+
+  /// Reasons of revelation of the selected ayah (one per source).
+  List<AsbabReason> get selectedAsbabReasons {
+    if (selectedAyah == null) return const [];
+    final key = _ayahKey(selectedAyah!.surahNumber, selectedAyah!.ayahNumber);
+    return _asbabByAyah[key] ?? const [];
+  }
+
+  /// Arabic surah name of the selected ayah.
+  String get selectedSurahName {
+    if (selectedAyah == null) return '';
+    return _surahName(selectedAyah!.surahNumber);
+  }
+
   /// Metadata title for the AppBar of the visible page.
   String get visiblePageTitle {
     if (pages.isEmpty ||
@@ -78,12 +112,12 @@ class MoshafViewModel extends ChangeNotifier {
   String get appBarTitle {
     if (isShowingTafser) {
       if (selectedAyah != null) {
-        final surahLabel =
-            selectedTafserSurahName ??
-            _surahName(selectedAyah!.surahNumber);
+        final surahLabel = isShowingAsbab
+            ? selectedSurahName
+            : selectedTafserSurahName ?? selectedSurahName;
         return '$surahLabel : ${selectedAyah!.ayahNumber}';
       }
-      return 'التفسير';
+      return isShowingAsbab ? 'سبب النزول' : 'التفسير';
     }
     if (selectedAyah != null) {
       return '${_surahName(selectedAyah!.surahNumber)} : ${selectedAyah!.ayahNumber}';
@@ -146,6 +180,8 @@ class MoshafViewModel extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
 
+      saveMoshafLastReadPage(initialPage);
+      _loadAsbab();
       await loadAyahCoordinatesForPage(initialPage);
     } catch (_) {
       errorMessage = 'تعذر تحميل المصحف';
@@ -229,6 +265,12 @@ class MoshafViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Shows or hides the AppBar and page footer.
+  void toggleUiVisibility() {
+    isUiVisible = !isUiVisible;
+    notifyListeners();
+  }
+
   /// Clears the ayah highlight.
   void clearSelectedAyah() {
     if (selectedAyah == null) return;
@@ -245,6 +287,7 @@ class MoshafViewModel extends ChangeNotifier {
   /// Shows the tafsir panel and loads tafsir when an ayah is selected.
   Future<void> openTafser() async {
     isShowingTafser = true;
+    isShowingAsbab = false;
     notifyListeners();
 
     if (selectedAyah != null) {
@@ -310,6 +353,64 @@ class MoshafViewModel extends ChangeNotifier {
     return surah;
   }
 
+  /// Opens the same panel as the tafsir, but showing أسباب النزول.
+  void openAsbabForSelectedAyah() {
+    if (!selectedAyahHasAsbab) return;
+    isShowingTafser = true;
+    isShowingAsbab = true;
+    selectedAsbabSourceIndex = 0;
+    notifyListeners();
+  }
+
+  /// Switches between the asbab sources (الواحدي / المحرر).
+  void selectAsbabSource(int index) {
+    if (index == selectedAsbabSourceIndex) return;
+    selectedAsbabSourceIndex = index;
+    notifyListeners();
+  }
+
+  /// Loads asbab.json once. On failure the "سبب النزول" option stays hidden.
+  Future<void> _loadAsbab() async {
+    if (_asbabByAyah.isNotEmpty) return;
+    try {
+      final raw = await rootBundle.loadString(AppAssets.asbabJson);
+      // compute() parses the large file in a background isolate,
+      // so the Mushaf page does not freeze while it loads.
+      _asbabByAyah = await compute(_buildAsbabIndex, raw);
+      notifyListeners();
+    } catch (_) {
+      _asbabByAyah = {};
+    }
+  }
+
+  /// Parses asbab.json into a "surah:ayah" → reasons map.
+  static Map<String, List<AsbabReason>> _buildAsbabIndex(String raw) {
+    final list = jsonDecode(raw) as List<dynamic>;
+    final Map<String, List<AsbabReason>> index = {};
+
+    for (final item in list) {
+      final entry = AsbabEntry.fromJson(item as Map<String, dynamic>);
+      for (final ayahNumber in entry.ayahs) {
+        final key = _ayahKey(entry.surah, ayahNumber);
+        final reasons = index.putIfAbsent(key, () => []);
+        for (final reason in entry.reasons) {
+          // Keep الواحدي first so the source tabs always have the same order.
+          if (reason.source == AsbabReason.wahidiSource) {
+            reasons.insert(0, reason);
+          } else {
+            reasons.add(reason);
+          }
+        }
+      }
+    }
+    return index;
+  }
+
+  /// Map key used to look up the asbab of one ayah.
+  static String _ayahKey(int surahNumber, int ayahNumber) {
+    return '$surahNumber:$ayahNumber';
+  }
+
   /// Updates the visible page from a PageView index.
   void updateVisiblePage(int pageIndex) {
     if (pageIndex < 0 || pageIndex >= pages.length) return;
@@ -320,6 +421,7 @@ class MoshafViewModel extends ChangeNotifier {
     currentPageAyahs = [];
     notifyListeners();
 
+    saveMoshafLastReadPage(visiblePageNumber);
     loadAyahCoordinatesForPage(pages[pageIndex].pageNumber);
   }
 
