@@ -28,6 +28,17 @@ class AppTheme {
       showUnselectedLabels: false,
       selectedLabelStyle: AppStyles.whiteBold12,
     ),
+    // Same Android zoom transition as before, but its background/scrim uses
+    // the app's dark color instead of the light default, so routes do not
+    // flash white while opening or closing.
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(
+          backgroundColor: AppColors.blackColor,
+        ),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     textSelectionTheme: const TextSelectionThemeData(
       selectionHandleColor: AppColors.primaryColor,
       cursorColor: AppColors.primaryColor,

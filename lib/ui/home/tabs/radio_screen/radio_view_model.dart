@@ -16,9 +16,11 @@ import 'package:islami/models/reciters_response.dart';
 import 'package:islami/models/sermon.dart';
 import 'package:islami/models/sharawy_category.dart';
 import 'package:islami/models/sharawy_pillar.dart';
+import 'package:islami/utils/app_animations.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:islami/utils/arabic_utils.dart';
 import 'package:islami/utils/network_utils.dart';
+import 'package:islami/utils/shared_preferences.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -39,6 +41,7 @@ class RadioViewModel extends ChangeNotifier {
        _downloadedAudioRepository =
            downloadedAudioRepository ?? DownloadedAudioRepositoryImpl() {
     _restorePlaybackState();
+    _loadFavorites();
     getRadios();
     getReciters();
     getSermons();
@@ -96,6 +99,22 @@ class RadioViewModel extends ChangeNotifier {
   bool isRepeatEnabled = false;
   bool isAutoNextEnabled = false;
   bool isReciterPlaying = false; // drives play/pause icon on reciter cards
+
+  // Favorites are saved ids, newest first, so a new favorite goes to the top.
+  List<int> favoriteRadioIds = [];
+  List<int> favoriteReciterIds = [];
+  static const int allListTabIndex = 0;
+  static const int favoritesListTabIndex = 1;
+  int radioListTabIndex = allListTabIndex;
+  int reciterListTabIndex = allListTabIndex;
+  String _radioSearchQuery = '';
+  String _reciterSearchQuery = '';
+  // Cards shrinking away before moving to their new place in the list.
+  Set<int> leavingRadioIds = {};
+  Set<int> leavingReciterIds = {};
+  // Card that grows in at its new place right after moving.
+  int? enteringRadioId;
+  int? enteringReciterId;
 
   // Where the playing Sha'rawy lecture lives, so the mini player can reopen it.
   SharawyCategory? _playingSharawyCategory;
@@ -205,19 +224,13 @@ class RadioViewModel extends ChangeNotifier {
     _syncActiveAudioType();
   }
 
-  /// Called each time the Radio tab opens. Its search bars start empty, so
-  /// show full lists again, and re-read settings shared with the Downloads tab.
-  /// Does not notify because it runs right before the tab builds.
+  /// Called each time the Radio tab is shown: re-reads settings shared with
+  /// the Downloads tab. The tab stays alive between switches, so its search
+  /// bars and filtered lists are kept as the user left them.
   void onTabOpened() {
-    filteredRadios = radios;
-    filteredReciters = reciters;
-    filteredSermons = sermons;
-    filteredSharawyCategories = sharawyCategories;
-    filteredSharawyPillars = sharawyPillars;
-    filteredSharawySections = sharawySections;
-    filteredSharawyLectures = sharawyLectures;
     isRepeatEnabled = _audioService.isRepeatEnabled;
     isAutoNextEnabled = _audioService.isAutoNextEnabled;
+    notifyListeners();
   }
 
   /// Arabic name of [currentSura], e.g. "سورة الفاتحة".
@@ -252,6 +265,11 @@ class RadioViewModel extends ChangeNotifier {
     final ActiveAudioType? activeType = _audioService.activeAudioType;
     if (activeType == ActiveAudioType.radio) {
       await _openToggleIndex(0);
+      // The playing radio may be hidden by the favorites tab.
+      if (activeRadioIndex == null) {
+        radioListTabIndex = allListTabIndex;
+        _updateFilteredRadios();
+      }
     } else if (activeType == ActiveAudioType.reciter) {
       resetSuraSearch();
       await _openToggleIndex(1);
@@ -492,7 +510,7 @@ class RadioViewModel extends ChangeNotifier {
 
     try {
       radios = await _radioRepository.getRadios();
-      filteredRadios = radios;
+      _updateFilteredRadios();
       _syncSelectedRadiosFromList();
       radioIsLoading = false;
       notifyListeners();
@@ -518,7 +536,7 @@ class RadioViewModel extends ChangeNotifier {
 
     try {
       reciters = await _radioRepository.getReciters();
-      filteredReciters = reciters;
+      _updateFilteredReciters();
       // Rematch restored download folders to real API reciter ids.
       await _downloadedAudioRepository.restoreExistingDownloads(
         knownReciters: reciters,
@@ -1160,32 +1178,165 @@ class RadioViewModel extends ChangeNotifier {
     return '$minutes:$seconds';
   }
 
+  // Filters radios by name using normalized Arabic search.
   void filterRadio(String newText) {
-    if (newText.isEmpty) {
-      filteredRadios = radios;
-    } else {
-      final normalizedQuery = normalizeArabic(newText);
-      filteredRadios = radios.where((radio) {
-        final name = radio.name;
-        if (name == null) return false;
-        return normalizeArabic(name).contains(normalizedQuery);
-      }).toList();
-    }
+    _radioSearchQuery = newText;
+    _updateFilteredRadios();
     notifyListeners();
   }
 
+  // Filters reciters by name using normalized Arabic search.
   void filterReciter(String newText) {
-    if (newText.isEmpty) {
-      filteredReciters = reciters;
-    } else {
-      final normalizedQuery = normalizeArabic(newText);
-      filteredReciters = reciters.where((reciter) {
-        final name = reciter.name;
-        if (name == null) return false;
-        return normalizeArabic(name).contains(normalizedQuery);
-      }).toList();
-    }
+    _reciterSearchQuery = newText;
+    _updateFilteredReciters();
     notifyListeners();
+  }
+
+  // Loads saved favorites, then re-orders any already loaded lists.
+  Future<void> _loadFavorites() async {
+    favoriteRadioIds = await getFavoriteRadioIds();
+    favoriteReciterIds = await getFavoriteReciterIds();
+    _updateFilteredRadios();
+    _updateFilteredReciters();
+    notifyListeners();
+  }
+
+  /// True when [radio] is in the favorites.
+  bool isRadioFavorite(Radios radio) {
+    return favoriteRadioIds.contains(radio.id);
+  }
+
+  /// True when [reciter] is in the favorites.
+  bool isReciterFavorite(Reciters reciter) {
+    return favoriteReciterIds.contains(reciter.id);
+  }
+
+  // Switches the radios list between "all" and "favorites".
+  void changeRadioListTab(int index) {
+    if (radioListTabIndex == index) return;
+    radioListTabIndex = index;
+    _updateFilteredRadios();
+    notifyListeners();
+  }
+
+  // Switches the reciters list between "all" and "favorites".
+  void changeReciterListTab(int index) {
+    if (reciterListTabIndex == index) return;
+    reciterListTabIndex = index;
+    _updateFilteredReciters();
+    notifyListeners();
+  }
+
+  /// Adds or removes [radio] from favorites. Its card shrinks away first,
+  /// then the list is re-ordered and the card grows in at its new place.
+  Future<void> toggleFavoriteRadio(Radios radio) async {
+    final int? id = radio.id;
+    if (id == null || leavingRadioIds.contains(id)) return;
+
+    if (favoriteRadioIds.contains(id)) {
+      favoriteRadioIds.remove(id);
+    } else {
+      favoriteRadioIds.insert(0, id);
+    }
+    saveFavoriteRadioIds(favoriteRadioIds);
+    leavingRadioIds.add(id);
+    notifyListeners();
+
+    await Future.delayed(AppAnimations.listMove);
+    leavingRadioIds.remove(id);
+    enteringRadioId = id;
+    _updateFilteredRadios();
+    notifyListeners();
+
+    // Stops the card from replaying its grow animation when rebuilt later.
+    await Future.delayed(AppAnimations.listMove);
+    if (enteringRadioId == id) enteringRadioId = null;
+  }
+
+  /// Adds or removes [reciter] from favorites. Its card shrinks away first,
+  /// then the list is re-ordered and the card grows in at its new place.
+  Future<void> toggleFavoriteReciter(Reciters reciter) async {
+    final int? id = reciter.id;
+    if (id == null || leavingReciterIds.contains(id)) return;
+
+    if (favoriteReciterIds.contains(id)) {
+      favoriteReciterIds.remove(id);
+    } else {
+      favoriteReciterIds.insert(0, id);
+    }
+    saveFavoriteReciterIds(favoriteReciterIds);
+    leavingReciterIds.add(id);
+    notifyListeners();
+
+    await Future.delayed(AppAnimations.listMove);
+    leavingReciterIds.remove(id);
+    enteringReciterId = id;
+    _updateFilteredReciters();
+    notifyListeners();
+
+    // Stops the card from replaying its grow animation when rebuilt later.
+    await Future.delayed(AppAnimations.listMove);
+    if (enteringReciterId == id) enteringReciterId = null;
+  }
+
+  // Rebuilds [filteredRadios] from the search text, tab, and favorites.
+  void _updateFilteredRadios() {
+    filteredRadios = _favoritesFirst<Radios>(
+      items: radios,
+      favoriteIds: favoriteRadioIds,
+      searchQuery: _radioSearchQuery,
+      onlyFavorites: radioListTabIndex == favoritesListTabIndex,
+      idOf: (radio) => radio.id,
+      nameOf: (radio) => radio.name,
+    );
+  }
+
+  // Rebuilds [filteredReciters] from the search text, tab, and favorites.
+  void _updateFilteredReciters() {
+    filteredReciters = _favoritesFirst<Reciters>(
+      items: reciters,
+      favoriteIds: favoriteReciterIds,
+      searchQuery: _reciterSearchQuery,
+      onlyFavorites: reciterListTabIndex == favoritesListTabIndex,
+      idOf: (reciter) => reciter.id,
+      nameOf: (reciter) => reciter.name,
+    );
+  }
+
+  /// Returns the items matching [searchQuery]: favorites first (newest first),
+  /// then the rest in their original order. Generic (`<T>`) so radios and
+  /// reciters share the same logic; [idOf] and [nameOf] read each item.
+  List<T> _favoritesFirst<T>({
+    required List<T> items,
+    required List<int> favoriteIds,
+    required String searchQuery,
+    required bool onlyFavorites,
+    required int? Function(T item) idOf,
+    required String? Function(T item) nameOf,
+  }) {
+    final String normalizedQuery = normalizeArabic(searchQuery);
+    final List<T> matches = items.where((item) {
+      if (searchQuery.isEmpty) return true;
+      final String? name = nameOf(item);
+      if (name == null) return false;
+      return normalizeArabic(name).contains(normalizedQuery);
+    }).toList();
+
+    final List<T> favorites = [];
+    for (final int favoriteId in favoriteIds) {
+      for (final T item in matches) {
+        if (idOf(item) == favoriteId) {
+          favorites.add(item);
+          break;
+        }
+      }
+    }
+    if (onlyFavorites) return favorites;
+
+    final List<T> others = matches.where((item) {
+      return !favoriteIds.contains(idOf(item));
+    }).toList();
+    return [...favorites, ...others];
   }
 
   // Filters sermons by Arabic title using normalized Arabic search.
@@ -1272,7 +1423,8 @@ class RadioViewModel extends ChangeNotifier {
   }
 
   void resetReciterSearch() {
-    filteredReciters = reciters;
+    _reciterSearchQuery = '';
+    _updateFilteredReciters();
     notifyListeners();
   }
 

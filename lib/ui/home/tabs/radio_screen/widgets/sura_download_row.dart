@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/widgets/sura_bar.dart';
+import 'package:islami/ui/widgets/pressable_scale.dart';
 import 'package:islami/utils/app_colors.dart';
 
 /// Surah row with optional download checkbox and downloaded indicator.
@@ -42,9 +43,11 @@ class SuraDownloadRow extends StatelessWidget {
           side: const BorderSide(color: AppColors.primaryColor),
         ),
         Expanded(
-          child: InkWell(
-            onTap: onPlay,
-            child: SuraBar(index: suraIndex),
+          child: PressableScale(
+            child: InkWell(
+              onTap: onPlay,
+              child: SuraBar(index: suraIndex),
+            ),
           ),
         ),
         IconButton(

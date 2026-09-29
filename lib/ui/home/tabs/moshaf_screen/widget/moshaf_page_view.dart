@@ -99,7 +99,10 @@ class MoshafPageView extends StatelessWidget {
               },
             ),
           ),
-          MoshafPageFooter(page: page),
+          MoshafPageFooter(
+            page: page,
+            isDarkTheme: isDarkTheme,
+          ),
         ],
       ),
     );

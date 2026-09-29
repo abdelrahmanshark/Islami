@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:islami/ui/home/widgets/bottom_nav_icon.dart';
 
-import '../../../utils/app_colors.dart';
-
+/// Builds one bottom bar item with an animated selected icon.
 BottomNavigationBarItem bottomNavBarItem(
   int index,
   String label,
@@ -10,16 +9,7 @@ BottomNavigationBarItem bottomNavBarItem(
   int selectedIndex,
 ) {
   return BottomNavigationBarItem(
-    icon: selectedIndex == index
-        ? Container(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(66),
-              color: AppColors.grayColor,
-            ),
-            child: SvgPicture.asset(icon, color: AppColors.whiteColor),
-          )
-        : SvgPicture.asset(icon),
+    icon: BottomNavIcon(icon: icon, isSelected: selectedIndex == index),
     label: label,
   );
 }

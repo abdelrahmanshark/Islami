@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/home_screen_view_model.dart';
 import 'package:islami/ui/home/widgets/bottom_navigation_bar_Item.dart';
+import 'package:islami/ui/home/widgets/home_tabs_view.dart';
 import 'package:islami/ui/home/widgets/mini_audio_player.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +25,10 @@ class _HomeScreenState extends State<HomeScreen> {
             top: false,
             child: Scaffold(
               resizeToAvoidBottomInset: false,
-              body: homeScreenViewModel.tabs[homeScreenViewModel.selectedIndex],
+              body: HomeTabsView(
+                selectedIndex: homeScreenViewModel.selectedIndex,
+                tabs: homeScreenViewModel.tabs,
+              ),
               bottomNavigationBar: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

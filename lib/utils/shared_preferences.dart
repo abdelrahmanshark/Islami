@@ -21,7 +21,10 @@ class SharedPreferencesKay {
   static const String userLongitude = 'userLongitude';
   static const String userCity = 'userCity';
   static const String userCountry = 'userCountry';
+  static const String userCountryCode = 'userCountryCode';
   static const String downloadedQuranAudio = 'downloadedQuranAudio';
+  static const String favoriteRadioIds = 'favoriteRadioIds';
+  static const String favoriteReciterIds = 'favoriteReciterIds';
 }
 
 /// Re-reads values written by another isolate (background alarm / download task).
@@ -180,6 +183,39 @@ Future<void> saveMoshafMemorizedAyahs(Set<int> ayahIds) async {
   );
 }
 
+/// Returns favorite radio ids, newest first (empty when none saved).
+Future<List<int>> getFavoriteRadioIds() async {
+  return _getIdList(SharedPreferencesKay.favoriteRadioIds);
+}
+
+/// Saves favorite radio ids, newest first.
+Future<void> saveFavoriteRadioIds(List<int> ids) async {
+  await _saveIdList(SharedPreferencesKay.favoriteRadioIds, ids);
+}
+
+/// Returns favorite reciter ids, newest first (empty when none saved).
+Future<List<int>> getFavoriteReciterIds() async {
+  return _getIdList(SharedPreferencesKay.favoriteReciterIds);
+}
+
+/// Saves favorite reciter ids, newest first.
+Future<void> saveFavoriteReciterIds(List<int> ids) async {
+  await _saveIdList(SharedPreferencesKay.favoriteReciterIds, ids);
+}
+
+/// Reads a list of ids saved as strings under [key].
+Future<List<int>> _getIdList(String key) async {
+  final pref = await SharedPreferences.getInstance();
+  final saved = pref.getStringList(key) ?? [];
+  return saved.map(int.parse).toList();
+}
+
+/// Saves a list of ids as strings under [key], keeping their order.
+Future<void> _saveIdList(String key, List<int> ids) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setStringList(key, ids.map((id) => id.toString()).toList());
+}
+
 /// Saves the user's coordinates and place names locally.
 Future<void> saveUserLocation(UserLocation location) async {
   final pref = await SharedPreferences.getInstance();
@@ -187,6 +223,10 @@ Future<void> saveUserLocation(UserLocation location) async {
   await pref.setDouble(SharedPreferencesKay.userLongitude, location.longitude);
   await pref.setString(SharedPreferencesKay.userCity, location.city);
   await pref.setString(SharedPreferencesKay.userCountry, location.country);
+  await pref.setString(
+    SharedPreferencesKay.userCountryCode,
+    location.countryCode,
+  );
 }
 
 /// Returns the saved location, or null when nothing was stored yet.
@@ -204,5 +244,6 @@ Future<UserLocation?> getSavedUserLocation() async {
     longitude: longitude,
     city: pref.getString(SharedPreferencesKay.userCity) ?? '',
     country: pref.getString(SharedPreferencesKay.userCountry) ?? '',
+    countryCode: pref.getString(SharedPreferencesKay.userCountryCode) ?? '',
   );
 }

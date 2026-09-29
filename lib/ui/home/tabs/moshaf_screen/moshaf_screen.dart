@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_view.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_tafser_view.dart';
+import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -52,6 +53,28 @@ class _MoshafScreenState extends State<MoshafScreen> {
 
     _viewModel.markPageRestored();
     _viewModel.updateVisiblePage(initialIndex);
+    _precacheNeighborPages(initialIndex);
+  }
+
+  /// Called when the user swipes to another page.
+  void _onPageChanged(int index) {
+    _viewModel.updateVisiblePage(index);
+    _precacheNeighborPages(index);
+  }
+
+  /// Decodes the previous and next page images ahead of time, so swiping
+  /// does not show an empty page while the image loads.
+  void _precacheNeighborPages(int index) {
+    for (final int neighborIndex in [index - 1, index + 1]) {
+      if (neighborIndex < 0 || neighborIndex >= _viewModel.pages.length) {
+        continue;
+      }
+      final String imagePath = AppAssets.quranPageImage(
+        _viewModel.pages[neighborIndex].pageNumber,
+        isDark: _viewModel.isDarkTheme,
+      );
+      precacheImage(AssetImage(imagePath), context);
+    }
   }
 
   /// Toggles the bookmark and shows a short confirmation.
@@ -262,7 +285,7 @@ class _MoshafScreenState extends State<MoshafScreen> {
     return PageView.builder(
       controller: _pageController,
       itemCount: provider.pages.length,
-      onPageChanged: provider.updateVisiblePage,
+      onPageChanged: _onPageChanged,
       itemBuilder: (context, index) {
         final page = provider.pages[index];
         final isVisiblePage = index == provider.visiblePageIndex;

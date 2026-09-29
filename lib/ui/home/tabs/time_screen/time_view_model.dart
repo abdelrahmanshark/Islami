@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/widgets.dart';
 import 'package:islami/data/time/time_repository.dart';
 import 'package:islami/domain/repositories/time_repository.dart';
+import 'package:islami/models/location_failure.dart';
 import 'package:islami/models/user_location.dart';
 import 'package:islami/services/adhan_alarm_scheduler.dart';
 import 'package:islami/services/prayer_widget_updater.dart';
@@ -38,6 +39,9 @@ class TimeViewModel extends ChangeNotifier {
   bool isLocationLoading = false;
   UserLocation? userLocation;
 
+  /// Set when there is no saved location yet and GPS could not provide one.
+  LocationFailureReason? locationFailure;
+
   Prayer? nextPrayer;
   int nextPrayerIndex = -1;
   Duration remainingTime = Duration.zero;
@@ -50,6 +54,22 @@ class TimeViewModel extends ChangeNotifier {
       return placeName;
     }
     return 'اضغط لتحديد موقعك';
+  }
+
+  /// Message asking the user to fix location based on [locationFailure].
+  String get locationFailureMessage {
+    switch (locationFailure) {
+      case LocationFailureReason.permissionDenied:
+        return 'يرجى السماح للتطبيق بالوصول إلى موقعك لعرض مواقيت الصلاة';
+      case LocationFailureReason.permissionDeniedForever:
+        return 'إذن الموقع مرفوض، يرجى السماح به من إعدادات التطبيق لعرض مواقيت الصلاة';
+      case LocationFailureReason.serviceDisabled:
+        return 'يرجى تفعيل خدمة الموقع (GPS) لعرض مواقيت الصلاة';
+      case LocationFailureReason.unavailable:
+        return 'تعذر تحديد موقعك، تأكد من تفعيل الموقع ثم حاول مرة أخرى';
+      case null:
+        return '';
+    }
   }
 
   /// Loads the saved azan on/off preference (defaults to on).
@@ -116,6 +136,7 @@ class TimeViewModel extends ChangeNotifier {
 
     isTimeLoading = true;
     timeFailureMsg = '';
+    locationFailure = null;
     notifyListeners();
 
     try {
@@ -140,6 +161,12 @@ class TimeViewModel extends ChangeNotifier {
           refreshUpcoming: true,
         );
       }
+    } on LocationUnavailableException catch (e) {
+      // First-time setup only: no saved location and GPS failed.
+      log(e.toString());
+      isTimeLoading = false;
+      locationFailure = e.reason;
+      notifyListeners();
     } catch (e) {
       log(e.toString());
       isTimeLoading = false;

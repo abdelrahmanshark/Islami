@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/downloaded_reciter_summary.dart';
+import 'package:islami/ui/widgets/pressable_scale.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 
@@ -16,33 +17,32 @@ class DownloadedReciterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              summary.reciterName,
-              style: AppStyles.blackBold16,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${summary.suraCount} سورة',
-              style: AppStyles.blackBold14,
-            ),
-          ],
+    return PressableScale(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                summary.reciterName,
+                style: AppStyles.blackBold16,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 2),
+              Text('${summary.suraCount} سورة', style: AppStyles.blackBold14),
+            ],
+          ),
         ),
       ),
     );

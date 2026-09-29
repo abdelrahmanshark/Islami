@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloads_rescan_button.dart';
 import 'package:islami/ui/downloads_view/widget/downloads_tab_content.dart';
+import 'package:islami/ui/home/home_screen_view_model.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
+import 'package:islami/ui/widgets/fade_in.dart';
+import 'package:islami/ui/widgets/screen_background.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -17,14 +20,33 @@ class DownloadsView extends StatefulWidget {
 }
 
 class _DownloadsViewState extends State<DownloadsView> {
+  late final HomeScreenViewModel _homeViewModel;
+
   @override
   void initState() {
     super.initState();
+    _homeViewModel = context.read<HomeScreenViewModel>();
+    _homeViewModel.addListener(_onHomeTabChanged);
     // Runs after the first frame because loading notifies listeners.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<DownloadsViewModel>().onTabOpened();
     });
+  }
+
+  @override
+  void dispose() {
+    _homeViewModel.removeListener(_onHomeTabChanged);
+    super.dispose();
+  }
+
+  /// Reloads downloads each time the user comes back to this tab
+  /// (new files may have been downloaded from the Radio tab).
+  void _onHomeTabChanged() {
+    if (_homeViewModel.selectedIndex != HomeScreenViewModel.downloadsTabIndex) {
+      return;
+    }
+    context.read<DownloadsViewModel>().onTabOpened();
   }
 
   /// Rescans Music/Islami/Quran and shows a short result message.
@@ -53,13 +75,8 @@ class _DownloadsViewState extends State<DownloadsView> {
       builder: (context, viewModel, child) {
         final bool hasSelectedReciter = viewModel.selectedReciter != null;
 
-        return Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(AppAssets.radioBg),
-              fit: BoxFit.cover,
-            ),
-          ),
+        return ScreenBackground(
+          image: AppAssets.radioBg,
           child: SafeArea(
             child: Column(
               children: [
@@ -118,7 +135,13 @@ class _DownloadsViewState extends State<DownloadsView> {
                   textDirection: TextDirection.rtl,
                 ),
                 const SizedBox(height: 6),
-                Expanded(child: DownloadsTabContent(viewModel: viewModel)),
+                // Fades in when switching between reciters and their suras.
+                Expanded(
+                  child: FadeIn(
+                    key: ValueKey(hasSelectedReciter),
+                    child: DownloadsTabContent(viewModel: viewModel),
+                  ),
+                ),
               ],
             ),
           ),

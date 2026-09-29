@@ -5,6 +5,7 @@ class UserLocation {
     required this.longitude,
     this.city = '',
     this.country = '',
+    this.countryCode = '',
   });
 
   final double latitude;
@@ -12,8 +13,14 @@ class UserLocation {
   final String city;
   final String country;
 
+  /// ISO country code from reverse geocoding (e.g. "SA"), empty when unknown.
+  final String countryCode;
+
   /// True when both city and country are available for display.
   bool get hasPlaceName => city.isNotEmpty && country.isNotEmpty;
+
+  /// True when the location is inside Saudi Arabia.
+  bool get isSaudiArabia => countryCode.toUpperCase() == 'SA';
 
   /// Builds "City, Country" text for the location widget.
   String get displayName {
@@ -34,12 +41,14 @@ class UserLocation {
     double? longitude,
     String? city,
     String? country,
+    String? countryCode,
   }) {
     return UserLocation(
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       city: city ?? this.city,
       country: country ?? this.country,
+      countryCode: countryCode ?? this.countryCode,
     );
   }
 }

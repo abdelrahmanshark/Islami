@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_hub_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_option_card.dart';
+import 'package:islami/ui/widgets/screen_background.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -38,13 +39,8 @@ class _MoshafHubViewState extends State<MoshafHubView> {
         builder: (context, provider, child) {
           return Directionality(
             textDirection: TextDirection.rtl,
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage(AppAssets.quranBg),
-                  fit: BoxFit.cover,
-                ),
-              ),
+            child: ScreenBackground(
+              image: AppAssets.quranBg,
               child: SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -72,9 +72,13 @@ class _ActiveAudioListViewState extends State<ActiveAudioListView> {
 
   /// Smoothly scrolls back to the first card when a search bar is tapped.
   void _onSearchActivated() {
-    // Ignore taps from another screen pushed on top of this list.
+    // Ignore taps from another screen pushed on top of this list,
+    // or from another home tab while this tab is hidden.
     final bool isOnCurrentScreen = ModalRoute.isCurrentOf(context) ?? true;
-    if (!isOnCurrentScreen || !_scrollController.hasClients) return;
+    final bool isVisible = Visibility.of(context);
+    if (!isOnCurrentScreen || !isVisible || !_scrollController.hasClients) {
+      return;
+    }
 
     // Stops a mini player scroll that is still moving to the active card.
     if (_isScrolling) _stopActiveScroll = true;

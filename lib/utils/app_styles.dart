@@ -38,10 +38,26 @@ class AppStyles {
     fontSize: 18,
     fontWeight: FontWeight.bold,
   );
+  static final TextStyle blackBold20 = TextStyle(
+    color: AppColors.blackColor,
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+  );
   static final TextStyle whiteBold20 = TextStyle(
     color: AppColors.whiteColor,
     fontSize: 20,
     fontWeight: FontWeight.bold,
+  );
+  static final TextStyle whiteBold24 = TextStyle(
+    color: AppColors.whiteColor,
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+  );
+  static final TextStyle whiteBold56 = TextStyle(
+    color: AppColors.whiteColor,
+    fontSize: 56,
+    fontWeight: FontWeight.bold,
+    height: 1.1,
   );
   static final TextStyle primaryBold14 = TextStyle(
     color: AppColors.primaryColor,
@@ -51,6 +67,11 @@ class AppStyles {
   static final TextStyle primaryBold16 = TextStyle(
     color: AppColors.primaryColor,
     fontSize: 16,
+    fontWeight: FontWeight.bold,
+  );
+  static final TextStyle primaryBold18 = TextStyle(
+    color: AppColors.primaryColor,
+    fontSize: 18,
     fontWeight: FontWeight.bold,
   );
   static final TextStyle primaryBold20 = TextStyle(

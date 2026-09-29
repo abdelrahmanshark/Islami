@@ -4,6 +4,7 @@ import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/view_model/m
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/widget/moshaf_index_item_tile.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/moshaf_index_view/widget/moshaf_index_tab_button.dart';
 import 'package:islami/ui/home/widgets/sura_search_bar.dart';
+import 'package:islami/ui/widgets/fade_in.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
@@ -99,21 +100,25 @@ class _MoshafIndexViewState extends State<MoshafIndexView> {
                       ),
                     ),
                   Expanded(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                      itemCount: provider.currentItems.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = provider.currentItems[index];
-                        return MoshafIndexItemTile(
-                          item: item,
-                          isCompleted: provider.isItemCompleted(item),
-                          onTap: () =>
-                              Navigator.pop(context, item.pageNumber),
-                          onToggleComplete: () =>
-                              provider.toggleItemCompletion(item),
-                        );
-                      },
+                    // Fades the list in when another category tab is picked.
+                    child: FadeIn(
+                      key: ValueKey(provider.selectedTabIndex),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                        itemCount: provider.currentItems.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final item = provider.currentItems[index];
+                          return MoshafIndexItemTile(
+                            item: item,
+                            isCompleted: provider.isItemCompleted(item),
+                            onTap: () =>
+                                Navigator.pop(context, item.pageNumber),
+                            onToggleComplete: () =>
+                                provider.toggleItemCompletion(item),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],

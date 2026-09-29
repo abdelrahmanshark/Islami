@@ -1,6 +1,7 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/hadith_card.dart';
+import 'package:islami/ui/widgets/screen_background.dart';
 import 'package:islami/utils/app_assets.dart';
 
 class HadithScreen extends StatelessWidget {
@@ -8,21 +9,10 @@ class HadithScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var height = MediaQuery
-        .of(context)
-        .size
-        .height;
-    var width = MediaQuery
-        .of(context)
-        .size
-        .width;
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(AppAssets.hadithBg),
-          fit: BoxFit.cover,
-        ),
-      ),
+    // heightOf only rebuilds on size changes (not keyboard/padding changes).
+    var height = MediaQuery.heightOf(context);
+    return ScreenBackground(
+      image: AppAssets.hadithBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [Image.asset(AppAssets.header),

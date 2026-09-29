@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:islami/data/azkar/azkar_repository.dart';
@@ -16,9 +15,14 @@ class SebhaViewModel extends ChangeNotifier {
 
   final AzkarRepository _azkarRepository;
 
-  double angle = 0;
+  /// How many tasbihat make one round of the same zikr.
+  static const int tasbihLimit = 33;
+
+  /// Sebha rotation in full turns (1.0 = 360°).
+  double turns = 0;
   int counter = 0;
-  List<String> azkar = ['سبحان الله', "الحمد لله", " الله اكبر", "أستغفر الله"];
+  int totalCount = 0;
+  List<String> azkar = ['سبحان الله', 'الحمد لله', 'الله أكبر', 'أستغفر الله'];
   int azkarIndex = 0;
 
   List<AzkarItem> morningAzkar = [];
@@ -26,17 +30,19 @@ class SebhaViewModel extends ChangeNotifier {
   bool isAzkarLoading = false;
   String azkarFailureMsg = '';
 
-  /// Rotates the sebha and advances the tasbih counter.
+  /// True when the current zikr reached its last tasbiha (33 of 33).
+  bool get isRoundCompleted => counter == tasbihLimit;
+
+  /// Rotates the sebha one bead and advances the tasbih counter.
+  /// After 33 the next tap moves to the next zikr and starts again from 1.
   void rotate() {
-    angle += math.pi / 33;
-    counter++;
-    if (counter == 33) {
+    turns += 1 / tasbihLimit;
+    if (isRoundCompleted) {
       counter = 0;
-      azkarIndex++;
-      if (azkarIndex > 3) {
-        azkarIndex = 0;
-      }
+      azkarIndex = (azkarIndex + 1) % azkar.length;
     }
+    counter++;
+    totalCount++;
     notifyListeners();
   }
 

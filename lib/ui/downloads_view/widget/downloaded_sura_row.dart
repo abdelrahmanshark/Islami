@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/ui/home/widgets/sura_bar.dart';
+import 'package:islami/ui/widgets/pressable_scale.dart';
 import 'package:islami/utils/app_colors.dart';
 
 /// Row for one downloaded sura under a reciter.
@@ -27,9 +28,11 @@ class DownloadedSuraRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: InkWell(
-              onTap: onPlay,
-              child: SuraBar(index: download.suraId - 1),
+            child: PressableScale(
+              child: InkWell(
+                onTap: onPlay,
+                child: SuraBar(index: download.suraId - 1),
+              ),
             ),
           ),
           IconButton(

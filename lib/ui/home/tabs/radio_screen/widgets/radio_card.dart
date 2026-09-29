@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/radio_response.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widgets/favorite_icon_button.dart';
 import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/utils/app_colors.dart';
@@ -31,15 +32,27 @@ class RadioCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  radio.name ?? '',
-                  style: AppStyles.blackBold16,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      radio.name ?? '',
+                      style: AppStyles.blackBold16,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FavoriteIconButton(
+                      isFavorite: provider.isRadioFavorite(radio),
+                      onPressed: () => provider.toggleFavoriteRadio(radio),
+                    ),
+                  ),
+                ],
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

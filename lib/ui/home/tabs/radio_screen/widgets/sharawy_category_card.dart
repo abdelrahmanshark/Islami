@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/sharawy_category.dart';
+import 'package:islami/ui/widgets/pressable_scale.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 
@@ -16,23 +17,25 @@ class SharawyCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          category.titleAr,
-          style: AppStyles.blackBold16,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
+    return PressableScale(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            category.titleAr,
+            style: AppStyles.blackBold16,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     );

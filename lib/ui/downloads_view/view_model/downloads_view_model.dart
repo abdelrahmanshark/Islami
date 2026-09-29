@@ -72,10 +72,12 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Called each time the Downloads tab opens: re-reads settings shared with
   /// the Radio tab and reloads files (new ones may come from the Radio tab).
+  /// The spinner only shows on the first load; later reloads update the
+  /// list in place so it does not flicker or lose its scroll position.
   Future<void> onTabOpened() async {
     isRepeatEnabled = _audioService.isRepeatEnabled;
     isAutoNextEnabled = _audioService.isAutoNextEnabled;
-    await loadDownloads();
+    await loadDownloads(showLoading: _allDownloads.isEmpty);
   }
 
   /// Opens the reciter whose offline sura is playing (mini player tap),
@@ -116,8 +118,9 @@ class DownloadsViewModel extends ChangeNotifier {
   }
 
   /// Loads valid downloads and builds the reciter list.
-  Future<void> loadDownloads() async {
-    isLoading = true;
+  /// Pass [showLoading] false to refresh silently without the spinner.
+  Future<void> loadDownloads({bool showLoading = true}) async {
+    isLoading = showLoading;
     errorMessage = null;
     notifyListeners();
 

@@ -18,53 +18,57 @@ class QiblaCompass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      height: 280,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Rotating compass dial
-          Transform.rotate(
-            angle: compassRadians,
-            child: CustomPaint(
-              size: const Size(280, 280),
-              painter: _CompassDialPainter(),
-            ),
-          ),
-          // Qibla needle
-          Transform.rotate(
-            angle: needleRadians,
-            child: CustomPaint(
-              size: const Size(280, 280),
-              painter: _QiblaNeedlePainter(
-                isFacingQibla: isFacingQibla,
+    // RepaintBoundary keeps frequent sensor updates from repainting the
+    // whole screen, and lets the static dial be drawn once and just rotated.
+    return RepaintBoundary(
+      child: SizedBox(
+        width: 280,
+        height: 280,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Rotating compass dial
+            Transform.rotate(
+              angle: compassRadians,
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  size: const Size(280, 280),
+                  painter: _CompassDialPainter(),
+                ),
               ),
             ),
-          ),
-          // Center Kaaba marker
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.blackColor,
-              shape: BoxShape.circle,
-              border: Border.all(
+            // Qibla needle
+            Transform.rotate(
+              angle: needleRadians,
+              child: CustomPaint(
+                size: const Size(280, 280),
+                painter: _QiblaNeedlePainter(isFacingQibla: isFacingQibla),
+              ),
+            ),
+            // Center Kaaba marker
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.blackColor,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isFacingQibla
+                      ? AppColors.primaryColor
+                      : AppColors.whiteColor,
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.mosque,
                 color: isFacingQibla
                     ? AppColors.primaryColor
                     : AppColors.whiteColor,
-                width: 2,
+                size: 26,
               ),
             ),
-            child: Icon(
-              Icons.mosque,
-              color: isFacingQibla
-                  ? AppColors.primaryColor
-                  : AppColors.whiteColor,
-              size: 26,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -167,8 +171,7 @@ class _QiblaNeedlePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final color =
-        isFacingQibla ? AppColors.primaryColor : AppColors.whiteColor;
+    final color = isFacingQibla ? AppColors.primaryColor : AppColors.whiteColor;
 
     final paint = Paint()
       ..color = color
