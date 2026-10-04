@@ -95,6 +95,7 @@ class _MoshafIndexViewState extends State<MoshafIndexView> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: SuraSearchBar(
+                        text: provider.surahSearchQuery,
                         onChanged: provider.onSurahSearch,
                         textDirection: TextDirection.rtl,
                       ),

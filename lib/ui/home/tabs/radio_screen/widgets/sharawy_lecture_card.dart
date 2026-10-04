@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/quran_story.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widgets/card_play_pause_icon.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_audio_slider.dart';
-import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/ui/home/widgets/playback_speed_button.dart';
 import 'package:islami/utils/app_colors.dart';
@@ -81,15 +81,9 @@ class SharawyLectureCard extends StatelessWidget {
                       }
                     },
                     visualDensity: VisualDensity.compact,
-                    icon: AnimatedIconSwitcher(
-                      child: Icon(
-                        isLecturePlaying
-                            ? Icons.pause
-                            : Icons.play_arrow_rounded,
-                        key: ValueKey(isLecturePlaying),
-                        color: AppColors.blackColor,
-                        size: 40,
-                      ),
+                    icon: CardPlayPauseIcon(
+                      isLoading: provider.isSharawyLectureLoading(lecture),
+                      isPlaying: isLecturePlaying,
                     ),
                   ),
                   if (isLectureOn)

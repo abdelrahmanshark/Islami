@@ -66,6 +66,10 @@ dependencies:
 # only supports AGP up to 8.9.1, so pin the last AGP-8-compatible Android impl.
 dependency_overrides:
   permission_handler_android: 13.0.1
+  # Patched copy: a delayed "notification deleted" event from the previous
+  # player must not dispose the next one (radio switch stuck in loading).
+  just_audio_background:
+    path: packages/just_audio_background
 
 dev_dependencies:
   flutter_test:

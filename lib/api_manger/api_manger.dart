@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart';
-import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
+import 'package:islami/ui/home/tabs/time_screen/models/time_response.dart';
 
 abstract class ApiManger {
   static const String timesUrl = 'https://api.aladhan.com';

@@ -26,6 +26,14 @@ class MoshafIndexViewModel extends ChangeNotifier {
     rubItems = indexData.rubItems;
     memorizationTracker = indexData.memorizationTracker;
     loadMemorizationProgress();
+    loadSurahSearch();
+  }
+
+  /// Restores the saved Surah search text.
+  Future<void> loadSurahSearch() async {
+    surahSearchQuery =
+        await getSearchText(SharedPreferencesKay.moshafIndexSurahSearch);
+    notifyListeners();
   }
 
   /// Items for the currently selected index tab.
@@ -96,6 +104,7 @@ class MoshafIndexViewModel extends ChangeNotifier {
   /// Filters the Surah tab list by name.
   void onSurahSearch(String query) {
     surahSearchQuery = query;
+    saveSearchText(SharedPreferencesKay.moshafIndexSurahSearch, query);
     notifyListeners();
   }
 }

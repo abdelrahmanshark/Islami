@@ -42,11 +42,11 @@ class NextPrayerCalculator {
     for (int i = 0; i < prayerTimes.length; i++) {
       Prayer prayer = prayerTimes[i];
 
-      if (!salahNames.contains(prayer.PryerName)) {
+      if (!salahNames.contains(prayer.pryerName)) {
         continue;
       }
 
-      DateTime? prayerDateTime = toTodayDateTime(prayer.PryerTime, now);
+      DateTime? prayerDateTime = toTodayDateTime(prayer.pryerTime, now);
       if (prayerDateTime == null) {
         continue;
       }
@@ -64,11 +64,11 @@ class NextPrayerCalculator {
       for (int i = 0; i < prayerTimes.length; i++) {
         Prayer prayer = prayerTimes[i];
 
-        if (prayer.PryerName != 'الفجر') {
+        if (prayer.pryerName != 'الفجر') {
           continue;
         }
 
-        DateTime? fajrTime = toTodayDateTime(prayer.PryerTime, now);
+        DateTime? fajrTime = toTodayDateTime(prayer.pryerTime, now);
         if (fajrTime == null) {
           break;
         }

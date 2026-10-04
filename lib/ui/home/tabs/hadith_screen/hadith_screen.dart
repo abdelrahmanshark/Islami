@@ -35,6 +35,7 @@ class HadithScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 SuraSearchBar(
+                  text: provider.searchText,
                   onChanged: provider.onSearchChanged,
                   hintText: provider.searchType.hintText,
                   textDirection: TextDirection.rtl,

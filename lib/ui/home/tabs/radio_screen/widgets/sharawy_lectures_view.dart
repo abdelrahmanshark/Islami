@@ -55,6 +55,7 @@ class SharawyLecturesView extends StatelessWidget {
             ),
           ),
           SuraSearchBar(
+            text: provider.sharawyLectureSearchQuery,
             onChanged: (newText) {
               provider.filterSharawyLecture(newText);
             },

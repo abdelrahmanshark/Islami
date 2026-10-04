@@ -26,7 +26,7 @@ class SebhaScreen extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(40, 20, 40, 0),
-                    child: Image.asset(AppAssets.header),
+                    child: Image.asset(AppAssets.header,height: 80,),
                   ),
                   SebhaToggleSwitch(
                     selectedIndex: provider.tabIndex,

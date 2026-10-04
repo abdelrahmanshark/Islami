@@ -36,6 +36,7 @@ class SermonsList extends StatelessWidget {
           child: Column(
             children: [
               SuraSearchBar(
+                text: provider.sermonSearchQuery,
                 onChanged: (newText) {
                   provider.filterSermon(newText);
                 },

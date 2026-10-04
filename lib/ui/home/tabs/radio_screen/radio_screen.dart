@@ -97,6 +97,7 @@ class _RadioScreenState extends State<RadioScreen> {
                                 child: Column(
                                   children: [
                                     SuraSearchBar(
+                                      text: provider.radioSearchQuery,
                                       onChanged: (newText) {
                                         provider.filterRadio(newText);
                                       },
@@ -178,6 +179,7 @@ class _RadioScreenState extends State<RadioScreen> {
                                 child: Column(
                                   children: [
                                     SuraSearchBar(
+                                      text: provider.reciterSearchQuery,
                                       onChanged: (newText) {
                                         provider.filterReciter(newText);
                                       },

@@ -20,8 +20,8 @@ class PrayerWidgetUpdater {
     try {
       final Map<String, String> salahTimes = {};
       for (final Prayer prayer in prayerTimes) {
-        if (NextPrayerCalculator.salahNames.contains(prayer.PryerName)) {
-          salahTimes[prayer.PryerName] = prayer.PryerTime;
+        if (NextPrayerCalculator.salahNames.contains(prayer.pryerName)) {
+          salahTimes[prayer.pryerName] = prayer.pryerTime;
         }
       }
 
@@ -49,11 +49,11 @@ class PrayerWidgetUpdater {
       if (nextResult != null) {
         await HomeWidget.saveWidgetData<String>(
           'next_prayer_name',
-          nextResult.prayer.PryerName,
+          nextResult.prayer.pryerName,
         );
         await HomeWidget.saveWidgetData<String>(
           'next_prayer_time',
-          nextResult.prayer.PryerTime,
+          nextResult.prayer.pryerTime,
         );
         // Actual next-prayer DateTime; Android counts down from this alone.
         await HomeWidget.saveWidgetData<String>(

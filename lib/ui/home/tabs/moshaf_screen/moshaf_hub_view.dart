@@ -45,14 +45,14 @@ class _MoshafHubViewState extends State<MoshafHubView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Image.asset(AppAssets.header),
-                    const SizedBox(height: 8),
+                    Image.asset(AppAssets.header,height: 100),
+                    const SizedBox(height: 6),
                     Text(
                       'المصحف',
                       textAlign: TextAlign.center,
                       style: AppStyles.primaryBold24,
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 15),
                     Expanded(
                       child: provider.isLoadingIndex
                           ? const Center(
@@ -82,22 +82,7 @@ class _MoshafHubViewState extends State<MoshafHubView> {
                                       startPage: provider.lastReadPage ?? 1,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
-                                  MoshafOptionCard(
-                                    title: 'الفهرس',
-                                    subtitle:
-                                        'تصفح السور والأجزاء والأحزاب والأرباع',
-                                    icon: Icons.list_alt_rounded,
-                                    onTap: () => provider.openIndex(context),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  MoshafOptionCard(
-                                    title: 'البحث برقم الصفحة',
-                                    subtitle: 'أدخل رقم الصفحة للانتقال إليها',
-                                    icon: Icons.find_in_page_rounded,
-                                    onTap: () => provider.openByPage(context),
-                                  ),
-                                  if (provider.hasLastReadPage) ...[
+                                 if (provider.hasLastReadPage) ...[
                                     const SizedBox(height: 16),
                                     MoshafOptionCard(
                                       title: 'آخر صفحة قرأتها',
@@ -119,7 +104,23 @@ class _MoshafHubViewState extends State<MoshafHubView> {
                                           provider.openSavedPage(context),
                                     ),
                                   ],
-                                ],
+                                   const SizedBox(height: 16),
+                                  MoshafOptionCard(
+                                    title: 'البحث برقم الصفحة',
+                                    subtitle: 'أدخل رقم الصفحة للانتقال إليها',
+                                    icon: Icons.find_in_page_rounded,
+                                    onTap: () => provider.openByPage(context),
+                                  ),
+                                 
+                                  const SizedBox(height: 16),
+                                  MoshafOptionCard(
+                                    title: 'الفهرس',
+                                    subtitle:
+                                        'تصفح السور والأجزاء والأحزاب والأرباع',
+                                    icon: Icons.list_alt_rounded,
+                                    onTap: () => provider.openIndex(context),
+                                  ),
+                                  ],
                               ),
                             ),
                     ),

@@ -1,12 +1,17 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/utils/app_messenger.dart';
+import 'package:islami/utils/network_utils.dart';
 import 'package:just_audio/just_audio.dart';
 
-/// Why the last gated play attempt was blocked (if any).
+/// Why the last play attempt failed (if any).
 enum PlaybackBlockReason {
   call,
+  offline,
+  failed,
 }
 
 /// Shared app audio player. Keep [handleInterruptions] enabled so Quran /
@@ -14,12 +19,39 @@ enum PlaybackBlockReason {
 ///
 /// Also notifies listeners when [activeAudioType] changes (drives the mini player).
 class AudioPlayerService extends ChangeNotifier {
-  AudioPlayerService._();
+  AudioPlayerService._() {
+    _debugListenToPlayerState();
+  }
 
   static final AudioPlayerService instance = AudioPlayerService._();
 
   /// just_audio pauses on interruption and resumes when appropriate.
   final AudioPlayer player = AudioPlayer();
+
+  // TEMP AUDIO DEBUG (switching investigation) — remove after.
+  final Stopwatch _debugClock = Stopwatch()..start();
+  ProcessingState? _debugLastState;
+  bool? _debugLastPlaying;
+
+  // TEMP AUDIO DEBUG: prints a timestamped line (visible in logcat as I/flutter).
+  void debugAudio(String message) {
+    debugPrint('[AUDIO_DEBUG] t=${_debugClock.elapsedMilliseconds}ms '
+        'req=$_playRequestId $message');
+  }
+
+  // TEMP AUDIO DEBUG: logs every processingState / playing change.
+  void _debugListenToPlayerState() {
+    player.playerStateStream.listen((state) {
+      if (state.processingState == _debugLastState &&
+          state.playing == _debugLastPlaying) {
+        return;
+      }
+      _debugLastState = state.processingState;
+      _debugLastPlaying = state.playing;
+      debugAudio('state -> ${state.processingState.name} '
+          'playing=${state.playing}');
+    });
+  }
 
   /// Which audio is selected in [player]; null means nothing is active.
   ActiveAudioType? activeAudioType;
@@ -87,6 +119,46 @@ class AudioPlayerService extends ChangeNotifier {
     return true;
   }
 
+  /// Returns false and remembers [PlaybackBlockReason.offline] when the
+  /// internet check fails.
+  Future<bool> ensureOnline() async {
+    if (!await NetworkUtils.hasInternetConnection()) {
+      lastBlockReason = PlaybackBlockReason.offline;
+      return false;
+    }
+    return true;
+  }
+
+  /// Remembers that the player itself failed (not a call / offline block).
+  void markPlaybackFailed() {
+    lastBlockReason = PlaybackBlockReason.failed;
+  }
+
+  // Id of the latest play request; older requests must not touch the player.
+  int _playRequestId = 0;
+
+  /// Starts a new play request and returns its id.
+  /// Any older request still loading becomes stale.
+  int startPlayRequest() {
+    _playRequestId++;
+    debugAudio('startPlayRequest -> $_playRequestId');
+    return _playRequestId;
+  }
+
+  /// Makes every in-flight play request stale (call before [AudioPlayer.stop]).
+  void cancelPlayRequests() {
+    _playRequestId++;
+  }
+
+  /// True when a newer play request or a stop replaced [requestId].
+  bool isStalePlayRequest(int requestId) {
+    final bool isStale = requestId != _playRequestId;
+    if (isStale) {
+      debugAudio('STALE request $requestId (latest is $_playRequestId)');
+    }
+    return isStale;
+  }
+
   /// Reads and clears [lastBlockReason] for UI failure handling.
   PlaybackBlockReason? consumeBlockReason() {
     final PlaybackBlockReason? reason = lastBlockReason;
@@ -98,11 +170,21 @@ class AudioPlayerService extends ChangeNotifier {
   ///
   /// Does not await [AudioPlayer.play] — it completes when the track ends.
   Future<bool> play() async {
+    final Stopwatch debugWatch = Stopwatch()..start();
+    debugAudio('play() start (playing=${player.playing}, '
+        'state=${player.processingState.name})');
     if (!await ensureCanPlay()) {
+      debugAudio('play() blocked by call after '
+          '${debugWatch.elapsedMilliseconds}ms');
       return false;
     }
     // Fire-and-forget: AudioPlayer.play() completes when the track ends.
-    player.play();
+    // catchError keeps an interrupted play (e.g. by stop) from being unhandled.
+    player.play().catchError((Object error) {
+      log(error.toString());
+    });
+    debugAudio('play() end after ${debugWatch.elapsedMilliseconds}ms '
+        '(playing=${player.playing})');
     return true;
   }
 
@@ -119,10 +201,15 @@ class AudioPlayerService extends ChangeNotifier {
   }
 
   /// Builds a just_audio source from a local file URI or an online URL.
+  /// Logs the URL before loading so it shows even if the source fails.
   AudioSource buildUriAudioSource(
     Uri uri, {
     dynamic tag,
   }) {
+    if (uri.toString().isNotEmpty) {
+      log('Playing audio url: $uri');
+      debugAudio('source url: $uri');
+    }
     return AudioSource.uri(uri, tag: tag);
   }
 }

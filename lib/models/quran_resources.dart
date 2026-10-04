@@ -231,7 +231,7 @@ class QuranResources {
     "Al-Falaq",
     "An-Nas",
   ];
-  static const List<String> AyaNumber = [
+  static const List<String> ayaNumber = [
     '7',
     '286',
     '200',

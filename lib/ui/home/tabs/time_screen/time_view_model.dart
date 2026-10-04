@@ -10,7 +10,7 @@ import 'package:islami/services/adhan_alarm_scheduler.dart';
 import 'package:islami/services/prayer_widget_updater.dart';
 import 'package:islami/services/user_location_service.dart';
 import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
-import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
+import 'package:islami/ui/home/tabs/time_screen/models/time_response.dart';
 import 'package:islami/ui/home/tabs/time_screen/models/prayer.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/network_utils.dart';

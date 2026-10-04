@@ -8,7 +8,7 @@ import 'package:islami/domain/repositories/time_repository.dart';
 import 'package:islami/models/user_location.dart';
 import 'package:islami/services/user_location_service.dart';
 import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
-import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
+import 'package:islami/ui/home/tabs/time_screen/models/time_response.dart';
 import 'package:islami/utils/network_utils.dart';
 
 class TimeRepositoryImpl implements TimeRepository {

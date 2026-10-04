@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/reciters_response.dart';
-import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/ui/home/widgets/playback_speed_button.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../../../utils/app_colors.dart';
 import '../../../../../utils/app_styles.dart';
 import '../radio_view_model.dart';
+import 'card_play_pause_icon.dart';
 import 'reciter_audio_slider.dart';
 import 'reciter_mode_icon_button.dart';
 
@@ -129,15 +129,9 @@ class ReciterCard extends StatelessWidget {
                         }
                       },
                       visualDensity: VisualDensity.compact,
-                      icon: AnimatedIconSwitcher(
-                        child: Icon(
-                          isReciterPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow_rounded,
-                          key: ValueKey(isReciterPlaying),
-                          color: AppColors.blackColor,
-                          size: 40,
-                        ),
+                      icon: CardPlayPauseIcon(
+                        isLoading: provider.isReciterLoading(reciter),
+                        isPlaying: isReciterPlaying,
                       ),
                     ),
                     IconButton(

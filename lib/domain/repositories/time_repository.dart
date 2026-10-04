@@ -1,4 +1,4 @@
-import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
+import 'package:islami/ui/home/tabs/time_screen/models/time_response.dart';
 
 /// Contract for loading prayer times.
 abstract class TimeRepository {

@@ -4,9 +4,12 @@ import 'package:islami/utils/app_styles.dart';
 
 /// Tasbih number that pops in (scale + fade) every time it changes.
 class AnimatedCounterText extends StatelessWidget {
-  const AnimatedCounterText({super.key, required this.counter});
+  const AnimatedCounterText({super.key, required this.counter, this.style});
 
   final int counter;
+
+  /// Text style of the number. Defaults to [AppStyles.whiteBold56].
+  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,7 @@ class AnimatedCounterText extends StatelessWidget {
         // A new key tells AnimatedSwitcher the number changed.
         key: ValueKey<int>(counter),
         textAlign: TextAlign.center,
-        style: AppStyles.whiteBold56.copyWith(
+        style: (style ?? AppStyles.whiteBold56).copyWith(
           shadows: [
             Shadow(
               color: AppColors.primaryColor.withValues(alpha: 0.7),

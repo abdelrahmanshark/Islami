@@ -90,6 +90,7 @@ class RecitersScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   SuraSearchBar(
+                    text: radioVm.suraSearchQuery,
                     onChanged: radioVm.onSearch,
                     textDirection: TextDirection.rtl,
                   ),

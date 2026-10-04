@@ -28,6 +28,40 @@ class SharedPreferencesKay {
   static const String favoriteReciterIds = 'favoriteReciterIds';
   static const String favoriteHadithIds = 'favoriteHadithIds';
   static const String favoriteAzkarCategories = 'favoriteAzkarCategories';
+  static const String tasbihRoundCounts = 'tasbihRoundCounts';
+  static const String tasbihTotalCounts = 'tasbihTotalCounts';
+  static const String tasbihActiveIndex = 'tasbihActiveIndex';
+  // Saved text of each search field.
+  static const String radioSearch = 'radioSearch';
+  static const String reciterSearch = 'reciterSearch';
+  static const String reciterSuraSearch = 'reciterSuraSearch';
+  static const String sermonSearch = 'sermonSearch';
+  static const String sharawyCategorySearch = 'sharawyCategorySearch';
+  static const String sharawyPillarSearch = 'sharawyPillarSearch';
+  static const String sharawySectionSearch = 'sharawySectionSearch';
+  static const String sharawyLectureSearch = 'sharawyLectureSearch';
+  static const String hadithSearch = 'hadithSearch';
+  static const String azkarSearch = 'azkarSearch';
+  static const String downloadsReciterSearch = 'downloadsReciterSearch';
+  static const String downloadsSuraSearch = 'downloadsSuraSearch';
+  static const String moshafIndexSurahSearch = 'moshafIndexSurahSearch';
+}
+
+/// Returns the saved text of the search field stored under [key] ('' when none).
+Future<String> getSearchText(String key) async {
+  final pref = await SharedPreferences.getInstance();
+  return pref.getString(key) ?? '';
+}
+
+/// Saves the text of the search field stored under [key].
+/// Empty text removes the saved value, so the list shows unfiltered.
+Future<void> saveSearchText(String key, String text) async {
+  final pref = await SharedPreferences.getInstance();
+  if (text.isEmpty) {
+    await pref.remove(key);
+  } else {
+    await pref.setString(key, text);
+  }
 }
 
 /// Re-reads values written by another isolate (background alarm / download task).
@@ -238,6 +272,34 @@ Future<List<String>> getFavoriteAzkarCategories() async {
 Future<void> saveFavoriteAzkarCategories(List<String> titles) async {
   final pref = await SharedPreferences.getInstance();
   await pref.setStringList(SharedPreferencesKay.favoriteAzkarCategories, titles);
+}
+
+/// Returns the current-round count of each sebha zikr (empty when none saved).
+Future<List<int>> getTasbihRoundCounts() async {
+  return _getIdList(SharedPreferencesKay.tasbihRoundCounts);
+}
+
+/// Returns the total count of each sebha zikr (empty when none saved).
+Future<List<int>> getTasbihTotalCounts() async {
+  return _getIdList(SharedPreferencesKay.tasbihTotalCounts);
+}
+
+/// Returns the index of the selected sebha zikr. Defaults to 0.
+Future<int> getTasbihActiveIndex() async {
+  final pref = await SharedPreferences.getInstance();
+  return pref.getInt(SharedPreferencesKay.tasbihActiveIndex) ?? 0;
+}
+
+/// Saves the sebha counters and the selected zikr index.
+Future<void> saveTasbihProgress({
+  required List<int> roundCounts,
+  required List<int> totalCounts,
+  required int activeIndex,
+}) async {
+  final pref = await SharedPreferences.getInstance();
+  await _saveIdList(SharedPreferencesKay.tasbihRoundCounts, roundCounts);
+  await _saveIdList(SharedPreferencesKay.tasbihTotalCounts, totalCounts);
+  await pref.setInt(SharedPreferencesKay.tasbihActiveIndex, activeIndex);
 }
 
 /// Reads a list of ids saved as strings under [key].

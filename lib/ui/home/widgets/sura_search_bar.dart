@@ -7,7 +7,7 @@ import '../../../utils/app_styles.dart';
 
 typedef OnChanged = void Function(String newText);
 
-class SuraSearchBar extends StatelessWidget {
+class SuraSearchBar extends StatefulWidget {
   /// Increases each time any search bar is tapped, so lists can scroll to top.
   static final ValueNotifier<int> activationCount = ValueNotifier<int>(0);
 
@@ -20,15 +20,46 @@ class SuraSearchBar extends StatelessWidget {
   /// Optional SVG icon at the start of the field. Defaults to the Quran icon.
   final String? iconAsset;
 
+  /// Current search text kept by the ViewModel (restored from storage).
+  final String text;
+
   const SuraSearchBar({
     super.key,
     required this.onChanged,
+    this.text = '',
     this.hintText,
     this.textDirection,
     this.suffixIcon,
     this.iconAsset,
   });
   final OnChanged onChanged;
+
+  @override
+  State<SuraSearchBar> createState() => _SuraSearchBarState();
+}
+
+class _SuraSearchBarState extends State<SuraSearchBar> {
+  // Needed to show text restored or cleared by the ViewModel;
+  // typing is still reported through onChanged.
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.text,
+  );
+
+  /// Shows the ViewModel text when it changes from outside the field.
+  @override
+  void didUpdateWidget(covariant SuraSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.text != _controller.text) {
+      _controller.text = widget.text;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -36,17 +67,18 @@ class SuraSearchBar extends StatelessWidget {
           horizontal: 10
       ),
       child: TextField(
+        controller: _controller,
         onTap: () {
-          activationCount.value++;
+          SuraSearchBar.activationCount.value++;
         },
         onChanged: (newText) {
-          onChanged(newText);
+          widget.onChanged(newText);
         },
-        textDirection: textDirection ?? TextDirection.ltr,
+        textDirection: widget.textDirection ?? TextDirection.ltr,
         style: AppStyles.primaryBold20,
         cursorColor: AppColors.primaryColor,
         decoration: InputDecoration(
-          hintText: hintText ?? "اسم السورة",
+          hintText: widget.hintText ?? "اسم السورة",
           hintStyle: AppStyles.whiteBold16,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -65,14 +97,14 @@ class SuraSearchBar extends StatelessWidget {
             borderSide: BorderSide(color: AppColors.primaryColor),
           ),
           prefixIcon: SvgPicture.asset(
-            iconAsset ?? AppAssets.quranIc,
+            widget.iconAsset ?? AppAssets.quranIc,
             colorFilter: const ColorFilter.mode(
               AppColors.primaryColor,
               BlendMode.srcIn,
             ),
             fit: BoxFit.scaleDown,
           ),
-          suffixIcon: suffixIcon,
+          suffixIcon: widget.suffixIcon,
         ),
       ),
     );

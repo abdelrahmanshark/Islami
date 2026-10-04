@@ -6,7 +6,7 @@ import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-import '../models/TimeResponse.dart';
+import '../models/time_response.dart';
 import '../models/prayer.dart';
 
 class PrayTime extends StatelessWidget {

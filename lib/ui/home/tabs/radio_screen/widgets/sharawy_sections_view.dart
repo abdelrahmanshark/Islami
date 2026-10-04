@@ -67,6 +67,7 @@ class SharawySectionsView extends StatelessWidget {
             ),
           ),
           SuraSearchBar(
+            text: provider.sharawySectionSearchQuery,
             onChanged: (newText) {
               provider.filterSharawySection(newText);
             },

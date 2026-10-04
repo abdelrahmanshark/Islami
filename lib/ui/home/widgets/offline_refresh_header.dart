@@ -17,7 +17,7 @@ class OfflineRefreshHeader extends StatelessWidget {
         return Stack(
           alignment: Alignment.center,
           children: [
-            Image.asset(AppAssets.header),
+            Image.asset(AppAssets.header,height: 130),
             if (!monitor.isOnline)
               Positioned(
                 top: MediaQuery.paddingOf(context).top + 4,

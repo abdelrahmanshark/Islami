@@ -42,6 +42,7 @@ class RadioViewModel extends ChangeNotifier {
            downloadedAudioRepository ?? DownloadedAudioRepositoryImpl() {
     _restorePlaybackState();
     _loadFavorites();
+    _loadSearchTexts();
     getRadios();
     getReciters();
     getSermons();
@@ -99,6 +100,10 @@ class RadioViewModel extends ChangeNotifier {
   bool isRepeatEnabled = false;
   bool isAutoNextEnabled = false;
   bool isReciterPlaying = false; // drives play/pause icon on reciter cards
+  // Card whose new audio is still loading (shows a spinner on its play button).
+  String? loadingAudioKey;
+  // Play request that owns [loadingAudioKey]; only it may clear the spinner.
+  int? _loadingRequestId;
 
   // Favorites are saved ids, newest first, so a new favorite goes to the top.
   List<int> favoriteRadioIds = [];
@@ -107,8 +112,15 @@ class RadioViewModel extends ChangeNotifier {
   static const int favoritesListTabIndex = 1;
   int radioListTabIndex = allListTabIndex;
   int reciterListTabIndex = allListTabIndex;
-  String _radioSearchQuery = '';
-  String _reciterSearchQuery = '';
+  // Text of each search field, saved in SharedPreferences.
+  String radioSearchQuery = '';
+  String reciterSearchQuery = '';
+  String suraSearchQuery = '';
+  String sermonSearchQuery = '';
+  String sharawyCategorySearchQuery = '';
+  String sharawyPillarSearchQuery = '';
+  String sharawySectionSearchQuery = '';
+  String sharawyLectureSearchQuery = '';
   // Cards shrinking away before moving to their new place in the list.
   Set<int> leavingRadioIds = {};
   Set<int> leavingReciterIds = {};
@@ -214,6 +226,47 @@ class RadioViewModel extends ChangeNotifier {
     selectedSermonAudioUrl = sermon?.audioUrl;
     _audioService.selectedSermonAudioUrl = sermon?.audioUrl;
     _syncActiveAudioType();
+  }
+
+  // Loading keys: one unique key per card so only that card shows a spinner.
+  String _radioKey(Radios radio) => 'radio_${radio.id}';
+  String _reciterKey(Reciters reciter) => 'reciter_${reciter.id}';
+  String _sermonKey(Sermon sermon) => 'sermon_${sermon.audioUrl}';
+  String _sharawyKey(QuranStoryLecture lecture) => 'sharawy_${lecture.mp3Url}';
+
+  /// True while [radio]'s audio is loading after a tap.
+  bool isRadioLoading(Radios radio) => loadingAudioKey == _radioKey(radio);
+
+  /// True while [reciter]'s audio is loading after a tap.
+  bool isReciterLoading(Reciters reciter) =>
+      loadingAudioKey == _reciterKey(reciter);
+
+  /// True while [sermon]'s audio is loading after a tap.
+  bool isSermonLoading(Sermon sermon) => loadingAudioKey == _sermonKey(sermon);
+
+  /// True while [lecture]'s audio is loading after a tap.
+  bool isSharawyLectureLoading(QuranStoryLecture lecture) =>
+      loadingAudioKey == _sharawyKey(lecture);
+
+  // Shows the spinner on the card with [key] for play request [requestId].
+  void _startLoading(String key, int requestId) {
+    loadingAudioKey = key;
+    _loadingRequestId = requestId;
+    notifyListeners();
+  }
+
+  // Hides the spinner, only if [requestId] still owns it
+  // (a newer request may have moved the spinner to another card).
+  void _finishLoading(int requestId) {
+    if (_loadingRequestId != requestId) return;
+    _clearLoading();
+    notifyListeners();
+  }
+
+  // Hides the spinner right away (used by the stop buttons).
+  void _clearLoading() {
+    loadingAudioKey = null;
+    _loadingRequestId = null;
   }
 
   // Persist sha'rawy play selection on the singleton.
@@ -377,21 +430,42 @@ class RadioViewModel extends ChangeNotifier {
     _setCurrentSura(sura);
   }
 
-  // Resets sura search results to the full list of 114 suras.
+  // Clears the sura search so the full list of 114 suras shows.
   void resetSuraSearch() {
-    filterSearch = List.generate(114, (index) => index);
+    suraSearchQuery = '';
+    saveSearchText(SharedPreferencesKay.reciterSuraSearch, '');
+    _updateSuraSearch();
     notifyListeners();
   }
 
   // Plays a specific sura with the given reciter (does not toggle pause).
   // Returns false when blocked by a call, or when offline without a local file.
   Future<bool> playReciterSura(Reciters reciter, int suraNumber) async {
+    final int requestId = _audioService.startPlayRequest();
+    _setCurrentSura(suraNumber);
+    return _loadAndPlayReciterSura(
+      reciter: reciter,
+      suraNumber: suraNumber,
+      requestId: requestId,
+    );
+  }
+
+  /// Loads [suraNumber] of [reciter] and starts it (shared by all reciter
+  /// play methods). Returns false on a real failure (call, offline, player
+  /// error); returns true when it played or a newer request replaced it.
+  Future<bool> _loadAndPlayReciterSura({
+    required Reciters reciter,
+    required int suraNumber,
+    required int requestId,
+  }) async {
+    _startLoading(_reciterKey(reciter), requestId);
+    // TEMP AUDIO DEBUG
+    final Stopwatch debugWatch = Stopwatch()..start();
     try {
       if (!await _audioService.ensureCanPlay()) {
         notifyListeners();
         return false;
       }
-      _setCurrentSura(suraNumber);
       final Uri playbackUri = await _resolveReciterPlaybackUri(
         reciter: reciter,
         suraNumber: suraNumber,
@@ -400,34 +474,71 @@ class RadioViewModel extends ChangeNotifier {
         notifyListeners();
         return false;
       }
+      _audioService.debugAudio('reciter req=$requestId pre-load checks took '
+          '${debugWatch.elapsedMilliseconds}ms');
+      // A newer request or a stop replaced this one: leave the player alone.
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       await player.setLoopMode(
         isRepeatEnabled ? LoopMode.one : LoopMode.off,
       );
+      final Stopwatch debugLoadWatch = Stopwatch()..start();
+      _audioService.debugAudio('reciter req=$requestId setAudioSource start '
+          '(playing=${player.playing}, state=${player.processingState.name})');
       await player.setAudioSource(
         _audioService.buildUriAudioSource(
           playbackUri,
           tag: MediaItem(
-            id: 'sura_$currentSura',
-            title: 'سورة $currentSura',
+            id: 'sura_$suraNumber',
+            title: 'سورة $suraNumber',
             artist: reciter.name ?? 'قارئ',
           ),
         ),
       );
+      _audioService.debugAudio('reciter req=$requestId setAudioSource end '
+          'after ${debugLoadWatch.elapsedMilliseconds}ms '
+          '(total ${debugWatch.elapsedMilliseconds}ms, '
+          'playing=${player.playing})');
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       await _audioService.applyPlaybackSpeed();
+      // Update selection before play so the card UI refreshes immediately.
+      _setCurrentSura(suraNumber);
       _setSelectedRadio(null);
       _setSelectedSermon(null);
       _setSelectedSharawyLecture(null);
       _setSelectedReciter(reciter);
-      _audioService.currentSura = currentSura;
       final bool started = await _audioService.play();
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       isReciterPlaying = started;
       notifyListeners();
+      _audioService.debugAudio('reciter req=$requestId done, started=$started '
+          'total ${debugWatch.elapsedMilliseconds}ms');
       return started;
-    } catch (e) {
-      log(e.toString());
+    } on PlayerInterruptedException catch (e) {
+      _audioService.debugAudio('reciter req=$requestId '
+          'PlayerInterruptedException after '
+          '${debugWatch.elapsedMilliseconds}ms: ${e.message}');
+      // Loading was replaced by a newer audio or a stop: not a failure.
       notifyListeners();
-      return false;
+      return true;
+    } catch (e) {
+      return _handlePlayError(e, requestId);
+    } finally {
+      _finishLoading(requestId);
     }
+  }
+
+  /// Handles an unexpected play error for [requestId].
+  /// Returns true (no failure shown) when a newer request already replaced
+  /// this one; otherwise marks a real player failure and returns false.
+  bool _handlePlayError(Object error, int requestId) {
+    log(error.toString());
+    _audioService.debugAudio('req=$requestId play ERROR: $error');
+    notifyListeners();
+    if (_audioService.isStalePlayRequest(requestId)) {
+      return true;
+    }
+    _audioService.markPlaybackFailed();
+    return false;
   }
 
   void changeToggleIndex(int index) {
@@ -557,7 +668,7 @@ class RadioViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       sermons = await _sermonsLocalDataSource.fetchSermons();
-      filteredSermons = sermons;
+      _updateFilteredSermons();
       _syncSelectedSermonFromList();
       sermonIsLoading = false;
       notifyListeners();
@@ -572,7 +683,7 @@ class RadioViewModel extends ChangeNotifier {
   // Loads the Sha'rawy category list (static for now).
   void getSharawyCategories() {
     sharawyCategories = _sharawyLocalDataSource.fetchCategories();
-    filteredSharawyCategories = sharawyCategories;
+    _updateFilteredSharawyCategories();
     sharawyFailureMsg = '';
     notifyListeners();
   }
@@ -595,6 +706,9 @@ class RadioViewModel extends ChangeNotifier {
     filteredSharawySections = [];
     sharawyLectures = [];
     filteredSharawyLectures = [];
+    _setSharawyPillarSearch('');
+    _setSharawySectionSearch('');
+    _setSharawyLectureSearch('');
     sharawySectionIsLoading = true;
     sharawyFailureMsg = '';
     notifyListeners();
@@ -641,6 +755,8 @@ class RadioViewModel extends ChangeNotifier {
     filteredSharawySections = sharawySections;
     sharawyLectures = [];
     filteredSharawyLectures = [];
+    _setSharawySectionSearch('');
+    _setSharawyLectureSearch('');
     notifyListeners();
   }
 
@@ -660,6 +776,7 @@ class RadioViewModel extends ChangeNotifier {
     selectedSharawySection = section;
     sharawyLectures = section.lectures;
     filteredSharawyLectures = sharawyLectures;
+    _setSharawyLectureSearch('');
     _syncSelectedSharawyLectureFromList();
     notifyListeners();
   }
@@ -675,14 +792,20 @@ class RadioViewModel extends ChangeNotifier {
   // Plays or pauses a Sha'rawy lecture audio (keeps selection on pause).
   // Returns false when blocked by a call, or when offline.
   Future<bool> playSharawyLecture(QuranStoryLecture lecture) async {
-    if (selectedSharawyAudioUrl != null &&
+    final String key = _sharawyKey(lecture);
+    // Ignore repeat taps while this lecture is still loading.
+    if (loadingAudioKey == key) return true;
+    // While another card is loading, the player holds that audio, so this
+    // lecture must be loaded again instead of resumed.
+    if (loadingAudioKey == null &&
+        selectedSharawyAudioUrl != null &&
         selectedSharawyAudioUrl == lecture.mp3Url) {
       if (player.playing) {
         await player.pause();
         notifyListeners();
         return true;
       }
-      if (!await NetworkUtils.hasInternetConnection()) {
+      if (!await _audioService.ensureOnline()) {
         notifyListeners();
         return false;
       }
@@ -691,20 +814,22 @@ class RadioViewModel extends ChangeNotifier {
       return started;
     }
 
-    if (!await _audioService.ensureCanPlay()) {
-      notifyListeners();
-      return false;
-    }
-
-    if (!await NetworkUtils.hasInternetConnection()) {
-      notifyListeners();
-      return false;
-    }
-
+    final int requestId = _audioService.startPlayRequest();
+    _startLoading(key, requestId);
     try {
+      if (!await _audioService.ensureCanPlay()) {
+        notifyListeners();
+        return false;
+      }
+      if (!await _audioService.ensureOnline()) {
+        notifyListeners();
+        return false;
+      }
+      // A newer request or a stop replaced this one: leave the player alone.
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       await player.setLoopMode(LoopMode.off);
       await player.setAudioSource(
-        AudioSource.uri(
+        _audioService.buildUriAudioSource(
           Uri.parse(lecture.mp3Url),
           tag: MediaItem(
             id: 'sharawy_${lecture.mp3Url}',
@@ -713,8 +838,10 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       await _audioService.applyPlaybackSpeed();
       final bool started = await _audioService.play();
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       if (!started) {
         notifyListeners();
         return false;
@@ -728,10 +855,14 @@ class RadioViewModel extends ChangeNotifier {
       _playingSharawySection = selectedSharawySection;
       notifyListeners();
       return true;
-    } catch (e) {
-      log(e.toString());
+    } on PlayerInterruptedException {
+      // Loading was replaced by a newer audio or a stop: not a failure.
       notifyListeners();
-      return false;
+      return true;
+    } catch (e) {
+      return _handlePlayError(e, requestId);
+    } finally {
+      _finishLoading(requestId);
     }
   }
 
@@ -742,6 +873,8 @@ class RadioViewModel extends ChangeNotifier {
 
   // Stops Sha'rawy audio and clears the current selection.
   Future<void> stopSharawyLecture() async {
+    _audioService.cancelPlayRequests();
+    _clearLoading();
     await player.stop();
     _setSelectedSharawyLecture(null);
     notifyListeners();
@@ -759,13 +892,27 @@ class RadioViewModel extends ChangeNotifier {
   /// Plays or pauses a radio station (keeps selection on pause).
   /// Returns false when blocked by a call, or when offline.
   Future<bool> playRadio(Radios radio) async {
-    if (selectedRadioId != null && selectedRadioId == radio.id) {
+    final String key = _radioKey(radio);
+    // TEMP AUDIO DEBUG
+    _audioService.debugAudio('playRadio START "${radio.name}" id=${radio.id} '
+        '(selectedRadioId=$selectedRadioId, loading=$loadingAudioKey, '
+        'playing=${player.playing}, state=${player.processingState.name})');
+    // Ignore repeat taps while this radio is still loading.
+    if (loadingAudioKey == key) {
+      _audioService.debugAudio('playRadio ignored: already loading');
+      return true;
+    }
+    // While another card is loading, the player holds that audio, so this
+    // radio must be loaded again instead of resumed.
+    if (loadingAudioKey == null &&
+        selectedRadioId != null &&
+        selectedRadioId == radio.id) {
       if (player.playing) {
         await player.pause();
         notifyListeners();
         return true;
       }
-      if (!await NetworkUtils.hasInternetConnection()) {
+      if (!await _audioService.ensureOnline()) {
         notifyListeners();
         return false;
       }
@@ -774,28 +921,47 @@ class RadioViewModel extends ChangeNotifier {
       return started;
     }
 
-    if (!await _audioService.ensureCanPlay()) {
-      notifyListeners();
-      return false;
-    }
-
-    if (!await NetworkUtils.hasInternetConnection()) {
-      notifyListeners();
-      return false;
-    }
-
+    final int requestId = _audioService.startPlayRequest();
+    _startLoading(key, requestId);
+    // TEMP AUDIO DEBUG
+    final Stopwatch debugWatch = Stopwatch()..start();
     try {
+      if (!await _audioService.ensureCanPlay()) {
+        notifyListeners();
+        return false;
+      }
+      if (!await _audioService.ensureOnline()) {
+        notifyListeners();
+        return false;
+      }
+      _audioService.debugAudio('radio req=$requestId pre-load checks took '
+          '${debugWatch.elapsedMilliseconds}ms');
+      // A newer request or a stop replaced this one: leave the player alone.
+      if (_audioService.isStalePlayRequest(requestId)) {
+        return true;
+      }
       // Live radio streams all report the same track info (index 0, no
       // duration), so the notification keeps the old title unless the
       // background player is reset before loading the new station.
       if (selectedRadioId != null) {
+        final Stopwatch debugStopWatch = Stopwatch()..start();
         await player.stop();
+        _audioService.debugAudio('radio req=$requestId player.stop() took '
+            '${debugStopWatch.elapsedMilliseconds}ms');
+        if (_audioService.isStalePlayRequest(requestId)) {
+          return true;
+        }
       }
       // Radio should not inherit reciter loop mode or lecture speed.
       await player.setLoopMode(LoopMode.off);
       await player.setSpeed(1.0);
+      final Stopwatch debugLoadWatch = Stopwatch()..start();
+      _audioService.debugAudio('radio req=$requestId setAudioSource start '
+          '(playing=${player.playing}, state=${player.processingState.name})');
+      // Notification metadata is the MediaItem tag; just_audio_background
+      // pushes it to the notification as part of setAudioSource.
       await player.setAudioSource(
-        AudioSource.uri(
+        _audioService.buildUriAudioSource(
           Uri.parse(radio.url ?? ''),
           tag: MediaItem(
             id: 'radio_${radio.id}',
@@ -804,7 +970,17 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
+      _audioService.debugAudio('radio req=$requestId setAudioSource end '
+          'after ${debugLoadWatch.elapsedMilliseconds}ms '
+          '(total ${debugWatch.elapsedMilliseconds}ms, '
+          'playing=${player.playing})');
+      if (_audioService.isStalePlayRequest(requestId)) {
+        return true;
+      }
       final bool started = await _audioService.play();
+      if (_audioService.isStalePlayRequest(requestId)) {
+        return true;
+      }
       if (!started) {
         notifyListeners();
         return false;
@@ -814,16 +990,27 @@ class RadioViewModel extends ChangeNotifier {
       _setSelectedSharawyLecture(null);
       _setSelectedRadio(radio);
       notifyListeners();
+      _audioService.debugAudio('radio req=$requestId done, total '
+          '${debugWatch.elapsedMilliseconds}ms');
+      return true;
+    } on PlayerInterruptedException catch (e) {
+      _audioService.debugAudio('radio req=$requestId '
+          'PlayerInterruptedException after '
+          '${debugWatch.elapsedMilliseconds}ms: ${e.message}');
+      // Loading was replaced by a newer audio or a stop: not a failure.
+      notifyListeners();
       return true;
     } catch (e) {
-      log(e.toString());
-      notifyListeners();
-      return false;
+      return _handlePlayError(e, requestId);
+    } finally {
+      _finishLoading(requestId);
     }
   }
 
   // Stops the radio stream and clears the current selection.
   Future<void> stopRadio() async {
+    _audioService.cancelPlayRequests();
+    _clearLoading();
     await player.stop();
     _setSelectedRadio(null);
     notifyListeners();
@@ -897,6 +1084,8 @@ class RadioViewModel extends ChangeNotifier {
 
   // Stops reciter audio and clears the current selection.
   Future<void> stopReciter() async {
+    _audioService.cancelPlayRequests();
+    _clearLoading();
     await player.stop();
     _setSelectedReciter(null);
     isReciterPlaying = false;
@@ -906,7 +1095,21 @@ class RadioViewModel extends ChangeNotifier {
   // Plays or pauses a reciter audio (keeps selection on pause).
   // Returns false when blocked by a call, or when offline without a local file.
   Future<bool> playReciter(Reciters reciter) async {
-    if (selectedReciterId != null && selectedReciterId == reciter.id) {
+    // TEMP AUDIO DEBUG
+    _audioService.debugAudio('playReciter START "${reciter.name}" '
+        'id=${reciter.id} sura=$currentSura '
+        '(selectedReciterId=$selectedReciterId, loading=$loadingAudioKey, '
+        'playing=${player.playing}, state=${player.processingState.name})');
+    // Ignore repeat taps while this reciter is still loading.
+    if (isReciterLoading(reciter)) {
+      _audioService.debugAudio('playReciter ignored: already loading');
+      return true;
+    }
+    // While another card is loading, the player holds that audio, so this
+    // reciter must be loaded again instead of resumed.
+    if (loadingAudioKey == null &&
+        selectedReciterId != null &&
+        selectedReciterId == reciter.id) {
       if (isReciterPlaying) {
         await player.pause();
         isReciterPlaying = false;
@@ -928,61 +1131,31 @@ class RadioViewModel extends ChangeNotifier {
       return started;
     }
 
-    try {
-      if (!await _audioService.ensureCanPlay()) {
-        notifyListeners();
-        return false;
-      }
-      final Uri playbackUri = await _resolveReciterPlaybackUri(
-        reciter: reciter,
-        suraNumber: currentSura,
-      );
-      if (!await _canPlayUri(playbackUri)) {
-        notifyListeners();
-        return false;
-      }
-      await player.setLoopMode(
-        isRepeatEnabled ? LoopMode.one : LoopMode.off,
-      );
-      await player.setAudioSource(
-        _audioService.buildUriAudioSource(
-          playbackUri,
-          tag: MediaItem(
-            id: 'sura_$currentSura',
-            title: 'سورة $currentSura',
-            artist: reciter.name ?? 'قارئ',
-          ),
-        ),
-      );
-      await _audioService.applyPlaybackSpeed();
-      // Update selection before play so the card UI refreshes immediately.
-      _setSelectedRadio(null);
-      _setSelectedSermon(null);
-      _setSelectedSharawyLecture(null);
-      _setSelectedReciter(reciter);
-      _audioService.currentSura = currentSura;
-      final bool started = await _audioService.play();
-      isReciterPlaying = started;
-      notifyListeners();
-      return started;
-    } catch (e) {
-      log(e.toString());
-      notifyListeners();
-      return false;
-    }
+    final int requestId = _audioService.startPlayRequest();
+    return _loadAndPlayReciterSura(
+      reciter: reciter,
+      suraNumber: currentSura,
+      requestId: requestId,
+    );
   }
 
   // Plays or pauses a sermon audio (keeps selection on pause).
   // Returns false when blocked by a call, or when offline.
   Future<bool> playSermon(Sermon sermon) async {
-    if (selectedSermonAudioUrl != null &&
+    final String key = _sermonKey(sermon);
+    // Ignore repeat taps while this sermon is still loading.
+    if (loadingAudioKey == key) return true;
+    // While another card is loading, the player holds that audio, so this
+    // sermon must be loaded again instead of resumed.
+    if (loadingAudioKey == null &&
+        selectedSermonAudioUrl != null &&
         selectedSermonAudioUrl == sermon.audioUrl) {
       if (player.playing) {
         await player.pause();
         notifyListeners();
         return true;
       }
-      if (!await NetworkUtils.hasInternetConnection()) {
+      if (!await _audioService.ensureOnline()) {
         notifyListeners();
         return false;
       }
@@ -991,20 +1164,22 @@ class RadioViewModel extends ChangeNotifier {
       return started;
     }
 
-    if (!await _audioService.ensureCanPlay()) {
-      notifyListeners();
-      return false;
-    }
-
-    if (!await NetworkUtils.hasInternetConnection()) {
-      notifyListeners();
-      return false;
-    }
-
+    final int requestId = _audioService.startPlayRequest();
+    _startLoading(key, requestId);
     try {
+      if (!await _audioService.ensureCanPlay()) {
+        notifyListeners();
+        return false;
+      }
+      if (!await _audioService.ensureOnline()) {
+        notifyListeners();
+        return false;
+      }
+      // A newer request or a stop replaced this one: leave the player alone.
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       await player.setLoopMode(LoopMode.off);
       await player.setAudioSource(
-        AudioSource.uri(
+        _audioService.buildUriAudioSource(
           Uri.parse(sermon.audioUrl),
           tag: MediaItem(
             id: 'sermon_${sermon.audioUrl}',
@@ -1013,8 +1188,10 @@ class RadioViewModel extends ChangeNotifier {
           ),
         ),
       );
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       await _audioService.applyPlaybackSpeed();
       final bool started = await _audioService.play();
+      if (_audioService.isStalePlayRequest(requestId)) return true;
       if (!started) {
         notifyListeners();
         return false;
@@ -1025,15 +1202,21 @@ class RadioViewModel extends ChangeNotifier {
       _setSelectedSermon(sermon);
       notifyListeners();
       return true;
-    } catch (e) {
-      log(e.toString());
+    } on PlayerInterruptedException {
+      // Loading was replaced by a newer audio or a stop: not a failure.
       notifyListeners();
-      return false;
+      return true;
+    } catch (e) {
+      return _handlePlayError(e, requestId);
+    } finally {
+      _finishLoading(requestId);
     }
   }
 
   // Stops sermon audio and clears the current selection.
   Future<void> stopSermon() async {
+    _audioService.cancelPlayRequests();
+    _clearLoading();
     await player.stop();
     _setSelectedSermon(null);
     notifyListeners();
@@ -1044,47 +1227,7 @@ class RadioViewModel extends ChangeNotifier {
     if (currentSura >= 114) {
       return true;
     }
-
-    if (!await _audioService.ensureCanPlay()) {
-      notifyListeners();
-      return false;
-    }
-
-    _setCurrentSura(currentSura + 1);
-    final Uri playbackUri = await _resolveReciterPlaybackUri(
-      reciter: reciter,
-      suraNumber: currentSura,
-    );
-    if (!await _canPlayUri(playbackUri)) {
-      _setCurrentSura(currentSura - 1);
-      notifyListeners();
-      return false;
-    }
-
-    await player.setAudioSource(
-      _audioService.buildUriAudioSource(
-        playbackUri,
-        tag: MediaItem(
-          id: 'sura_$currentSura',
-          title: 'سورة $currentSura',
-          artist: reciter.name ?? 'قارئ',
-        ),
-      ),
-    );
-    await _audioService.applyPlaybackSpeed();
-    final bool started = await _audioService.play();
-    if (!started) {
-      _setCurrentSura(currentSura - 1);
-      notifyListeners();
-      return false;
-    }
-    _setSelectedRadio(null);
-    _setSelectedSermon(null);
-    _setSelectedSharawyLecture(null);
-    _setSelectedReciter(reciter);
-    isReciterPlaying = true;
-    notifyListeners();
-    return true;
+    return _playAdjacentSura(reciter, currentSura + 1);
   }
 
   /// Plays the previous sura. Returns false when blocked by a call or offline.
@@ -1092,47 +1235,25 @@ class RadioViewModel extends ChangeNotifier {
     if (currentSura <= 1) {
       return true;
     }
+    return _playAdjacentSura(reciter, currentSura - 1);
+  }
 
-    if (!await _audioService.ensureCanPlay()) {
-      notifyListeners();
-      return false;
-    }
-
-    _setCurrentSura(currentSura - 1);
-    final Uri playbackUri = await _resolveReciterPlaybackUri(
+  /// Moves to [suraNumber] right away (so fast taps keep counting) and plays
+  /// it; restores the previous sura when this latest request really fails.
+  Future<bool> _playAdjacentSura(Reciters reciter, int suraNumber) async {
+    final int requestId = _audioService.startPlayRequest();
+    final int previousSura = currentSura;
+    _setCurrentSura(suraNumber);
+    final bool played = await _loadAndPlayReciterSura(
       reciter: reciter,
-      suraNumber: currentSura,
+      suraNumber: suraNumber,
+      requestId: requestId,
     );
-    if (!await _canPlayUri(playbackUri)) {
-      _setCurrentSura(currentSura + 1);
+    if (!played && !_audioService.isStalePlayRequest(requestId)) {
+      _setCurrentSura(previousSura);
       notifyListeners();
-      return false;
     }
-
-    await player.setAudioSource(
-      _audioService.buildUriAudioSource(
-        playbackUri,
-        tag: MediaItem(
-          id: 'sura_$currentSura',
-          title: 'سورة $currentSura',
-          artist: reciter.name ?? 'قارئ',
-        ),
-      ),
-    );
-    await _audioService.applyPlaybackSpeed();
-    final bool started = await _audioService.play();
-    if (!started) {
-      _setCurrentSura(currentSura + 1);
-      notifyListeners();
-      return false;
-    }
-    _setSelectedRadio(null);
-    _setSelectedSermon(null);
-    _setSelectedSharawyLecture(null);
-    _setSelectedReciter(reciter);
-    isReciterPlaying = true;
-    notifyListeners();
-    return true;
+    return played;
   }
 
   /// Prefers a local MediaStore file when available; otherwise the remote URL.
@@ -1169,7 +1290,7 @@ class RadioViewModel extends ChangeNotifier {
     if (_isLocalUri(uri)) {
       return true;
     }
-    return NetworkUtils.hasInternetConnection();
+    return _audioService.ensureOnline();
   }
 
   /// Re-fetches the online list for the current radio tab segment.
@@ -1203,15 +1324,37 @@ class RadioViewModel extends ChangeNotifier {
 
   // Filters radios by name using normalized Arabic search.
   void filterRadio(String newText) {
-    _radioSearchQuery = newText;
+    radioSearchQuery = newText;
+    saveSearchText(SharedPreferencesKay.radioSearch, newText);
     _updateFilteredRadios();
     notifyListeners();
   }
 
   // Filters reciters by name using normalized Arabic search.
   void filterReciter(String newText) {
-    _reciterSearchQuery = newText;
+    reciterSearchQuery = newText;
+    saveSearchText(SharedPreferencesKay.reciterSearch, newText);
     _updateFilteredReciters();
+    notifyListeners();
+  }
+
+  // Restores the saved search texts, then re-filters the loaded lists.
+  // Sha'rawy pillars/sections/lectures are skipped: opening them clears
+  // their search, and they are not open after a restart.
+  Future<void> _loadSearchTexts() async {
+    radioSearchQuery = await getSearchText(SharedPreferencesKay.radioSearch);
+    reciterSearchQuery =
+        await getSearchText(SharedPreferencesKay.reciterSearch);
+    suraSearchQuery =
+        await getSearchText(SharedPreferencesKay.reciterSuraSearch);
+    sermonSearchQuery = await getSearchText(SharedPreferencesKay.sermonSearch);
+    sharawyCategorySearchQuery =
+        await getSearchText(SharedPreferencesKay.sharawyCategorySearch);
+    _updateFilteredRadios();
+    _updateFilteredReciters();
+    _updateSuraSearch();
+    _updateFilteredSermons();
+    _updateFilteredSharawyCategories();
     notifyListeners();
   }
 
@@ -1307,7 +1450,7 @@ class RadioViewModel extends ChangeNotifier {
     filteredRadios = _favoritesFirst<Radios>(
       items: radios,
       favoriteIds: favoriteRadioIds,
-      searchQuery: _radioSearchQuery,
+      searchQuery: radioSearchQuery,
       onlyFavorites: radioListTabIndex == favoritesListTabIndex,
       idOf: (radio) => radio.id,
       nameOf: (radio) => radio.name,
@@ -1319,7 +1462,7 @@ class RadioViewModel extends ChangeNotifier {
     filteredReciters = _favoritesFirst<Reciters>(
       items: reciters,
       favoriteIds: favoriteReciterIds,
-      searchQuery: _reciterSearchQuery,
+      searchQuery: reciterSearchQuery,
       onlyFavorites: reciterListTabIndex == favoritesListTabIndex,
       idOf: (reciter) => reciter.id,
       nameOf: (reciter) => reciter.name,
@@ -1364,32 +1507,65 @@ class RadioViewModel extends ChangeNotifier {
 
   // Filters sermons by Arabic title using normalized Arabic search.
   void filterSermon(String newText) {
-    if (newText.isEmpty) {
+    sermonSearchQuery = newText;
+    saveSearchText(SharedPreferencesKay.sermonSearch, newText);
+    _updateFilteredSermons();
+    notifyListeners();
+  }
+
+  // Rebuilds [filteredSermons] from [sermonSearchQuery].
+  void _updateFilteredSermons() {
+    if (sermonSearchQuery.isEmpty) {
       filteredSermons = sermons;
     } else {
-      final normalizedQuery = normalizeArabic(newText);
+      final normalizedQuery = normalizeArabic(sermonSearchQuery);
       filteredSermons = sermons.where((sermon) {
         return normalizeArabic(sermon.titleAr).contains(normalizedQuery);
       }).toList();
     }
-    notifyListeners();
   }
 
   // Filters Sha'rawy categories by Arabic title using normalized Arabic search.
   void filterSharawyCategory(String newText) {
-    if (newText.isEmpty) {
+    sharawyCategorySearchQuery = newText;
+    saveSearchText(SharedPreferencesKay.sharawyCategorySearch, newText);
+    _updateFilteredSharawyCategories();
+    notifyListeners();
+  }
+
+  // Rebuilds [filteredSharawyCategories] from [sharawyCategorySearchQuery].
+  void _updateFilteredSharawyCategories() {
+    if (sharawyCategorySearchQuery.isEmpty) {
       filteredSharawyCategories = sharawyCategories;
     } else {
-      final normalizedQuery = normalizeArabic(newText);
+      final normalizedQuery = normalizeArabic(sharawyCategorySearchQuery);
       filteredSharawyCategories = sharawyCategories.where((category) {
         return normalizeArabic(category.titleAr).contains(normalizedQuery);
       }).toList();
     }
-    notifyListeners();
+  }
+
+  // Stores and saves the Sha'rawy pillars search text.
+  void _setSharawyPillarSearch(String text) {
+    sharawyPillarSearchQuery = text;
+    saveSearchText(SharedPreferencesKay.sharawyPillarSearch, text);
+  }
+
+  // Stores and saves the Sha'rawy sections search text.
+  void _setSharawySectionSearch(String text) {
+    sharawySectionSearchQuery = text;
+    saveSearchText(SharedPreferencesKay.sharawySectionSearch, text);
+  }
+
+  // Stores and saves the Sha'rawy lectures search text.
+  void _setSharawyLectureSearch(String text) {
+    sharawyLectureSearchQuery = text;
+    saveSearchText(SharedPreferencesKay.sharawyLectureSearch, text);
   }
 
   // Filters Sha'rawy pillars by Arabic title using normalized Arabic search.
   void filterSharawyPillar(String newText) {
+    _setSharawyPillarSearch(newText);
     if (newText.isEmpty) {
       filteredSharawyPillars = sharawyPillars;
     } else {
@@ -1403,6 +1579,7 @@ class RadioViewModel extends ChangeNotifier {
 
   // Filters Sha'rawy sections by Arabic title using normalized Arabic search.
   void filterSharawySection(String newText) {
+    _setSharawySectionSearch(newText);
     if (newText.isEmpty) {
       filteredSharawySections = sharawySections;
     } else {
@@ -1416,6 +1593,7 @@ class RadioViewModel extends ChangeNotifier {
 
   // Filters Sha'rawy lectures by Arabic title using normalized Arabic search.
   void filterSharawyLecture(String newText) {
+    _setSharawyLectureSearch(newText);
     if (newText.isEmpty) {
       filteredSharawyLectures = sharawyLectures;
     } else {
@@ -1427,13 +1605,22 @@ class RadioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Filters the reciter's sura list by Arabic or English sura name.
   void onSearch(String newText) {
+    suraSearchQuery = newText;
+    saveSearchText(SharedPreferencesKay.reciterSuraSearch, newText);
+    _updateSuraSearch();
+    notifyListeners();
+  }
+
+  // Rebuilds [filterSearch] (sura indexes) from [suraSearchQuery].
+  void _updateSuraSearch() {
     List<int> suraResultSearch = [];
-    final normalizedQuery = normalizeArabic(newText);
+    final normalizedQuery = normalizeArabic(suraSearchQuery);
 
     for (int i = 0; i < QuranResources.englishQuranSuras.length; i++) {
       if (QuranResources.englishQuranSuras[i].toUpperCase().contains(
-            newText.toUpperCase(),
+            suraSearchQuery.toUpperCase(),
           ) ||
           normalizeArabic(QuranResources.arabicQuranSuras[i])
               .contains(normalizedQuery)) {
@@ -1442,11 +1629,11 @@ class RadioViewModel extends ChangeNotifier {
     }
 
     filterSearch = suraResultSearch;
-    notifyListeners();
   }
 
   void resetReciterSearch() {
-    _reciterSearchQuery = '';
+    reciterSearchQuery = '';
+    saveSearchText(SharedPreferencesKay.reciterSearch, '');
     _updateFilteredReciters();
     notifyListeners();
   }

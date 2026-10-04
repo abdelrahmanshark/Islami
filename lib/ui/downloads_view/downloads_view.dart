@@ -59,8 +59,7 @@ class _DownloadsViewState extends State<DownloadsView> {
 
     final String message = viewModel.errorMessage != null
         ? viewModel.errorMessage!
-        : viewModel.filteredReciters.isEmpty &&
-              viewModel.selectedReciter == null
+        : !viewModel.hasDownloads
         ? 'لم يتم العثور على تحميلات على الجهاز'
         : 'تم تحديث التحميلات';
 
@@ -128,6 +127,9 @@ class _DownloadsViewState extends State<DownloadsView> {
                 ),
                 const SizedBox(height: 6),
                 SuraSearchBar(
+                  text: hasSelectedReciter
+                      ? viewModel.suraSearchQuery
+                      : viewModel.reciterSearchQuery,
                   onChanged: hasSelectedReciter
                       ? viewModel.filterSuras
                       : viewModel.filterReciters,

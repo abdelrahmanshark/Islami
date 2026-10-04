@@ -45,12 +45,12 @@ class PrayersCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Text(
-            prayer.PryerName,
+            prayer.pryerName,
             style: isNext ? AppStyles.blackBold14 : AppStyles.whiteBold14,
             textAlign: TextAlign.center,
           ),
           Text(
-            prayer.PryerTime,
+            prayer.pryerTime,
             style: isNext ? AppStyles.whiteBold16 : AppStyles.whiteBold14,
             textAlign: TextAlign.center,
           ),

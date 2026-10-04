@@ -6,9 +6,9 @@ import '../../../utils/app_assets.dart';
 import '../../../utils/app_styles.dart';
 
 class SuraBar extends StatelessWidget {
-  int index;
+  final int index;
 
-  SuraBar({super.key, required this.index});
+  const SuraBar({super.key, required this.index});
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,7 @@ class SuraBar extends StatelessWidget {
               style: AppStyles.whiteBold20,
             ),
             Text(
-              '${QuranResources.AyaNumber[index]} آيات',
+              '${QuranResources.ayaNumber[index]} آيات',
               style: AppStyles.whiteBold12,
               textAlign: TextAlign.start,
             ),

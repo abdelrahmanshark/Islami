@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/radio_response.dart';
 import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widgets/card_play_pause_icon.dart';
 import 'package:islami/ui/home/tabs/radio_screen/widgets/favorite_icon_button.dart';
-import 'package:islami/ui/home/widgets/animated_icon_switcher.dart';
 import 'package:islami/ui/home/widgets/playback_failure_snackbar.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -76,13 +76,9 @@ class RadioCard extends StatelessWidget {
                       }
                     },
                     visualDensity: VisualDensity.compact,
-                    icon: AnimatedIconSwitcher(
-                      child: Icon(
-                        isRadioPlaying ? Icons.pause : Icons.play_arrow_rounded,
-                        key: ValueKey(isRadioPlaying),
-                        color: AppColors.blackColor,
-                        size: 40,
-                      ),
+                    icon: CardPlayPauseIcon(
+                      isLoading: provider.isRadioLoading(radio),
+                      isPlaying: isRadioPlaying,
                     ),
                   ),
                 ],

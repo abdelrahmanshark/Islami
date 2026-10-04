@@ -60,6 +60,7 @@ class SharawyPillarsView extends StatelessWidget {
             ),
           ),
           SuraSearchBar(
+            text: provider.sharawyPillarSearchQuery,
             onChanged: (newText) {
               provider.filterSharawyPillar(newText);
             },

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:islami/ui/home/tabs/time_screen/models/TimeResponse.dart';
+import 'package:islami/ui/home/tabs/time_screen/models/time_response.dart';
 import 'package:islami/utils/shared_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

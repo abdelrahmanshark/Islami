@@ -1,6 +1,6 @@
 class Prayer {
-  Prayer(this.PryerTime, this.PryerName);
+  Prayer(this.pryerTime, this.pryerName);
 
-  String PryerName;
-  String PryerTime;
+  String pryerName;
+  String pryerTime;
 }

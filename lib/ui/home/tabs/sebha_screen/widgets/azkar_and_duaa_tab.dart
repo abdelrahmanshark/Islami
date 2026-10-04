@@ -31,6 +31,7 @@ class AzkarAndDuaaTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SuraSearchBar(
+          text: provider.searchText,
           onChanged: provider.onSearchChanged,
           hintText: 'ابحث عن الأذكار والأدعية',
           textDirection: TextDirection.rtl,

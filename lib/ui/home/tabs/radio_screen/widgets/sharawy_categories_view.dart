@@ -26,6 +26,7 @@ class SharawyCategoriesView extends StatelessWidget {
       child: Column(
         children: [
           SuraSearchBar(
+            text: provider.sharawyCategorySearchQuery,
             onChanged: (newText) {
               provider.filterSharawyCategory(newText);
             },

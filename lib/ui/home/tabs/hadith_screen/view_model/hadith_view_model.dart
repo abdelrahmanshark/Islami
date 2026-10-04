@@ -44,7 +44,8 @@ class HadithViewModel extends ChangeNotifier {
   int listTabIndex = RadioViewModel.allListTabIndex;
 
   RiyadSearchType searchType = RiyadSearchType.chapter;
-  String _searchText = '';
+  /// Search field text, saved in SharedPreferences.
+  String searchText = '';
   bool isLoading = false;
   String failureMsg = '';
 
@@ -82,6 +83,7 @@ class HadithViewModel extends ChangeNotifier {
       }
 
       favoriteHadithIds = await getFavoriteHadithIds();
+      searchText = await getSearchText(SharedPreferencesKay.hadithSearch);
       _applySearch();
     } catch (e) {
       log(e.toString());
@@ -94,7 +96,8 @@ class HadithViewModel extends ChangeNotifier {
 
   /// Updates the search text and refreshes the lists.
   void onSearchChanged(String text) {
-    _searchText = text;
+    searchText = text;
+    saveSearchText(SharedPreferencesKay.hadithSearch, text);
     _applySearch();
     notifyListeners();
   }
@@ -156,7 +159,7 @@ class HadithViewModel extends ChangeNotifier {
 
   /// Filters chapters and favorites using the current search text and type.
   void _applySearch() {
-    final query = normalizeArabic(_searchText.trim());
+    final query = normalizeArabic(searchText.trim());
     _filterChapters(query);
     _filterFavorites(query);
   }

@@ -10,6 +10,7 @@ import 'package:islami/models/downloaded_reciter_summary.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/services/audio_player_service.dart';
 import 'package:islami/utils/arabic_utils.dart';
+import 'package:islami/utils/shared_preferences.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 
@@ -24,6 +25,7 @@ class DownloadsViewModel extends ChangeNotifier {
     _restorePlaybackState();
     _listenForPlayerState();
     _audioService.addListener(_onActiveAudioChanged);
+    _loadReciterSearch();
   }
 
   final DownloadedAudioRepository _downloadedAudioRepository;
@@ -38,6 +40,13 @@ class DownloadsViewModel extends ChangeNotifier {
   DownloadedReciterSummary? selectedReciter;
   bool isLoading = false;
   String? errorMessage;
+
+  // Text of the reciters / suras search field, saved in SharedPreferences.
+  String reciterSearchQuery = '';
+  String suraSearchQuery = '';
+
+  /// True when at least one downloaded sura exists on the device.
+  bool get hasDownloads => _allDownloads.isNotEmpty;
 
   /// Reciter currently selected for offline playback.
   int? playingReciterId;
@@ -89,6 +98,7 @@ class DownloadsViewModel extends ChangeNotifier {
     final bool isPlayingSuraListed =
         selectedReciter?.reciterId == reciterId && playingSuraIndex != null;
     if (!isPlayingSuraListed) {
+      _setSuraSearch('');
       for (final DownloadedReciterSummary summary
           in buildReciterSummaries(_allDownloads)) {
         if (summary.reciterId == reciterId) {
@@ -126,7 +136,7 @@ class DownloadsViewModel extends ChangeNotifier {
 
     try {
       _allDownloads = await _downloadedAudioRepository.getValidDownloads();
-      filteredReciters = buildReciterSummaries(_allDownloads);
+      _updateFilteredReciters();
       if (selectedReciter != null) {
         _applySelectedReciter(selectedReciter!.reciterId);
       }
@@ -147,41 +157,69 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Filters reciters that have downloads by name.
   void filterReciters(String query) {
+    reciterSearchQuery = query;
+    saveSearchText(SharedPreferencesKay.downloadsReciterSearch, query);
+    _updateFilteredReciters();
+    notifyListeners();
+  }
+
+  /// Restores the saved reciters search text and re-filters the list.
+  /// The suras search is not restored: opening a reciter clears it.
+  Future<void> _loadReciterSearch() async {
+    reciterSearchQuery =
+        await getSearchText(SharedPreferencesKay.downloadsReciterSearch);
+    _updateFilteredReciters();
+    notifyListeners();
+  }
+
+  /// Rebuilds [filteredReciters] from all downloads and [reciterSearchQuery].
+  void _updateFilteredReciters() {
     final List<DownloadedReciterSummary> all =
         buildReciterSummaries(_allDownloads);
-    if (query.trim().isEmpty) {
+    if (reciterSearchQuery.trim().isEmpty) {
       filteredReciters = all;
     } else {
-      final String normalizedQuery = normalizeArabic(query);
+      final String normalizedQuery = normalizeArabic(reciterSearchQuery);
       filteredReciters = all.where((reciter) {
         return normalizeArabic(reciter.reciterName).contains(normalizedQuery);
       }).toList();
     }
-    notifyListeners();
   }
 
-  /// Opens a reciter's downloaded surah list.
+  /// Opens a reciter's downloaded surah list (starts with an empty search).
   void selectReciter(DownloadedReciterSummary reciter) {
     selectedReciter = reciter;
+    _setSuraSearch('');
     _applySelectedReciter(reciter.reciterId);
     notifyListeners();
   }
 
-  /// Returns to the reciter list.
+  /// Returns to the reciter list, filtered by the saved reciters search.
   void clearSelectedReciter() {
     selectedReciter = null;
     filteredSuras = <DownloadedAudio>[];
-    filteredReciters = buildReciterSummaries(_allDownloads);
+    _updateFilteredReciters();
     notifyListeners();
   }
 
   /// Filters downloaded surahs for the selected reciter.
   void filterSuras(String query) {
+    _setSuraSearch(query);
     if (selectedReciter == null) return;
+    _updateFilteredSuras(selectedReciter!.reciterId);
+    notifyListeners();
+  }
 
-    final List<DownloadedAudio> forReciter = _downloadsForReciter(
-      selectedReciter!.reciterId,
-    );
+  /// Stores and saves the suras search text.
+  void _setSuraSearch(String query) {
+    suraSearchQuery = query;
+    saveSearchText(SharedPreferencesKay.downloadsSuraSearch, query);
+  }
+
+  /// Rebuilds [filteredSuras] for [reciterId] from [suraSearchQuery].
+  void _updateFilteredSuras(int reciterId) {
+    final List<DownloadedAudio> forReciter = _downloadsForReciter(reciterId);
+    final String query = suraSearchQuery;
 
     if (query.trim().isEmpty) {
       filteredSuras = forReciter;
@@ -198,16 +236,21 @@ class DownloadsViewModel extends ChangeNotifier {
             english.toUpperCase().contains(query.toUpperCase());
       }).toList();
     }
-    notifyListeners();
   }
 
   /// Plays a downloaded sura (does not toggle pause — card handles that).
   Future<void> playDownloadedSura(DownloadedAudio download) async {
+    final int requestId = _audioService.startPlayRequest();
     try {
-      await _startDownload(download);
+      await _startDownload(download, requestId);
+    } on PlayerInterruptedException {
+      // Loading was replaced by a newer audio or a stop: nothing to clear.
     } catch (e) {
       log(e.toString());
-      _clearPlayingSelection();
+      // Only the latest request may clear the selection.
+      if (!_audioService.isStalePlayRequest(requestId)) {
+        _clearPlayingSelection();
+      }
     }
     notifyListeners();
   }
@@ -308,6 +351,7 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Stops playback and clears the downloads selection.
   Future<void> stopPlayback() async {
+    _audioService.cancelPlayRequests();
     await player.stop();
     _clearPlayingSelection();
     notifyListeners();
@@ -347,6 +391,7 @@ class DownloadsViewModel extends ChangeNotifier {
     try {
       // Stop playback if this track is currently playing.
       if (isSelectedDownload(download)) {
+        _audioService.cancelPlayRequests();
         await player.stop();
         _clearPlayingSelection();
       }
@@ -364,13 +409,16 @@ class DownloadsViewModel extends ChangeNotifier {
       );
 
       if (selectedReciter != null) {
-        _applySelectedReciter(selectedReciter!.reciterId);
-        if (filteredSuras.isEmpty) {
+        final int reciterId = selectedReciter!.reciterId;
+        _applySelectedReciter(reciterId);
+        // Checks all downloads, not filteredSuras (the search may hide some).
+        if (_downloadsForReciter(reciterId).isEmpty) {
           selectedReciter = null;
-          filteredReciters = buildReciterSummaries(_allDownloads);
+          filteredSuras = <DownloadedAudio>[];
+          _updateFilteredReciters();
         }
       } else {
-        filteredReciters = buildReciterSummaries(_allDownloads);
+        _updateFilteredReciters();
       }
 
       notifyListeners();
@@ -393,6 +441,7 @@ class DownloadsViewModel extends ChangeNotifier {
     try {
       for (final DownloadedAudio download in toDelete) {
         if (isSelectedDownload(download)) {
+          _audioService.cancelPlayRequests();
           await player.stop();
           _clearPlayingSelection();
         }
@@ -407,7 +456,7 @@ class DownloadsViewModel extends ChangeNotifier {
       _allDownloads.removeWhere((item) => item.reciterId == reciterId);
       selectedReciter = null;
       filteredSuras = <DownloadedAudio>[];
-      filteredReciters = buildReciterSummaries(_allDownloads);
+      _updateFilteredReciters();
       notifyListeners();
       return true;
     } catch (e) {
@@ -419,11 +468,13 @@ class DownloadsViewModel extends ChangeNotifier {
   }
 
   /// Starts a download track and syncs shared audio selection.
-  Future<void> _startDownload(DownloadedAudio download) async {
+  /// Does nothing once a newer play request or a stop replaced [requestId].
+  Future<void> _startDownload(DownloadedAudio download, int requestId) async {
     if (!await _audioService.ensureCanPlay()) {
       isPlaying = false;
       return;
     }
+    if (_audioService.isStalePlayRequest(requestId)) return;
 
     final String suraTitle = _suraTitle(download.suraId);
     await player.setLoopMode(
@@ -439,6 +490,7 @@ class DownloadsViewModel extends ChangeNotifier {
         ),
       ),
     );
+    if (_audioService.isStalePlayRequest(requestId)) return;
     await _audioService.applyPlaybackSpeed();
 
     // Clear other audio modes so only this download is active.
@@ -561,7 +613,7 @@ class DownloadsViewModel extends ChangeNotifier {
 
   /// Fills [filteredSuras] for the given reciter id.
   void _applySelectedReciter(int reciterId) {
-    filteredSuras = _downloadsForReciter(reciterId);
+    _updateFilteredSuras(reciterId);
 
     for (final DownloadedReciterSummary summary
         in buildReciterSummaries(_allDownloads)) {

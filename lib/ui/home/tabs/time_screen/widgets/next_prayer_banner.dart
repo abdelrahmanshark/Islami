@@ -36,12 +36,12 @@ class NextPrayerBanner extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      prayer.PryerName,
+                      prayer.pryerName,
                       style: AppStyles.whiteBold20,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      prayer.PryerTime,
+                      prayer.pryerTime,
                       style: AppStyles.primaryBold20,
                     ),
                     const SizedBox(height: 12),
