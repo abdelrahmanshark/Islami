@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_asbab_view.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_colors_sheet.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_view.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_tafser_view.dart';
-import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -20,13 +21,16 @@ class MoshafScreen extends StatefulWidget {
   State<MoshafScreen> createState() => _MoshafScreenState();
 }
 
-class _MoshafScreenState extends State<MoshafScreen> {
+class _MoshafScreenState extends State<MoshafScreen>
+    with WidgetsBindingObserver {
   late final MoshafViewModel _viewModel;
   PageController? _pageController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _allowAllOrientations();
     _viewModel = MoshafViewModel();
     _viewModel.addListener(_onViewModelChanged);
     _viewModel.loadMoshaf(startPage: widget.startPage);
@@ -34,10 +38,38 @@ class _MoshafScreenState extends State<MoshafScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _lockPortraitOrientation();
     _viewModel.removeListener(_onViewModelChanged);
     _pageController?.dispose();
     _viewModel.dispose();
     super.dispose();
+  }
+
+  /// Re-applies the orientation when the app returns to the foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final bool isMoshafOnTop = ModalRoute.of(context)?.isCurrent ?? false;
+    if (isMoshafOnTop) {
+      _allowAllOrientations();
+    } else {
+      _lockPortraitOrientation();
+    }
+  }
+
+  /// Lets the Mushaf rotate between portrait and landscape.
+  void _allowAllOrientations() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  /// Restores the app-wide portrait-only orientation.
+  void _lockPortraitOrientation() {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
   /// Creates the PageController once metadata has finished loading.
@@ -88,12 +120,25 @@ class _MoshafScreenState extends State<MoshafScreen> {
       if (neighborIndex < 0 || neighborIndex >= _viewModel.pages.length) {
         continue;
       }
-      final String imagePath = AppAssets.quranPageImage(
-        _viewModel.pages[neighborIndex].pageNumber,
-        isDark: _viewModel.isDarkTheme,
-      );
+      final String imagePath = _viewModel.pages[neighborIndex].imagePath;
       precacheImage(AssetImage(imagePath), context);
     }
+  }
+
+  /// Opens the sheet to choose the page and background colors.
+  void _openColorsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.blackColor,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return ChangeNotifierProvider<MoshafViewModel>.value(
+          value: _viewModel,
+          child: const MoshafColorsSheet(),
+        );
+      },
+    );
   }
 
   /// Toggles the bookmark and shows a short confirmation.
@@ -125,6 +170,8 @@ class _MoshafScreenState extends State<MoshafScreen> {
       final ayahs = await _viewModel.loadAyahMeta();
       if (!mounted) return;
 
+      // The index screen is portrait-only like the rest of the app.
+      _lockPortraitOrientation();
       final selectedPage =
           await Navigator.pushNamed(
                 context,
@@ -132,8 +179,10 @@ class _MoshafScreenState extends State<MoshafScreen> {
                 arguments: ayahs,
               )
               as int?;
+      if (!mounted) return;
+      _allowAllOrientations();
 
-      if (!mounted || selectedPage == null) return;
+      if (selectedPage == null) return;
       if (_pageController == null || !_pageController!.hasClients) return;
 
       final targetIndex = (selectedPage - 1).clamp(
@@ -255,6 +304,16 @@ class _MoshafScreenState extends State<MoshafScreen> {
                                 IconButton(
                                   onPressed: provider.isLoading
                                       ? null
+                                      : _openColorsSheet,
+                                  icon: const Icon(
+                                    Icons.palette_outlined,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'ألوان المصحف',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
                                       : _openIndex,
                                   icon: const Icon(
                                     Icons.list_alt,
@@ -352,7 +411,8 @@ class _MoshafScreenState extends State<MoshafScreen> {
 
         return MoshafPageView(
           page: page,
-          isDarkTheme: provider.isDarkTheme,
+          pageColor: provider.pageColor,
+          backgroundColor: provider.backgroundColor,
           ayahs: isVisiblePage ? provider.currentPageAyahs : const [],
           selectedAyah: isVisiblePage ? provider.selectedAyah : null,
           findAyahAt: provider.findAyahAt,

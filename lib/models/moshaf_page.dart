@@ -38,7 +38,7 @@ class MoshafPage {
       juz: marker.juz,
       hizb: marker.hizb,
       rub: marker.rub,
-      imagePath: AppAssets.quranPageImage(marker.page),
+      imagePath: AppAssets.moshafPageImage(marker.page),
       suraNumbers: suraNumbers ?? [marker.sura],
     );
   }

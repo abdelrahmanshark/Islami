@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:islami/models/user_location.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,6 +8,10 @@ class SharedPreferencesKay {
   static const String moshafLastPage = 'moshafLastPage';
   static const String moshafLastReadPage = 'moshafLastReadPage';
   static const String moshafDarkTheme = 'moshafDarkTheme';
+  static const String moshafLightPageColor = 'moshafLightPageColor';
+  static const String moshafLightBackgroundColor = 'moshafLightBackgroundColor';
+  static const String moshafDarkPageColor = 'moshafDarkPageColor';
+  static const String moshafDarkBackgroundColor = 'moshafDarkBackgroundColor';
   static const String moshafMemorizedPages = 'moshafMemorizedPages';
   static const String moshafMemorizedAyahs = 'moshafMemorizedAyahs';
   static const String prayerDate = 'prayerDate';
@@ -194,6 +200,26 @@ Future<bool> getMoshafDarkTheme() async {
 Future<void> saveMoshafDarkTheme(bool isDark) async {
   final pref = await SharedPreferences.getInstance();
   await pref.setBool(SharedPreferencesKay.moshafDarkTheme, isDark);
+}
+
+/// Returns the Mushaf color saved under [key], or [defaultColor] when unset.
+Future<Color> getMoshafColor(String key, Color defaultColor) async {
+  final pref = await SharedPreferences.getInstance();
+  final int? savedValue = pref.getInt(key);
+  if (savedValue == null) return defaultColor;
+  return Color(savedValue);
+}
+
+/// Saves a Mushaf color (page text or background) under [key].
+Future<void> saveMoshafColor(String key, Color color) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.setInt(key, color.toARGB32());
+}
+
+/// Removes the saved Mushaf color under [key], so the default is used again.
+Future<void> clearMoshafColor(String key) async {
+  final pref = await SharedPreferences.getInstance();
+  await pref.remove(key);
 }
 
 /// Returns Mushaf pages marked as memorized (empty when none saved).

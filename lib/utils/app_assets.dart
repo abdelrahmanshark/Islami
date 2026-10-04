@@ -55,8 +55,7 @@ class AppAssets {
       'assets/json/quran_with_juz_hizb_rub.json';
   static const String hafsAyahMetaJson = 'assets/json/hafs-ayah-meta.json';
   static const String asbabJson = 'assets/json/asbab.json';
-  static const String quranImagesFolder = 'assets/quran_images';
-  static const String quranImagesDarkFolder = 'assets/quran_images_dark';
+  static const String moshafPagesFolder = 'assets/pages';
   static const String quranCoordinatesFolder =
       'assets/json/quran_coordinates';
   static const String tafserFolder = 'assets/json/tafser';
@@ -178,14 +177,11 @@ class AppAssets {
     '114_an-nas.json',
   ];
 
-  /// Returns the asset path for Quran page [pageNumber] (1–604).
-  /// Light mode uses unpadded PNG names (1.png). Dark mode uses padded WebP (001.webp).
-  static String quranPageImage(int pageNumber, {bool isDark = false}) {
-    if (isDark) {
-      final padded = pageNumber.toString().padLeft(3, '0');
-      return '$quranImagesDarkFolder/$padded.webp';
-    }
-    return '$quranImagesFolder/$pageNumber.png';
+  /// Returns the asset path for Mushaf page [pageNumber] (1–604).
+  /// One image per page (black text on transparent), recolored at runtime.
+  static String moshafPageImage(int pageNumber) {
+    final padded = pageNumber.toString().padLeft(3, '0');
+    return '$moshafPagesFolder/page_$padded.webp';
   }
 
   /// Returns the ayah-polygon JSON path for Quran page [pageNumber] (1–604).

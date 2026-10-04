@@ -11,6 +11,7 @@ import 'package:islami/models/moshaf_page_marker.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/tafser_surah.dart';
 import 'package:islami/utils/app_assets.dart';
+import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 class MoshafViewModel extends ChangeNotifier {
@@ -25,8 +26,26 @@ class MoshafViewModel extends ChangeNotifier {
   /// Cached ayah metadata for the Mushaf index screen.
   List<HafsAyahMeta>? _ayahMeta;
 
-  /// Whether Mushaf uses dark page images. Default is light.
+  /// Whether Mushaf uses the dark colors. Default is light.
   bool isDarkTheme = false;
+
+  static const Color defaultLightPageColor = AppColors.blackColor;
+  static const Color defaultLightBackgroundColor = AppColors.offWhite;
+  static const Color defaultDarkPageColor = AppColors.offWhite;
+  static const Color defaultDarkBackgroundColor = AppColors.blackColor;
+
+  /// User-chosen colors of each theme (page text + background).
+  Color lightPageColor = defaultLightPageColor;
+  Color lightBackgroundColor = defaultLightBackgroundColor;
+  Color darkPageColor = defaultDarkPageColor;
+  Color darkBackgroundColor = defaultDarkBackgroundColor;
+
+  /// Text color of the Mushaf page in the current theme.
+  Color get pageColor => isDarkTheme ? darkPageColor : lightPageColor;
+
+  /// Background color behind the Mushaf page in the current theme.
+  Color get backgroundColor =>
+      isDarkTheme ? darkBackgroundColor : lightBackgroundColor;
 
   /// 0-based index of the currently visible page in [pages].
   int visiblePageIndex = 0;
@@ -153,6 +172,7 @@ class MoshafViewModel extends ChangeNotifier {
 
     try {
       isDarkTheme = await getMoshafDarkTheme();
+      await _loadColors();
 
       final markers = await _loadPageMarkers();
       if (markers.isEmpty) {
@@ -196,6 +216,71 @@ class MoshafViewModel extends ChangeNotifier {
     selectedAyah = null;
     notifyListeners();
     await saveMoshafDarkTheme(isDarkTheme);
+  }
+
+  /// Reads the saved page/background colors of both themes.
+  Future<void> _loadColors() async {
+    lightPageColor = await getMoshafColor(
+      SharedPreferencesKay.moshafLightPageColor,
+      defaultLightPageColor,
+    );
+    lightBackgroundColor = await getMoshafColor(
+      SharedPreferencesKay.moshafLightBackgroundColor,
+      defaultLightBackgroundColor,
+    );
+    darkPageColor = await getMoshafColor(
+      SharedPreferencesKay.moshafDarkPageColor,
+      defaultDarkPageColor,
+    );
+    darkBackgroundColor = await getMoshafColor(
+      SharedPreferencesKay.moshafDarkBackgroundColor,
+      defaultDarkBackgroundColor,
+    );
+  }
+
+  /// Sets the page text color of the current theme and saves it.
+  Future<void> selectPageColor(Color color) async {
+    if (isDarkTheme) {
+      darkPageColor = color;
+    } else {
+      lightPageColor = color;
+    }
+    notifyListeners();
+    final key = isDarkTheme
+        ? SharedPreferencesKay.moshafDarkPageColor
+        : SharedPreferencesKay.moshafLightPageColor;
+    await saveMoshafColor(key, color);
+  }
+
+  /// Sets the background color of the current theme and saves it.
+  Future<void> selectBackgroundColor(Color color) async {
+    if (isDarkTheme) {
+      darkBackgroundColor = color;
+    } else {
+      lightBackgroundColor = color;
+    }
+    notifyListeners();
+    final key = isDarkTheme
+        ? SharedPreferencesKay.moshafDarkBackgroundColor
+        : SharedPreferencesKay.moshafLightBackgroundColor;
+    await saveMoshafColor(key, color);
+  }
+
+  /// Restores the default colors of the current theme.
+  Future<void> resetColors() async {
+    if (isDarkTheme) {
+      darkPageColor = defaultDarkPageColor;
+      darkBackgroundColor = defaultDarkBackgroundColor;
+      notifyListeners();
+      await clearMoshafColor(SharedPreferencesKay.moshafDarkPageColor);
+      await clearMoshafColor(SharedPreferencesKay.moshafDarkBackgroundColor);
+    } else {
+      lightPageColor = defaultLightPageColor;
+      lightBackgroundColor = defaultLightBackgroundColor;
+      notifyListeners();
+      await clearMoshafColor(SharedPreferencesKay.moshafLightPageColor);
+      await clearMoshafColor(SharedPreferencesKay.moshafLightBackgroundColor);
+    }
   }
 
   /// Reads page metadata from quran_with_juz_hizb_rub.json.

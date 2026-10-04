@@ -39,6 +39,8 @@ void main() async {
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   SystemChrome.setSystemUIOverlayStyle(AppTheme.systemUiOverlayStyle);
+  // Portrait-only by default; the Mushaf screen unlocks landscape while open.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
     androidNotificationChannelName: 'تشغيل الصوت',

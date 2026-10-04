@@ -85,9 +85,10 @@ class TimeViewModel extends ChangeNotifier {
   }
 
   /// Fetches accurate GPS, saves it locally, then reloads prayer times.
-  Future<void> refreshUserLocation() async {
+  /// Returns the failure reason when GPS could not be used, otherwise null.
+  Future<LocationFailureReason?> refreshUserLocation() async {
     if (isLocationLoading) {
-      return;
+      return null;
     }
 
     isLocationLoading = true;
@@ -98,10 +99,17 @@ class TimeViewModel extends ChangeNotifier {
       isLocationLoading = false;
       notifyListeners();
       await getTimeResponse();
+      return null;
+    } on LocationUnavailableException catch (e) {
+      log('Failed to refresh user location: $e');
+      isLocationLoading = false;
+      notifyListeners();
+      return e.reason;
     } catch (e) {
       log('Failed to refresh user location: $e');
       isLocationLoading = false;
       notifyListeners();
+      return LocationFailureReason.unavailable;
     }
   }
 

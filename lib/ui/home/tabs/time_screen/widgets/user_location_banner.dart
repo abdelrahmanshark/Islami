@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/models/location_failure.dart';
 import 'package:islami/ui/home/tabs/time_screen/time_view_model.dart';
 import 'package:islami/ui/widgets/pressable_scale.dart';
 import 'package:islami/utils/app_colors.dart';
@@ -9,6 +10,30 @@ import 'package:provider/provider.dart';
 class UserLocationBanner extends StatelessWidget {
   const UserLocationBanner({super.key});
 
+  /// Refreshes the location and asks the user to enable GPS when it is off.
+  Future<void> _onLocationTap(
+    BuildContext context,
+    TimeViewModel provider,
+  ) async {
+    final LocationFailureReason? failure =
+        await provider.refreshUserLocation();
+    if (failure != LocationFailureReason.serviceDisabled || !context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text(
+            'قم بتفعيل الموقع حتى نحدث الصلوات',
+            textDirection: TextDirection.rtl,
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TimeViewModel>(
@@ -18,7 +43,7 @@ class UserLocationBanner extends StatelessWidget {
           child: GestureDetector(
             onTap: provider.isLocationLoading
                 ? null
-                : () => provider.refreshUserLocation(),
+                : () => _onLocationTap(context, provider),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(

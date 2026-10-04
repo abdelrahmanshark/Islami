@@ -3,15 +3,14 @@ import 'package:islami/models/ayah_coordinate.dart';
 import 'package:islami/models/moshaf_page.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_ayah_overlay.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_footer.dart';
-import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_frame.dart';
-import 'package:islami/utils/app_assets.dart';
-import 'package:islami/utils/app_colors.dart';
-import 'package:islami/utils/app_styles.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_image.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_layout.dart';
 
-/// One Mushaf image page wrapped in a decorative frame.
+/// One Mushaf image page painted with the user's page and background colors.
 class MoshafPageView extends StatelessWidget {
   final MoshafPage page;
-  final bool isDarkTheme;
+  final Color pageColor;
+  final Color backgroundColor;
   final List<AyahCoordinate> ayahs;
   final AyahCoordinate? selectedAyah;
   final AyahCoordinate? Function(Offset localPosition, Size size) findAyahAt;
@@ -21,10 +20,27 @@ class MoshafPageView extends StatelessWidget {
   final bool isFooterVisible;
   final VoidCallback? onPageTapped;
 
+  /// Space around the page image.
+  static const EdgeInsets _pageImagePadding = EdgeInsets.only(
+    left: 10,
+    top: 5,
+    right: 10,
+    bottom: 5,
+  );
+
+  /// Space around the ayah tap/highlight layer, used to align it with the text.
+  static const EdgeInsets _ayahOverlayPadding = EdgeInsets.only(
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+  );
+
   const MoshafPageView({
     super.key,
     required this.page,
-    this.isDarkTheme = false,
+    required this.pageColor,
+    required this.backgroundColor,
     this.ayahs = const [],
     this.selectedAyah,
     required this.findAyahAt,
@@ -37,17 +53,6 @@ class MoshafPageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = isDarkTheme
-        ? AppColors.blackColor
-        : AppColors.offWhite;
-    final imagePath = AppAssets.quranPageImage(
-      page.pageNumber,
-      isDark: isDarkTheme,
-    );
-    // Pages 1–2 use dark-style coords (no light inset), even in light mode.
-    final useLightCoordPadding =
-        !isDarkTheme && page.pageNumber != 1 && page.pageNumber != 2;
-
     return ColoredBox(
       color: backgroundColor,
       // Catches taps outside the ayah layer (margins, frame, footer).
@@ -56,60 +61,37 @@ class MoshafPageView extends StatelessWidget {
         onTap: onPageTapped,
         child: Stack(
           children: [
+            // Image and ayah layer share one box so highlights stay aligned.
             Positioned.fill(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return MoshafPageFrame(
-                    isDarkTheme: isDarkTheme,
-                    pageNumber: page.pageNumber,
-                    child: SizedBox(
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
-                            imagePath,
-                            key: ValueKey(imagePath),
-                            fit: BoxFit.fill,
-                            width: constraints.maxWidth,
-                            height: constraints.maxHeight,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Text(
-                                  'تعذر تحميل الصفحة ${page.pageNumber}',
-                                  style: AppStyles.primaryBold16,
-                                  textDirection: TextDirection.rtl,
-                                ),
-                              );
-                            },
-                          ),
-                          // Light mode (pages 3+): inset ayah hit/highlight layer.
-                          // Pages 1–2 match dark padding (zero inset).
-                          Padding(
-                            padding: useLightCoordPadding
-                                ? const EdgeInsets.only(
-                                    left: 40,
-                                    right: 40,
-                                    top: 40,
-                                    bottom: 40,
-                                  )
-                                : EdgeInsets.zero,
-                            child: MoshafAyahOverlay(
-                              ayahs: ayahs,
-                              selectedAyah: selectedAyah,
-                              findAyahAt: findAyahAt,
-                              onAyahTapped: onAyahTapped,
-                              onTafserLabelTapped: onTafserLabelTapped,
-                              onAsbabLabelTapped: onAsbabLabelTapped,
-                              onPageTapped: onPageTapped,
-                            ),
-                          ),
-                        ],
+              child: MoshafPageLayout(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Padding(
+                        padding: _pageImagePadding,
+                        child: MoshafPageImage(
+                          pageNumber: page.pageNumber,
+                          imagePath: page.imagePath,
+                          pageColor: pageColor,
+                        ),
                       ),
                     ),
-                  );
-                },
+                    Positioned.fill(
+                      child: Padding(
+                        padding: _ayahOverlayPadding,
+                        child: MoshafAyahOverlay(
+                          ayahs: ayahs,
+                          selectedAyah: selectedAyah,
+                          findAyahAt: findAyahAt,
+                          onAyahTapped: onAyahTapped,
+                          onTafserLabelTapped: onTafserLabelTapped,
+                          onAsbabLabelTapped: onAsbabLabelTapped,
+                          onPageTapped: onPageTapped,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             Positioned(
@@ -127,7 +109,7 @@ class MoshafPageView extends StatelessWidget {
                     color: backgroundColor,
                     child: MoshafPageFooter(
                       page: page,
-                      isDarkTheme: isDarkTheme,
+                      textColor: pageColor,
                     ),
                   ),
                 ),
