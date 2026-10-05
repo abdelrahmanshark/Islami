@@ -22,10 +22,10 @@ class MoshafPageView extends StatelessWidget {
 
   /// Space around the page image.
   static const EdgeInsets _pageImagePadding = EdgeInsets.only(
-    left: 10,
-    top: 5,
-    right: 10,
-    bottom: 5,
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
   );
 
   /// Space around the ayah tap/highlight layer, used to align it with the text.
