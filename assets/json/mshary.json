@@ -1,0 +1,686 @@
+[
+  {
+    "number": "001",
+    "name": "الفاتحة",
+    "mp3": "https://server8.mp3quran.net/afs/001.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "002",
+    "name": "البقرة",
+    "mp3": "https://server8.mp3quran.net/afs/002.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "003",
+    "name": "آل عمران",
+    "mp3": "https://server8.mp3quran.net/afs/003.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "004",
+    "name": "النساء",
+    "mp3": "https://server8.mp3quran.net/afs/004.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "005",
+    "name": "المائدة",
+    "mp3": "https://server8.mp3quran.net/afs/005.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "006",
+    "name": "الأنعام",
+    "mp3": "https://server8.mp3quran.net/afs/006.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "007",
+    "name": "الأعراف",
+    "mp3": "https://server8.mp3quran.net/afs/007.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "008",
+    "name": "الأنفال",
+    "mp3": "https://server8.mp3quran.net/afs/008.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "009",
+    "name": "التوبة",
+    "mp3": "https://server8.mp3quran.net/afs/009.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "010",
+    "name": "يونس",
+    "mp3": "https://server8.mp3quran.net/afs/010.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "011",
+    "name": "هود",
+    "mp3": "https://server8.mp3quran.net/afs/011.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "012",
+    "name": "يوسف",
+    "mp3": "https://server8.mp3quran.net/afs/012.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "013",
+    "name": "الرعد",
+    "mp3": "https://server8.mp3quran.net/afs/013.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "014",
+    "name": "ابراهيم",
+    "mp3": "https://server8.mp3quran.net/afs/014.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "015",
+    "name": "الحجر",
+    "mp3": "https://server8.mp3quran.net/afs/015.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "016",
+    "name": "النحل",
+    "mp3": "https://server8.mp3quran.net/afs/016.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "017",
+    "name": "الإسراء",
+    "mp3": "https://server8.mp3quran.net/afs/017.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "018",
+    "name": "الكهف",
+    "mp3": "https://server8.mp3quran.net/afs/018.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "019",
+    "name": "مريم",
+    "mp3": "https://server8.mp3quran.net/afs/019.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "020",
+    "name": "طه",
+    "mp3": "https://server8.mp3quran.net/afs/020.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "021",
+    "name": "الأنبياء",
+    "mp3": "https://server8.mp3quran.net/afs/021.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "022",
+    "name": "الحج",
+    "mp3": "https://server8.mp3quran.net/afs/022.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "023",
+    "name": "المؤمنون",
+    "mp3": "https://server8.mp3quran.net/afs/023.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "024",
+    "name": "النور",
+    "mp3": "https://server8.mp3quran.net/afs/024.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "025",
+    "name": "الفرقان",
+    "mp3": "https://server8.mp3quran.net/afs/025.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "026",
+    "name": "الشعراء",
+    "mp3": "https://server8.mp3quran.net/afs/026.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "027",
+    "name": "النمل",
+    "mp3": "https://server8.mp3quran.net/afs/027.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "028",
+    "name": "القصص",
+    "mp3": "https://server8.mp3quran.net/afs/028.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "029",
+    "name": "العنكبوت",
+    "mp3": "https://server8.mp3quran.net/afs/029.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "030",
+    "name": "الروم",
+    "mp3": "https://server8.mp3quran.net/afs/030.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "031",
+    "name": "لقمان",
+    "mp3": "https://server8.mp3quran.net/afs/031.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "032",
+    "name": "السجدة",
+    "mp3": "https://server8.mp3quran.net/afs/032.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "033",
+    "name": "الأحزاب",
+    "mp3": "https://server8.mp3quran.net/afs/033.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "034",
+    "name": "سبأ",
+    "mp3": "https://server8.mp3quran.net/afs/034.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "035",
+    "name": "فاطر",
+    "mp3": "https://server8.mp3quran.net/afs/035.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "036",
+    "name": "يس",
+    "mp3": "https://server8.mp3quran.net/afs/036.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "037",
+    "name": "الصافات",
+    "mp3": "https://server8.mp3quran.net/afs/037.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "038",
+    "name": "سورة ص",
+    "mp3": "https://server8.mp3quran.net/afs/038.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "039",
+    "name": "الزمر",
+    "mp3": "https://server8.mp3quran.net/afs/039.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "040",
+    "name": "غافر",
+    "mp3": "https://server8.mp3quran.net/afs/040.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "041",
+    "name": "فصلت",
+    "mp3": "https://server8.mp3quran.net/afs/041.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "042",
+    "name": "الشورى",
+    "mp3": "https://server8.mp3quran.net/afs/042.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "043",
+    "name": "الزخرف",
+    "mp3": "https://server8.mp3quran.net/afs/043.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "044",
+    "name": "الدخان",
+    "mp3": "https://server8.mp3quran.net/afs/044.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "045",
+    "name": "الجاثية",
+    "mp3": "https://server8.mp3quran.net/afs/045.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "046",
+    "name": "الأحقاف",
+    "mp3": "https://server8.mp3quran.net/afs/046.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "047",
+    "name": "محمد",
+    "mp3": "https://server8.mp3quran.net/afs/047.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "048",
+    "name": "الفتح",
+    "mp3": "https://server8.mp3quran.net/afs/048.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "049",
+    "name": "الحجرات",
+    "mp3": "https://server8.mp3quran.net/afs/049.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "050",
+    "name": "سورة ق",
+    "mp3": "https://server8.mp3quran.net/afs/050.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "051",
+    "name": "الذاريات",
+    "mp3": "https://server8.mp3quran.net/afs/051.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "052",
+    "name": "الطور",
+    "mp3": "https://server8.mp3quran.net/afs/052.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "053",
+    "name": "النجم",
+    "mp3": "https://server8.mp3quran.net/afs/053.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "054",
+    "name": "القمر",
+    "mp3": "https://server8.mp3quran.net/afs/054.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "055",
+    "name": "الرحمن",
+    "mp3": "https://server8.mp3quran.net/afs/055.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "056",
+    "name": "الواقعة",
+    "mp3": "https://server8.mp3quran.net/afs/056.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "057",
+    "name": "الحديد",
+    "mp3": "https://server8.mp3quran.net/afs/057.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "058",
+    "name": "المجادلة",
+    "mp3": "https://server8.mp3quran.net/afs/058.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "059",
+    "name": "الحشر",
+    "mp3": "https://server8.mp3quran.net/afs/059.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "060",
+    "name": "الممتحنة",
+    "mp3": "https://server8.mp3quran.net/afs/060.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "061",
+    "name": "الصف",
+    "mp3": "https://server8.mp3quran.net/afs/061.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "062",
+    "name": "الجمعة",
+    "mp3": "https://server8.mp3quran.net/afs/062.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "063",
+    "name": "المنافقون",
+    "mp3": "https://server8.mp3quran.net/afs/063.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "064",
+    "name": "التغابن",
+    "mp3": "https://server8.mp3quran.net/afs/064.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "065",
+    "name": "الطلاق",
+    "mp3": "https://server8.mp3quran.net/afs/065.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "066",
+    "name": "التحريم",
+    "mp3": "https://server8.mp3quran.net/afs/066.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "067",
+    "name": "الملك",
+    "mp3": "https://server8.mp3quran.net/afs/067.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "068",
+    "name": "القلم",
+    "mp3": "https://server8.mp3quran.net/afs/068.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "069",
+    "name": "الحاقة",
+    "mp3": "https://server8.mp3quran.net/afs/069.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "070",
+    "name": "المعارج",
+    "mp3": "https://server8.mp3quran.net/afs/070.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "071",
+    "name": "نوح",
+    "mp3": "https://server8.mp3quran.net/afs/071.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "072",
+    "name": "الجن",
+    "mp3": "https://server8.mp3quran.net/afs/072.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "073",
+    "name": "المزمل",
+    "mp3": "https://server8.mp3quran.net/afs/073.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "074",
+    "name": "المدثر",
+    "mp3": "https://server8.mp3quran.net/afs/074.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "075",
+    "name": "القيامة",
+    "mp3": "https://server8.mp3quran.net/afs/075.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "076",
+    "name": "الإنسان",
+    "mp3": "https://server8.mp3quran.net/afs/076.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "077",
+    "name": "المرسلات",
+    "mp3": "https://server8.mp3quran.net/afs/077.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "078",
+    "name": "النبأ",
+    "mp3": "https://server8.mp3quran.net/afs/078.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "079",
+    "name": "النازعات",
+    "mp3": "https://server8.mp3quran.net/afs/079.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "080",
+    "name": "عبس",
+    "mp3": "https://server8.mp3quran.net/afs/080.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "081",
+    "name": "التكوير",
+    "mp3": "https://server8.mp3quran.net/afs/081.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "082",
+    "name": "الإنفطار",
+    "mp3": "https://server8.mp3quran.net/afs/082.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "083",
+    "name": "المطففين",
+    "mp3": "https://server8.mp3quran.net/afs/083.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "084",
+    "name": "الانشقاق",
+    "mp3": "https://server8.mp3quran.net/afs/084.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "085",
+    "name": "البروج",
+    "mp3": "https://server8.mp3quran.net/afs/085.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "086",
+    "name": "الطارق",
+    "mp3": "https://server8.mp3quran.net/afs/086.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "087",
+    "name": "الأعلى",
+    "mp3": "https://server8.mp3quran.net/afs/087.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "088",
+    "name": "الغاشية",
+    "mp3": "https://server8.mp3quran.net/afs/088.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "089",
+    "name": "الفجر",
+    "mp3": "https://server8.mp3quran.net/afs/089.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "090",
+    "name": "البلد",
+    "mp3": "https://server8.mp3quran.net/afs/090.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "091",
+    "name": "الشمس",
+    "mp3": "https://server8.mp3quran.net/afs/091.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "092",
+    "name": "الليل",
+    "mp3": "https://server8.mp3quran.net/afs/092.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "093",
+    "name": "الضحى",
+    "mp3": "https://server8.mp3quran.net/afs/093.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "094",
+    "name": "الشرح",
+    "mp3": "https://server8.mp3quran.net/afs/094.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "095",
+    "name": "التين",
+    "mp3": "https://server8.mp3quran.net/afs/095.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "096",
+    "name": "العلق",
+    "mp3": "https://server8.mp3quran.net/afs/096.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "097",
+    "name": "القدر",
+    "mp3": "https://server8.mp3quran.net/afs/097.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "098",
+    "name": "البينة",
+    "mp3": "https://server8.mp3quran.net/afs/098.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "099",
+    "name": "الزلزلة",
+    "mp3": "https://server8.mp3quran.net/afs/099.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "100",
+    "name": "العاديات",
+    "mp3": "https://server8.mp3quran.net/afs/100.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "101",
+    "name": "القارعة",
+    "mp3": "https://server8.mp3quran.net/afs/101.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "102",
+    "name": "التكاثر",
+    "mp3": "https://server8.mp3quran.net/afs/102.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "103",
+    "name": "العصر",
+    "mp3": "https://server8.mp3quran.net/afs/103.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "104",
+    "name": "الهمزة",
+    "mp3": "https://server8.mp3quran.net/afs/104.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "105",
+    "name": "الفيل",
+    "mp3": "https://server8.mp3quran.net/afs/105.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "106",
+    "name": "قريش",
+    "mp3": "https://server8.mp3quran.net/afs/106.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "107",
+    "name": "الماعون",
+    "mp3": "https://server8.mp3quran.net/afs/107.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "108",
+    "name": "الكوثر",
+    "mp3": "https://server8.mp3quran.net/afs/108.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "109",
+    "name": "الكافرون",
+    "mp3": "https://server8.mp3quran.net/afs/109.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "110",
+    "name": "النصر",
+    "mp3": "https://server8.mp3quran.net/afs/110.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "111",
+    "name": "المسد",
+    "mp3": "https://server8.mp3quran.net/afs/111.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "112",
+    "name": "الإخلاص",
+    "mp3": "https://server8.mp3quran.net/afs/112.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "113",
+    "name": "الفلق",
+    "mp3": "https://server8.mp3quran.net/afs/113.mp3",
+    "category": "مشاري راشد العفاسي"
+  },
+  {
+    "number": "114",
+    "name": "الناس",
+    "mp3": "https://server8.mp3quran.net/afs/114.mp3",
+    "category": "مشاري راشد العفاسي"
+  }
+]

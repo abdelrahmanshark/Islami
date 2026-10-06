@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prayer_widget_title">مواقيت الصلاة</string>
+    <string name="prayer_widget_description">عرض مواقيت الصلاة والصلاة القادمة</string>
+    <string name="prayer_widget_next_label">الصلاة القادمة</string>
+    <string name="prayer_widget_remaining_label">متبقي</string>
+    <string name="prayer_fajr">الفجر</string>
+    <string name="prayer_dhuhr">الظهر</string>
+    <string name="prayer_asr">العصر</string>
+    <string name="prayer_maghrib">المغرب</string>
+    <string name="prayer_isha">العشاء</string>
+</resources>

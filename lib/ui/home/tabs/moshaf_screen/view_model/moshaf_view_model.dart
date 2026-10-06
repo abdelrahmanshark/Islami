@@ -1,0 +1,499 @@
+import 'package:flutter/material.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/data/moshaf/moshaf_local_data_source.dart';
+import 'package:islami/models/asbab_nuzul.dart';
+import 'package:islami/models/ayah_coordinate.dart';
+import 'package:islami/models/hafs_ayah_meta.dart';
+import 'package:islami/models/moshaf_page.dart';
+import 'package:islami/models/quran_resources.dart';
+import 'package:islami/models/tafser_surah.dart';
+import 'package:islami/utils/app_colors.dart';
+import 'package:islami/utils/shared_preferences.dart';
+
+@injectable
+class MoshafViewModel extends ChangeNotifier {
+  MoshafViewModel(this._moshafLocalDataSource);
+
+  final MoshafLocalDataSource _moshafLocalDataSource;
+
+  /// Madani coordinate page size used by quran_coordinates JSON.
+  static const double coordinatePageWidth = 345;
+  static const double coordinatePageHeight = 550;
+
+  List<MoshafPage> pages = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  /// Cached ayah metadata for the Mushaf index screen.
+  List<HafsAyahMeta>? _ayahMeta;
+
+  /// Whether Mushaf uses the dark colors. Default is light.
+  bool isDarkTheme = false;
+
+  static const Color defaultLightPageColor = AppColors.blackColor;
+  static const Color defaultLightBackgroundColor = AppColors.offWhite;
+  static const Color defaultDarkPageColor = AppColors.offWhite;
+  static const Color defaultDarkBackgroundColor = AppColors.blackColor;
+
+  /// User-chosen colors of each theme (page text + background).
+  Color lightPageColor = defaultLightPageColor;
+  Color lightBackgroundColor = defaultLightBackgroundColor;
+  Color darkPageColor = defaultDarkPageColor;
+  Color darkBackgroundColor = defaultDarkBackgroundColor;
+
+  /// Text color of the Mushaf page in the current theme.
+  Color get pageColor => isDarkTheme ? darkPageColor : lightPageColor;
+
+  /// Background color behind the Mushaf page in the current theme.
+  Color get backgroundColor =>
+      isDarkTheme ? darkBackgroundColor : lightBackgroundColor;
+
+  /// 0-based index of the currently visible page in [pages].
+  int visiblePageIndex = 0;
+
+  /// Page to open after load (1-based).
+  int initialPage = 1;
+
+  /// Saved bookmark page number (1-based), or null if none.
+  int? bookmarkedPage;
+
+  bool didRestorePage = false;
+
+  /// Ayah polygons for the currently visible page.
+  List<AyahCoordinate> currentPageAyahs = [];
+
+  /// Currently highlighted ayah, or null when nothing is selected.
+  AyahCoordinate? selectedAyah;
+
+  /// True when the tafsir panel is shown instead of Mushaf pages.
+  bool isShowingTafser = false;
+
+  /// True when the AppBar and page footer are shown (hidden = fullscreen).
+  bool isUiVisible = false;
+
+  /// Keeps the AppBar visible on tafsir/error so the user can always leave.
+  bool get isAppBarVisible =>
+      isUiVisible || isShowingTafser || errorMessage != null;
+
+  /// Loaded tafsir for the selected ayah, or null when none.
+  TafserAyah? selectedTafserAyah;
+
+  /// Surah name from the loaded tafsir file.
+  String? selectedTafserSurahName;
+
+  /// True while loading tafsir JSON.
+  bool isTafserLoading = false;
+
+  /// Error message when tafsir fails to load.
+  String? tafserErrorMessage;
+
+  /// Cache of page number → parsed ayah coordinates.
+  final Map<int, List<AyahCoordinate>> _ayahCache = {};
+
+  /// Cache of surah number → parsed tafsir surah.
+  final Map<int, TafserSurah> _tafserCache = {};
+
+  /// True when the panel shows أسباب النزول instead of the tafsir.
+  bool isShowingAsbab = false;
+
+  /// Index of the selected source tab (الواحدي / المحرر) in the asbab panel.
+  int selectedAsbabSourceIndex = 0;
+
+  /// Reasons of revelation keyed by "surah:ayah", filled once from asbab.json.
+  Map<String, List<AsbabReason>> _asbabByAyah = {};
+
+  /// True when the selected ayah has at least one reason of revelation.
+  bool get selectedAyahHasAsbab => selectedAsbabReasons.isNotEmpty;
+
+  /// Reasons of revelation of the selected ayah (one per source).
+  List<AsbabReason> get selectedAsbabReasons {
+    if (selectedAyah == null) return const [];
+    final key = AsbabEntry.ayahKey(
+      selectedAyah!.surahNumber,
+      selectedAyah!.ayahNumber,
+    );
+    return _asbabByAyah[key] ?? const [];
+  }
+
+  /// Arabic surah name of the selected ayah.
+  String get selectedSurahName {
+    if (selectedAyah == null) return '';
+    return _surahName(selectedAyah!.surahNumber);
+  }
+
+  /// Metadata title for the AppBar of the visible page.
+  String get visiblePageTitle {
+    if (pages.isEmpty ||
+        visiblePageIndex < 0 ||
+        visiblePageIndex >= pages.length) {
+      return 'المصحف';
+    }
+    return pages[visiblePageIndex].appBarTitle;
+  }
+
+  /// AppBar label: selected ayah when set, otherwise the surah title.
+  String get appBarTitle {
+    if (isShowingTafser) {
+      if (selectedAyah != null) {
+        final surahLabel = isShowingAsbab
+            ? selectedSurahName
+            : selectedTafserSurahName ?? selectedSurahName;
+        return '$surahLabel : ${selectedAyah!.ayahNumber}';
+      }
+      return isShowingAsbab ? 'سبب النزول' : 'التفسير';
+    }
+    if (selectedAyah != null) {
+      return '${_surahName(selectedAyah!.surahNumber)} : ${selectedAyah!.ayahNumber}';
+    }
+    return visiblePageTitle;
+  }
+
+  /// Arabic Surah name for a 1-based Surah number.
+  String _surahName(int surahNumber) {
+    if (surahNumber < 1 ||
+        surahNumber > QuranResources.arabicQuranSuras.length) {
+      return 'سورة $surahNumber';
+    }
+    return QuranResources.arabicQuranSuras[surahNumber - 1];
+  }
+
+  /// Current 1-based page number, or 1 when empty.
+  int get visiblePageNumber {
+    if (pages.isEmpty) return 1;
+    return pages[visiblePageIndex].pageNumber;
+  }
+
+  /// True when the visible page matches the saved bookmark.
+  bool get isCurrentPageBookmarked {
+    return bookmarkedPage != null && bookmarkedPage == visiblePageNumber;
+  }
+
+  /// Loads page metadata, builds image pages, and opens at [startPage] if set.
+  Future<void> loadMoshaf({int? startPage}) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      isDarkTheme = await getMoshafDarkTheme();
+      await _loadColors();
+
+      final markers = await _moshafLocalDataSource.fetchPageMarkers();
+      if (markers.isEmpty) {
+        throw Exception('empty markers');
+      }
+
+      pages = MoshafPage.fromMarkers(markers);
+
+      final savedPage = await getMoshafLastPage();
+      bookmarkedPage = savedPage;
+
+      if (startPage != null &&
+          startPage >= 1 &&
+          startPage <= pages.length) {
+        initialPage = startPage;
+      } else if (savedPage != null &&
+          savedPage >= 1 &&
+          savedPage <= pages.length) {
+        initialPage = savedPage;
+      } else {
+        initialPage = 1;
+      }
+
+      visiblePageIndex = initialPage - 1;
+      isLoading = false;
+      notifyListeners();
+
+      saveMoshafLastReadPage(initialPage);
+      _loadAsbab();
+      await loadAyahCoordinatesForPage(initialPage);
+    } catch (_) {
+      errorMessage = 'تعذر تحميل المصحف';
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Toggles light/dark Mushaf theme and saves the choice.
+  Future<void> toggleTheme() async {
+    isDarkTheme = !isDarkTheme;
+    selectedAyah = null;
+    notifyListeners();
+    await saveMoshafDarkTheme(isDarkTheme);
+  }
+
+  /// Reads the saved page/background colors of both themes.
+  Future<void> _loadColors() async {
+    lightPageColor = await getMoshafColor(
+      SharedPreferencesKay.moshafLightPageColor,
+      defaultLightPageColor,
+    );
+    lightBackgroundColor = await getMoshafColor(
+      SharedPreferencesKay.moshafLightBackgroundColor,
+      defaultLightBackgroundColor,
+    );
+    darkPageColor = await getMoshafColor(
+      SharedPreferencesKay.moshafDarkPageColor,
+      defaultDarkPageColor,
+    );
+    darkBackgroundColor = await getMoshafColor(
+      SharedPreferencesKay.moshafDarkBackgroundColor,
+      defaultDarkBackgroundColor,
+    );
+  }
+
+  /// Sets the page text color of the current theme and saves it.
+  Future<void> selectPageColor(Color color) async {
+    if (isDarkTheme) {
+      darkPageColor = color;
+    } else {
+      lightPageColor = color;
+    }
+    notifyListeners();
+    final key = isDarkTheme
+        ? SharedPreferencesKay.moshafDarkPageColor
+        : SharedPreferencesKay.moshafLightPageColor;
+    await saveMoshafColor(key, color);
+  }
+
+  /// Sets the background color of the current theme and saves it.
+  Future<void> selectBackgroundColor(Color color) async {
+    if (isDarkTheme) {
+      darkBackgroundColor = color;
+    } else {
+      lightBackgroundColor = color;
+    }
+    notifyListeners();
+    final key = isDarkTheme
+        ? SharedPreferencesKay.moshafDarkBackgroundColor
+        : SharedPreferencesKay.moshafLightBackgroundColor;
+    await saveMoshafColor(key, color);
+  }
+
+  /// Restores the default colors of the current theme.
+  Future<void> resetColors() async {
+    if (isDarkTheme) {
+      darkPageColor = defaultDarkPageColor;
+      darkBackgroundColor = defaultDarkBackgroundColor;
+      notifyListeners();
+      await clearMoshafColor(SharedPreferencesKay.moshafDarkPageColor);
+      await clearMoshafColor(SharedPreferencesKay.moshafDarkBackgroundColor);
+    } else {
+      lightPageColor = defaultLightPageColor;
+      lightBackgroundColor = defaultLightBackgroundColor;
+      notifyListeners();
+      await clearMoshafColor(SharedPreferencesKay.moshafLightPageColor);
+      await clearMoshafColor(SharedPreferencesKay.moshafLightBackgroundColor);
+    }
+  }
+
+  /// Loads ayah polygons for [pageNumber] (uses cache when available).
+  Future<void> loadAyahCoordinatesForPage(int pageNumber) async {
+    if (_ayahCache.containsKey(pageNumber)) {
+      if (visiblePageNumber != pageNumber) return;
+      currentPageAyahs = _ayahCache[pageNumber]!;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final ayahs =
+          await _moshafLocalDataSource.fetchPageCoordinates(pageNumber);
+
+      _ayahCache[pageNumber] = ayahs;
+
+      // Ignore stale loads if the user already swiped away.
+      if (visiblePageNumber != pageNumber) return;
+
+      currentPageAyahs = ayahs;
+      notifyListeners();
+    } catch (_) {
+      if (visiblePageNumber != pageNumber) return;
+      currentPageAyahs = [];
+      notifyListeners();
+    }
+  }
+
+  /// Finds the ayah under [localPosition] using the displayed image [size].
+  AyahCoordinate? findAyahAt(Offset localPosition, Size size) {
+    if (size.width <= 0 || size.height <= 0) return null;
+
+    final scaleX = size.width / coordinatePageWidth;
+    final scaleY = size.height / coordinatePageHeight;
+
+    // Check from last to first so later (visually upper) ayahs win ties.
+    for (var i = currentPageAyahs.length - 1; i >= 0; i--) {
+      final ayah = currentPageAyahs[i];
+      if (ayah.contains(localPosition, scaleX, scaleY)) {
+        return ayah;
+      }
+    }
+    return null;
+  }
+
+  /// Handles an ayah tap: select, switch, or toggle off if already selected.
+  void onAyahTapped(AyahCoordinate ayah) {
+    if (selectedAyah != null && selectedAyah!.isSameAyah(ayah)) {
+      selectedAyah = null;
+    } else {
+      selectedAyah = ayah;
+    }
+    notifyListeners();
+  }
+
+  /// Shows or hides the AppBar and page footer.
+  void toggleUiVisibility() {
+    isUiVisible = !isUiVisible;
+    notifyListeners();
+  }
+
+  /// Clears the ayah highlight.
+  void clearSelectedAyah() {
+    if (selectedAyah == null) return;
+    selectedAyah = null;
+    notifyListeners();
+  }
+
+  /// Opens tafsir for the selected ayah (from ayah label).
+  Future<void> openTafserForSelectedAyah() async {
+    if (selectedAyah == null) return;
+    await openTafser();
+  }
+
+  /// Shows the tafsir panel and loads tafsir when an ayah is selected.
+  Future<void> openTafser() async {
+    isShowingTafser = true;
+    isShowingAsbab = false;
+    notifyListeners();
+
+    if (selectedAyah != null) {
+      await loadTafserForAyah(
+        selectedAyah!.surahNumber,
+        selectedAyah!.ayahNumber,
+      );
+    }
+  }
+
+  /// Hides the tafsir panel and returns to Mushaf pages.
+  void closeTafser() {
+    if (!isShowingTafser) return;
+    isShowingTafser = false;
+    notifyListeners();
+  }
+
+  /// Toggles between Mushaf pages and the tafsir panel.
+  Future<void> toggleTafser() async {
+    if (isShowingTafser) {
+      closeTafser();
+    } else {
+      await openTafser();
+    }
+  }
+
+  /// Loads tafsir for [surahNumber]/[ayahNumber] from assets.
+  Future<void> loadTafserForAyah(int surahNumber, int ayahNumber) async {
+    isTafserLoading = true;
+    tafserErrorMessage = null;
+    selectedTafserAyah = null;
+    selectedTafserSurahName = null;
+    notifyListeners();
+
+    try {
+      final surah = await _loadTafserSurah(surahNumber);
+      final ayah = surah.ayahByNumber(ayahNumber);
+      if (ayah == null) {
+        tafserErrorMessage = 'تعذر العثور على تفسير هذه الآية';
+      } else {
+        selectedTafserAyah = ayah;
+        selectedTafserSurahName = surah.surah;
+      }
+    } catch (_) {
+      tafserErrorMessage = 'تعذر تحميل التفسير';
+    }
+
+    isTafserLoading = false;
+    notifyListeners();
+  }
+
+  /// Loads and caches a full surah tafsir file.
+  Future<TafserSurah> _loadTafserSurah(int surahNumber) async {
+    final cached = _tafserCache[surahNumber];
+    if (cached != null) return cached;
+
+    final surah = await _moshafLocalDataSource.fetchTafserSurah(surahNumber);
+    _tafserCache[surahNumber] = surah;
+    return surah;
+  }
+
+  /// Opens the same panel as the tafsir, but showing أسباب النزول.
+  void openAsbabForSelectedAyah() {
+    if (!selectedAyahHasAsbab) return;
+    isShowingTafser = true;
+    isShowingAsbab = true;
+    selectedAsbabSourceIndex = 0;
+    notifyListeners();
+  }
+
+  /// Switches between the asbab sources (الواحدي / المحرر).
+  void selectAsbabSource(int index) {
+    if (index == selectedAsbabSourceIndex) return;
+    selectedAsbabSourceIndex = index;
+    notifyListeners();
+  }
+
+  /// Loads asbab.json once. On failure the "سبب النزول" option stays hidden.
+  Future<void> _loadAsbab() async {
+    if (_asbabByAyah.isNotEmpty) return;
+    try {
+      _asbabByAyah = await _moshafLocalDataSource.fetchAsbabIndex();
+      notifyListeners();
+    } catch (_) {
+      _asbabByAyah = {};
+    }
+  }
+
+  /// Updates the visible page from a PageView index.
+  void updateVisiblePage(int pageIndex) {
+    if (pageIndex < 0 || pageIndex >= pages.length) return;
+    if (visiblePageIndex == pageIndex) return;
+
+    visiblePageIndex = pageIndex;
+    selectedAyah = null;
+    currentPageAyahs = [];
+    notifyListeners();
+
+    saveMoshafLastReadPage(visiblePageNumber);
+    loadAyahCoordinatesForPage(pages[pageIndex].pageNumber);
+  }
+
+  /// Saves the current page as bookmark, or removes it if already saved.
+  Future<void> toggleBookmark() async {
+    if (pages.isEmpty) return;
+
+    // Second tap on the same page removes the bookmark.
+    if (isCurrentPageBookmarked) {
+      await clearMoshafLastPage();
+      bookmarkedPage = null;
+      notifyListeners();
+      return;
+    }
+
+    final page = visiblePageNumber;
+    await saveMoshafLastPage(page);
+    bookmarkedPage = page;
+    notifyListeners();
+  }
+
+  /// Marks that the initial page restore already happened.
+  void markPageRestored() {
+    didRestorePage = true;
+  }
+
+  /// Loads ayah metadata for the index (cached after first load).
+  Future<List<HafsAyahMeta>> loadAyahMeta() async {
+    if (_ayahMeta != null) return _ayahMeta!;
+
+    _ayahMeta = await _moshafLocalDataSource.fetchAyahMeta();
+    return _ayahMeta!;
+  }
+}

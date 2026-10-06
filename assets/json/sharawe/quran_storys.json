@@ -1,0 +1,116 @@
+{
+  "category": "قصص القران",
+  "sections": [
+    {
+      "title": "رجال في القران",
+      "lectures": [
+        {
+          "title": "قابيل و هابيل",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k12.mp3"
+        },
+        {
+          "title": "سحرة فرعون",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k13.mp3"
+        },
+        {
+          "title": "مؤمن أل فرعون",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k14.mp3"
+        },
+        {
+          "title": "الخضر",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k15.mp3"
+        },
+        {
+          "title": "العزيز",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k16.mp3"
+        },
+        {
+          "title": "لقمان الجزء الاول",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k17_1.mp3"
+        },
+        {
+          "title": "لقمان الجزء الثانى",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k17_2.mp3"
+        },
+        {
+          "title": "ذوالقرنين",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k18.mp3"
+        },
+        {
+          "title": "أصحاب الكهف",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k19.mp3"
+        },
+        {
+          "title": "مؤمن أل يس",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k11.mp3"
+        },
+        {
+          "title": "أصحاب الاخدود",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k10.mp3"
+        }
+      ]
+    },
+    {
+      "title": "نساء في القران",
+      "lectures": [
+        {
+          "title": "أم موسى",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k22.mp3"
+        },
+        {
+          "title": "ملكة سبأ",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k23.mp3"
+        },
+        {
+          "title": "مريم الجزء الاول",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k24_1.mp3"
+        },
+        {
+          "title": "مريم الجزء الثانى",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k24_2.mp3"
+        },
+        {
+          "title": "سارة",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k25.mp3"
+        }
+      ]
+    },
+    {
+      "title": "من قصص بنى اسرائيل",
+      "lectures": [
+        {
+          "title": "تقلبات بنى إسرائيل",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k31.mp3"
+        },
+        {
+          "title": "بقرة بنى إسرائيل",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k32.mp3"
+        },
+        {
+          "title": "قارون",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k33.mp3"
+        },
+        {
+          "title": "واذ نتقنا الجبل",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k34.mp3"
+        },
+        {
+          "title": "اصحاب السبت",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k35.mp3"
+        },
+        {
+          "title": "طالوت و جالوت",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k36.mp3"
+        },
+        {
+          "title": "هاروت و ماروت",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k37.mp3"
+        },
+        {
+          "title": "صاحب الجنتين",
+          "mp3_url": "https://www.sharawe.com/files/media/mp3/k38.mp3"
+        }
+      ]
+    }
+  ]
+}

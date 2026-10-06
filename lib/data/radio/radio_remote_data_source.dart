@@ -1,0 +1,36 @@
+import 'dart:convert';
+import 'dart:developer';
+
+import 'package:http/http.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/models/radio_response.dart';
+import 'package:islami/models/reciters_response.dart';
+
+@lazySingleton
+class RadioRemoteDataSource {
+  static const String _baseUrl = 'https://mp3quran.net';
+  static const String _radiosPath = '/api/v3/radios?language=ar';
+  static const String _recitersPath = '/api/v3/reciters?language=ar';
+
+  Future<RadioResponse> fetchRadios() async {
+    try {
+      final uri = Uri.parse('$_baseUrl$_radiosPath');
+      final response = await get(uri);
+      return RadioResponse.fromJson(jsonDecode(response.body));
+    } catch (e) {
+      log(e.toString());
+      rethrow;
+    }
+  }
+
+  Future<RecitersResponse> fetchReciters() async {
+    try {
+      final uri = Uri.parse('$_baseUrl$_recitersPath');
+      final response = await get(uri);
+      return RecitersResponse.fromJson(jsonDecode(response.body));
+    } catch (e) {
+      log(e.toString());
+      rethrow;
+    }
+  }
+}

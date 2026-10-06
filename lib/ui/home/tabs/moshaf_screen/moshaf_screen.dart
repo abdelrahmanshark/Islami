@@ -1,0 +1,431 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:islami/di/injection.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_view_model.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_asbab_view.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_colors_sheet.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_view.dart';
+import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_tafser_view.dart';
+import 'package:islami/utils/app_colors.dart';
+import 'package:islami/utils/app_routes.dart';
+import 'package:islami/utils/app_styles.dart';
+import 'package:provider/provider.dart';
+
+/// Full-screen Mushaf reader (no bottom navigation bar).
+class MoshafScreen extends StatefulWidget {
+  /// Optional 1-based page to open first.
+  final int? startPage;
+
+  const MoshafScreen({super.key, this.startPage});
+
+  @override
+  State<MoshafScreen> createState() => _MoshafScreenState();
+}
+
+class _MoshafScreenState extends State<MoshafScreen>
+    with WidgetsBindingObserver {
+  late final MoshafViewModel _viewModel;
+  PageController? _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _allowAllOrientations();
+    _viewModel = getIt<MoshafViewModel>();
+    _viewModel.addListener(_onViewModelChanged);
+    _viewModel.loadMoshaf(startPage: widget.startPage);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _lockPortraitOrientation();
+    _viewModel.removeListener(_onViewModelChanged);
+    _pageController?.dispose();
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  /// Re-applies the orientation when the app returns to the foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final bool isMoshafOnTop = ModalRoute.of(context)?.isCurrent ?? false;
+    if (isMoshafOnTop) {
+      _allowAllOrientations();
+    } else {
+      _lockPortraitOrientation();
+    }
+  }
+
+  /// Lets the Mushaf rotate between portrait and landscape.
+  void _allowAllOrientations() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  /// Restores the app-wide portrait-only orientation.
+  void _lockPortraitOrientation() {
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
+
+  /// Creates the PageController once metadata has finished loading.
+  void _onViewModelChanged() {
+    if (!mounted || _pageController != null) return;
+    if (_viewModel.isLoading || _viewModel.pages.isEmpty) return;
+
+    final initialIndex = (_viewModel.initialPage - 1).clamp(
+      0,
+      _viewModel.pages.length - 1,
+    );
+
+    setState(() {
+      _pageController = PageController(initialPage: initialIndex);
+    });
+
+    _viewModel.markPageRestored();
+    _viewModel.updateVisiblePage(initialIndex);
+    _precacheNeighborPages(initialIndex);
+    _showUsageHint();
+  }
+
+  /// Tells the user how to show the controls and open tafsir.
+  void _showUsageHint() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'اضغط على الصفحة لإظهار الأدوات، واضغط مطولاً على الآية لعرض تفسيرها',
+          textDirection: TextDirection.rtl,
+          style: AppStyles.primaryBold24.copyWith(fontSize: 16),
+        ),
+        backgroundColor: AppColors.blackColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// Called when the user swipes to another page.
+  void _onPageChanged(int index) {
+    _viewModel.updateVisiblePage(index);
+    _precacheNeighborPages(index);
+  }
+
+  /// Decodes the previous and next page images ahead of time, so swiping
+  /// does not show an empty page while the image loads.
+  void _precacheNeighborPages(int index) {
+    for (final int neighborIndex in [index - 1, index + 1]) {
+      if (neighborIndex < 0 || neighborIndex >= _viewModel.pages.length) {
+        continue;
+      }
+      final String imagePath = _viewModel.pages[neighborIndex].imagePath;
+      precacheImage(AssetImage(imagePath), context);
+    }
+  }
+
+  /// Opens the sheet to choose the page and background colors.
+  void _openColorsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.blackColor,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return ChangeNotifierProvider<MoshafViewModel>.value(
+          value: _viewModel,
+          child: const MoshafColorsSheet(),
+        );
+      },
+    );
+  }
+
+  /// Toggles the bookmark and shows a short confirmation.
+  Future<void> _onBookmarkPressed() async {
+    final wasBookmarked = _viewModel.isCurrentPageBookmarked;
+    await _viewModel.toggleBookmark();
+    if (!mounted) return;
+
+    final message = wasBookmarked
+        ? 'تم إلغاء حفظ الصفحة ${_viewModel.visiblePageNumber}'
+        : 'تم حفظ موضع القراءة عند الصفحة ${_viewModel.visiblePageNumber}';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textDirection: TextDirection.rtl,
+          style: AppStyles.primaryBold24.copyWith(fontSize: 16),
+        ),
+        backgroundColor: AppColors.blackColor,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Opens the Quran index and jumps to the selected page.
+  Future<void> _openIndex() async {
+    try {
+      final ayahs = await _viewModel.loadAyahMeta();
+      if (!mounted) return;
+
+      // The index screen is portrait-only like the rest of the app.
+      _lockPortraitOrientation();
+      final selectedPage =
+          await Navigator.pushNamed(
+                context,
+                AppRoutes.moshafIndexRouteName,
+                arguments: ayahs,
+              )
+              as int?;
+      if (!mounted) return;
+      _allowAllOrientations();
+
+      if (selectedPage == null) return;
+      if (_pageController == null || !_pageController!.hasClients) return;
+
+      final targetIndex = (selectedPage - 1).clamp(
+        0,
+        _viewModel.pages.length - 1,
+      );
+      await _pageController!.animateToPage(
+        targetIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+      _viewModel.updateVisiblePage(targetIndex);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذر فتح الفهرس',
+            textDirection: TextDirection.rtl,
+            style: AppStyles.primaryBold24.copyWith(fontSize: 16),
+          ),
+          backgroundColor: AppColors.blackColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// Closes tafsir first; otherwise leaves the Mushaf screen.
+  void _onBackPressed() {
+    if (_viewModel.isShowingTafser) {
+      _viewModel.closeTafser();
+      return;
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<MoshafViewModel>.value(
+      value: _viewModel,
+      child: Consumer<MoshafViewModel>(
+        builder: (context, provider, child) {
+          return PopScope(
+            canPop: !provider.isShowingTafser,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop && provider.isShowingTafser) {
+                provider.closeTafser();
+              }
+            },
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Scaffold(
+                backgroundColor: AppColors.blackColor,
+                // AppBar overlays the page so hiding it never resizes the page.
+                body: Stack(
+                  children: [
+                    SafeArea(child: _buildBody(provider)),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: IgnorePointer(
+                        ignoring: !provider.isAppBarVisible,
+                        child: AnimatedSlide(
+                          offset: provider.isAppBarVisible
+                              ? Offset.zero
+                              : const Offset(0, -1),
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: AnimatedOpacity(
+                            opacity: provider.isAppBarVisible ? 1 : 0,
+                            duration: const Duration(milliseconds: 250),
+                            child: AppBar(
+                              surfaceTintColor: Colors.transparent,
+                              elevation: 0,
+                              backgroundColor: AppColors.blackColor,
+                              toolbarHeight: 48,
+                              leading: BackButton(
+                                color: AppColors.primaryColor,
+                                onPressed: _onBackPressed,
+                              ),
+                              centerTitle: true,
+                              title: Text(
+                                provider.isLoading
+                                    ? 'المصحف'
+                                    : provider.appBarTitle,
+                                style: AppStyles.primaryBold16,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              actions: [
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : provider.toggleTafser,
+                                  icon: Icon(
+                                    provider.isShowingTafser
+                                        ? Icons.menu_book
+                                        : Icons.menu_book_outlined,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'التفسير',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : provider.toggleTheme,
+                                  icon: Icon(
+                                    provider.isDarkTheme
+                                        ? Icons.light_mode
+                                        : Icons.dark_mode,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: provider.isDarkTheme
+                                      ? 'الوضع الفاتح'
+                                      : 'الوضع الداكن',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : _openColorsSheet,
+                                  icon: const Icon(
+                                    Icons.palette_outlined,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'ألوان المصحف',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : _openIndex,
+                                  icon: const Icon(
+                                    Icons.list_alt,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'الفهرس',
+                                ),
+                                IconButton(
+                                  onPressed: provider.isLoading
+                                      ? null
+                                      : _onBookmarkPressed,
+                                  icon: Icon(
+                                    provider.isCurrentPageBookmarked
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_border,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                  tooltip: 'حفظ الصفحة',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Builds loading, error, or Mushaf / Tafsir content.
+  Widget _buildBody(MoshafViewModel provider) {
+    if (provider.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryColor),
+      );
+    }
+
+    if (provider.errorMessage != null) {
+      return Center(
+        child: Text(
+          provider.errorMessage!,
+          style: AppStyles.primaryBold16,
+          textDirection: TextDirection.rtl,
+        ),
+      );
+    }
+
+    if (_pageController == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryColor),
+      );
+    }
+
+    // Keep both views mounted so the Mushaf PageView stays on the same page.
+    return IndexedStack(
+      index: provider.isShowingTafser ? 1 : 0,
+      children: [
+        _buildMoshafPages(provider),
+        if (provider.isShowingAsbab)
+          MoshafAsbabView(
+            surahName: provider.selectedSurahName,
+            ayahNumber: provider.selectedAyah?.ayahNumber,
+            reasons: provider.selectedAsbabReasons,
+            selectedSourceIndex: provider.selectedAsbabSourceIndex,
+            onSourceSelected: provider.selectAsbabSource,
+          )
+        else
+          MoshafTafserView(
+            isLoading: provider.isTafserLoading,
+            errorMessage: provider.tafserErrorMessage,
+            surahName: provider.selectedTafserSurahName,
+            ayah: provider.selectedTafserAyah,
+            surahNumber: provider.selectedAyah?.surahNumber,
+            ayahNumber: provider.selectedAyah?.ayahNumber,
+          ),
+      ],
+    );
+  }
+
+  /// Builds the horizontal Mushaf PageView.
+  Widget _buildMoshafPages(MoshafViewModel provider) {
+    return PageView.builder(
+      controller: _pageController,
+      itemCount: provider.pages.length,
+      onPageChanged: _onPageChanged,
+      itemBuilder: (context, index) {
+        final page = provider.pages[index];
+        final isVisiblePage = index == provider.visiblePageIndex;
+
+        return MoshafPageView(
+          page: page,
+          pageColor: provider.pageColor,
+          backgroundColor: provider.backgroundColor,
+          ayahs: isVisiblePage ? provider.currentPageAyahs : const [],
+          selectedAyah: isVisiblePage ? provider.selectedAyah : null,
+          findAyahAt: provider.findAyahAt,
+          onAyahTapped: provider.onAyahTapped,
+          onTafserLabelTapped: provider.openTafserForSelectedAyah,
+          onAsbabLabelTapped: provider.selectedAyahHasAsbab
+              ? provider.openAsbabForSelectedAyah
+              : null,
+          isFooterVisible: provider.isUiVisible,
+          onPageTapped: provider.toggleUiVisibility,
+        );
+      },
+    );
+  }
+}
