@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/riyad_hadith_position.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/favorite_icon_button.dart';
-import 'package:islami/ui/widgets/pressable_scale.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/favorite_icon_button.dart';
+import 'package:islami/ui/widget/pressable_scale.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 

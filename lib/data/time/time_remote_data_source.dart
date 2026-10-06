@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart';
+import 'package:injectable/injectable.dart';
 
 /// Fetches prayer times from the Aladhan API
 /// (and temporarily from eSalah for Saudi Arabia).
+@lazySingleton
 class TimeRemoteDataSource {
   static const String _baseUrl = 'https://api.aladhan.com';
   static const String _eSalahBaseUrl = 'https://esalah.com';

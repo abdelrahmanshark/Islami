@@ -5,6 +5,7 @@ import 'dart:math' show pi;
 import 'package:flutter/material.dart';
 import 'package:flutter_compass_v2/flutter_compass_v2.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/services/device_sensor_service.dart';
 import 'package:islami/utils/qibla_calculator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,6 +23,7 @@ enum QiblaUiState {
   error,
 }
 
+@injectable
 class QiblaViewModel extends ChangeNotifier {
   QiblaUiState uiState = QiblaUiState.loading;
   String errorMessage = '';
@@ -35,7 +37,7 @@ class QiblaViewModel extends ChangeNotifier {
   /// Angle from north to Qibla (degrees).
   double offset = 0;
 
-  final DeviceSensorService _sensorService = DeviceSensorService();
+  final DeviceSensorService _sensorService;
 
   StreamSubscription<CompassEvent>? _compassSubscription;
   Timer? _compassTimeout;
@@ -47,7 +49,7 @@ class QiblaViewModel extends ChangeNotifier {
   /// True after sending the user to Location/App settings.
   bool _isWaitingForSettings = false;
 
-  QiblaViewModel() {
+  QiblaViewModel(this._sensorService) {
     _lifecycleListener = AppLifecycleListener(onResume: _onAppResumed);
     initQibla();
   }

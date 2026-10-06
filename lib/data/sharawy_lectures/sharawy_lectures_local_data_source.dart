@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/sharawy_lectures.dart';
 import 'package:islami/utils/app_assets.dart';
 
 /// Loads Sharawy lectures and sermons from the local JSON asset.
+@lazySingleton
 class SharawyLecturesLocalDataSource {
   /// Reads and parses sharawy_lectures.json into lists of sections and lectures.
   Future<SharawyLectures> fetchSharawyLectures() async {

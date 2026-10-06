@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/pillars_of_islam.dart';
 import 'package:islami/utils/app_assets.dart';
 
 /// Loads pillars of Islam lectures from the local JSON asset.
+@lazySingleton
 class PillarsOfIslamLocalDataSource {
   /// Reads and parses pillars_of_islam.json into lists of sections and lectures.
   Future<PillarsOfIslam> fetchPillarsOfIslam() async {

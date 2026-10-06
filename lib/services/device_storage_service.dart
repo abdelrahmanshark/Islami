@@ -1,15 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
 
 /// Reads available device storage and checks whether a file can fit.
 ///
 /// Uses the Android shared-storage MethodChannel (no MANAGE_EXTERNAL_STORAGE).
+@lazySingleton
 class DeviceStorageService {
-  DeviceStorageService({MethodChannel? channel})
-      : _channel = channel ??
-            const MethodChannel('com.example.islami/quran_storage');
-
-  final MethodChannel _channel;
+  final MethodChannel _channel =
+      const MethodChannel('com.example.islami/quran_storage');
 
   /// Extra free space kept free after a download (10 MB).
   static const int defaultSafetyBufferBytes = 10 * 1024 * 1024;

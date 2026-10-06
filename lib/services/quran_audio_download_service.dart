@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:islami/data/quran_download/downloaded_audio_repository.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/data/quran_download/quran_media_store_data_source.dart';
 import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/models/downloaded_audio.dart';
@@ -33,24 +33,21 @@ class AlreadyDownloadedException implements Exception {
 }
 
 /// Downloads Quran MP3s to shared MediaStore storage (not app-private).
+///
+/// Registered as a factory: each owner gets its own instance because it keeps
+/// the abort state of the download that is currently running.
+@injectable
 class QuranAudioDownloadService {
-  QuranAudioDownloadService({
-    DownloadedAudioRepository? downloadedAudioRepository,
-    QuranMediaStoreDataSource? mediaStoreDataSource,
-    DeviceStorageService? deviceStorageService,
-    http.Client? httpClient,
-  })  : _downloadedAudioRepository =
-            downloadedAudioRepository ?? DownloadedAudioRepositoryImpl(),
-        _mediaStoreDataSource =
-            mediaStoreDataSource ?? QuranMediaStoreDataSource(),
-        _deviceStorageService =
-            deviceStorageService ?? DeviceStorageService(),
-        _httpClient = httpClient ?? http.Client();
+  QuranAudioDownloadService(
+    this._downloadedAudioRepository,
+    this._mediaStoreDataSource,
+    this._deviceStorageService,
+  );
 
   final DownloadedAudioRepository _downloadedAudioRepository;
   final QuranMediaStoreDataSource _mediaStoreDataSource;
   final DeviceStorageService _deviceStorageService;
-  final http.Client _httpClient;
+  final http.Client _httpClient = http.Client();
 
   /// How long to wait for the server to start responding.
   static const Duration _connectTimeout = Duration(seconds: 20);

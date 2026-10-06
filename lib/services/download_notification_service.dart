@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:injectable/injectable.dart';
 
 /// Action IDs used by the Quran download progress notification.
 class DownloadNotificationActions {
@@ -29,10 +30,9 @@ void downloadNotificationBackground(NotificationResponse response) {
 }
 
 /// Shows an ongoing notification with download progress and stop actions.
+@lazySingleton
 class DownloadNotificationService {
-  DownloadNotificationService._();
-
-  static final FlutterLocalNotificationsPlugin _plugin =
+  final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   static const int notificationId = 420;
@@ -42,10 +42,10 @@ class DownloadNotificationService {
   static const String _channelDescription =
       'حالة وتقدم تحميل سور القرآن مع إمكانية الإيقاف';
 
-  static bool _channelReady = false;
+  bool _channelReady = false;
 
   /// Ensures the Android notification channel exists.
-  static Future<void> init() async {
+  Future<void> init() async {
     if (_channelReady) return;
 
     final AndroidFlutterLocalNotificationsPlugin? android = _plugin
@@ -66,7 +66,7 @@ class DownloadNotificationService {
   }
 
   /// Shows or updates the ongoing download progress notification.
-  static Future<void> showProgress({
+  Future<void> showProgress({
     required String reciterName,
     required String suraLabel,
     required int completed,
@@ -138,7 +138,7 @@ class DownloadNotificationService {
   }
 
   /// Removes the download progress notification.
-  static Future<void> dismiss() async {
+  Future<void> dismiss() async {
     try {
       await _plugin.cancel(id: notificationId);
     } catch (e) {

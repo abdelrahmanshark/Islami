@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/ui/qibla_view/view_model/qibla_view_model.dart';
 import 'package:islami/ui/qibla_view/widget/qibla_compass.dart';
 import 'package:islami/ui/qibla_view/widget/qibla_info_card.dart';
@@ -14,7 +15,7 @@ class QiblaView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => QiblaViewModel(),
+      create: (context) => getIt<QiblaViewModel>(),
       child: Scaffold(
         backgroundColor: AppColors.blackColor,
         appBar: AppBar(

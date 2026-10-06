@@ -4,7 +4,7 @@ import 'package:islami/ui/downloads_view/view_model/downloads_view_model.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_reciter_card.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_reciter_player_card.dart';
 import 'package:islami/ui/downloads_view/widget/downloaded_sura_row.dart';
-import 'package:islami/ui/home/widgets/active_audio_list_view.dart';
+import 'package:islami/ui/home/widget/active_audio_list_view.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
 

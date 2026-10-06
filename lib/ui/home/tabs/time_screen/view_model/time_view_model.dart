@@ -1,0 +1,259 @@
+import 'dart:async';
+import 'dart:developer';
+
+import 'package:flutter/widgets.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/domain/repositories/time_repository.dart';
+import 'package:islami/models/location_failure.dart';
+import 'package:islami/models/prayer.dart';
+import 'package:islami/models/time_response.dart';
+import 'package:islami/models/user_location.dart';
+import 'package:islami/services/adhan_alarm_scheduler.dart';
+import 'package:islami/services/prayer_widget_updater.dart';
+import 'package:islami/services/user_location_service.dart';
+import 'package:islami/utils/app_routes.dart';
+import 'package:islami/utils/next_prayer_calculator.dart';
+import 'package:islami/utils/network_utils.dart';
+import 'package:islami/utils/shared_preferences.dart';
+
+@injectable
+class TimeViewModel extends ChangeNotifier {
+  TimeViewModel(
+    this._timeRepository,
+    this._locationService,
+    this._adhanAlarmScheduler,
+    this._prayerWidgetUpdater,
+  ) {
+    _loadAzanEnabled();
+    _loadSavedLocation();
+    getTimeResponse();
+  }
+
+  final TimeRepository _timeRepository;
+  final UserLocationService _locationService;
+  final AdhanAlarmScheduler _adhanAlarmScheduler;
+  final PrayerWidgetUpdater _prayerWidgetUpdater;
+
+  List<Prayer> pryerTimes = [];
+  Timings? timing;
+  DateInfo? dateInfo;
+  bool isTimeLoading = false;
+  String timeFailureMsg = '';
+  bool isAzanEnabled = true;
+  bool isLocationLoading = false;
+  UserLocation? userLocation;
+
+  /// Set when there is no saved location yet and GPS could not provide one.
+  LocationFailureReason? locationFailure;
+
+  Prayer? nextPrayer;
+  int nextPrayerIndex = -1;
+  Duration remainingTime = Duration.zero;
+  Timer? _countdownTimer;
+
+  /// Text shown under the location icon.
+  String get locationDisplayText {
+    final String placeName = userLocation?.displayName ?? '';
+    if (placeName.isNotEmpty) {
+      return placeName;
+    }
+    return 'اضغط لتحديد موقعك';
+  }
+
+  /// Message asking the user to fix location based on [locationFailure].
+  String get locationFailureMessage {
+    switch (locationFailure) {
+      case LocationFailureReason.permissionDenied:
+        return 'يرجى السماح للتطبيق بالوصول إلى موقعك لعرض مواقيت الصلاة';
+      case LocationFailureReason.permissionDeniedForever:
+        return 'إذن الموقع مرفوض، يرجى السماح به من إعدادات التطبيق لعرض مواقيت الصلاة';
+      case LocationFailureReason.serviceDisabled:
+        return 'يرجى تفعيل خدمة الموقع (GPS) لعرض مواقيت الصلاة';
+      case LocationFailureReason.unavailable:
+        return 'تعذر تحديد موقعك، تأكد من تفعيل الموقع ثم حاول مرة أخرى';
+      case null:
+        return '';
+    }
+  }
+
+  /// Loads the saved azan on/off preference (defaults to on).
+  Future<void> _loadAzanEnabled() async {
+    isAzanEnabled = await getAzanEnabled();
+    notifyListeners();
+  }
+
+  /// Loads the last saved city/country for the location banner.
+  Future<void> _loadSavedLocation() async {
+    userLocation = await _locationService.getSavedLocation();
+    notifyListeners();
+  }
+
+  /// Fetches accurate GPS, saves it locally, then reloads prayer times.
+  /// Returns the failure reason when GPS could not be used, otherwise null.
+  Future<LocationFailureReason?> refreshUserLocation() async {
+    if (isLocationLoading) {
+      return null;
+    }
+
+    isLocationLoading = true;
+    notifyListeners();
+
+    try {
+      userLocation = await _locationService.refreshAndSaveLocation();
+      isLocationLoading = false;
+      notifyListeners();
+      await getTimeResponse();
+      return null;
+    } on LocationUnavailableException catch (e) {
+      log('Failed to refresh user location: $e');
+      isLocationLoading = false;
+      notifyListeners();
+      return e.reason;
+    } catch (e) {
+      log('Failed to refresh user location: $e');
+      isLocationLoading = false;
+      notifyListeners();
+      return LocationFailureReason.unavailable;
+    }
+  }
+
+  /// Toggles azan sound and cancels or reschedules prayer alarms.
+  Future<void> toggleAzanSound() async {
+    isAzanEnabled = !isAzanEnabled;
+    await saveAzanEnabled(isAzanEnabled);
+
+    if (!isAzanEnabled) {
+      await _adhanAlarmScheduler.cancelAll();
+    } else {
+      await _adhanAlarmScheduler.requestExactAlarmPermission();
+      if (timing != null) {
+        await _adhanAlarmScheduler.scheduleFromTimings(timing!);
+      } else {
+        await _adhanAlarmScheduler.rescheduleFromSaved();
+      }
+    }
+
+    notifyListeners();
+  }
+
+  String get remainingTimeFormatted {
+    return NextPrayerCalculator.formatRemainingHms(remainingTime);
+  }
+
+  /// Loads prayer times from the repository and starts the countdown.
+  /// Offline failure UI only appears when there is no local cache yet.
+  Future<void> getTimeResponse() async {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+
+    isTimeLoading = true;
+    timeFailureMsg = '';
+    locationFailure = null;
+    notifyListeners();
+
+    try {
+      final timeResponse = await _timeRepository.getTimeResponse();
+      timing = timeResponse.data?.timings;
+      dateInfo = timeResponse.data?.date;
+      pryerTimes = getPryerTimesList(timing);
+      // Keep the banner in sync if prayer times saved a new GPS location.
+      userLocation = await _locationService.getSavedLocation();
+      isTimeLoading = false;
+      _updateNextPrayer(pushWidget: true);
+      _startCountdownTimer();
+      notifyListeners();
+
+      // Schedule background Adhan alarms (next days) from fresh prayer times.
+      if (timing != null) {
+        if (await getAzanEnabled()) {
+          await _adhanAlarmScheduler.requestExactAlarmPermission();
+        }
+        await _adhanAlarmScheduler.scheduleFromTimings(
+          timing!,
+          refreshUpcoming: true,
+        );
+      }
+    } on LocationUnavailableException catch (e) {
+      // First-time setup only: no saved location and GPS failed.
+      log(e.toString());
+      isTimeLoading = false;
+      locationFailure = e.reason;
+      notifyListeners();
+    } catch (e) {
+      log(e.toString());
+      isTimeLoading = false;
+      // Reached only when remote failed AND no cached prayer times exist.
+      timeFailureMsg = await NetworkUtils.failureMessageFor(e);
+      notifyListeners();
+    }
+  }
+
+  /// Builds the list of prayers shown in the carousel.
+  List<Prayer> getPryerTimesList(Timings? timing) {
+    return [
+      Prayer(NextPrayerCalculator.cleanTime(timing?.sunrise), 'الشروق'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.fajr), 'الفجر'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.dhuhr), 'الظهر'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.asr), 'العصر'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.maghrib), 'المغرب'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.sunset), 'الغروب'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.isha), 'العشاء'),
+      Prayer(NextPrayerCalculator.cleanTime(timing?.midnight), 'منتصف الليل'),
+    ];
+  }
+
+  /// Tick every second so the in-app remaining-time banner stays current.
+  void _startCountdownTimer() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateNextPrayer();
+      notifyListeners();
+    });
+  }
+
+  /// Finds the next salah and updates remaining time for the Time screen UI.
+  /// Home widget countdown is driven by the stored next-prayer DateTime on Android.
+  void _updateNextPrayer({bool pushWidget = false}) {
+    final DateTime now = DateTime.now();
+    final int previousIndex = nextPrayerIndex;
+    final NextPrayerResult? result =
+        NextPrayerCalculator.findNext(pryerTimes, now);
+
+    if (result == null) {
+      nextPrayer = null;
+      nextPrayerIndex = -1;
+      remainingTime = Duration.zero;
+      if (pushWidget) {
+        _prayerWidgetUpdater.update(
+          prayerTimes: pryerTimes,
+          nextResult: null,
+        );
+      }
+      return;
+    }
+
+    nextPrayer = result.prayer;
+    nextPrayerIndex = result.index;
+    remainingTime = result.remainingFrom(now);
+
+    // Push widget data after fetch, or when the next prayer itself changes.
+    if (pushWidget || previousIndex != result.index) {
+      _prayerWidgetUpdater.update(
+        prayerTimes: pryerTimes,
+        nextResult: result,
+      );
+    }
+  }
+
+  /// Opens the Qibla compass screen.
+  void openQibla(BuildContext context) {
+    Navigator.pushNamed(context, AppRoutes.qiblaRouteName);
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    super.dispose();
+  }
+}

@@ -38,9 +38,16 @@ class MoshafPage {
       juz: marker.juz,
       hizb: marker.hizb,
       rub: marker.rub,
-      imagePath: AppAssets.moshafPageImage(marker.page),
+      imagePath: imagePathFor(marker.page),
       suraNumbers: suraNumbers ?? [marker.sura],
     );
+  }
+
+  /// Returns the asset path for Mushaf page [pageNumber] (1–604).
+  /// One image per page (black text on transparent), recolored at runtime.
+  static String imagePathFor(int pageNumber) {
+    final padded = pageNumber.toString().padLeft(3, '0');
+    return '${AppAssets.moshafPagesFolder}/page-$padded.webp';
   }
 
   /// Builds all pages and fills each with every Surah that appears on it.

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/models/riyad_hadith_position.dart';
 import 'package:islami/providers/app_providers.dart';
@@ -24,7 +25,7 @@ import 'package:islami/ui/qibla_view/qibla_view.dart';
 import 'package:islami/ui/riyad_chapter_view/riyad_chapter_view.dart';
 import 'package:islami/ui/riyad_chapter_view/view_model/riyad_chapter_view_model.dart';
 import 'package:islami/ui/splash_view/splash_view.dart';
-import 'package:islami/ui/widgets/download_progress_banner.dart';
+import 'package:islami/ui/widget/download_progress_banner.dart';
 import 'package:islami/utils/app_messenger.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_themes.dart';
@@ -37,6 +38,7 @@ void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   // Keep native splash until SplashView is ready so it feels like one screen.
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  configureDependencies();
 
   SystemChrome.setSystemUIOverlayStyle(AppTheme.systemUiOverlayStyle);
   // Portrait-only by default; the Mushaf screen unlocks landscape while open.
@@ -49,18 +51,21 @@ void main() async {
   if (defaultTargetPlatform == TargetPlatform.android) {
     await AndroidAlarmManager.initialize();
     // Keep the next days of Adhan alarms scheduled even if the Time tab is never opened.
-    unawaited(AdhanAlarmScheduler.rescheduleFromSaved());
+    unawaited(getIt<AdhanAlarmScheduler>().rescheduleFromSaved());
   }
-  await WeeklyNotificationService.initAndSchedule(
-    onNotificationResponse: QuranDownloadManager.onNotificationResponse,
+  await getIt<WeeklyNotificationService>().initAndSchedule(
+    // Resolved on tap, so the download manager is still created below,
+    // after the foreground-task communication port is ready.
+    onNotificationResponse: (response) =>
+        getIt<QuranDownloadManager>().onNotificationResponse(response),
     onBackgroundNotificationResponse: downloadNotificationBackground,
   );
-  await DownloadNotificationService.init();
+  await getIt<DownloadNotificationService>().init();
   // Receives progress from the download foreground-service isolate.
   FlutterForegroundTask.initCommunicationPort();
   // Ensure the cancel port and task listener exist before any download starts.
-  QuranDownloadManager.instance;
-  await CallAudioGuard.instance.start();
+  getIt<QuranDownloadManager>();
+  await getIt<CallAudioGuard>().start();
   runApp(const Islami());
 }
 
@@ -76,7 +81,7 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    ConnectivityMonitor.instance.start();
+    getIt<ConnectivityMonitor>().start();
     // Keep the screen on once the UI is ready (needs an attached Activity).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _enableWakelock();
@@ -86,7 +91,7 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    ConnectivityMonitor.instance.stop();
+    getIt<ConnectivityMonitor>().stop();
     super.dispose();
   }
 
@@ -95,7 +100,7 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _enableWakelock();
-      ConnectivityMonitor.instance.checkNow();
+      getIt<ConnectivityMonitor>().checkNow();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _disableWakelock();
@@ -137,7 +142,7 @@ class _IslamiState extends State<Islami> with WidgetsBindingObserver {
               final Reciters reciter =
                   ModalRoute.of(context)!.settings.arguments as Reciters;
               return ChangeNotifierProvider(
-                create: (_) => ReciterDownloadViewModel(reciter: reciter),
+                create: (_) => getIt<ReciterDownloadViewModel>(param1: reciter),
                 child: RecitersScreen(reciter: reciter),
               );
             },

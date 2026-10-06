@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
+import 'package:injectable/injectable.dart';
 
 /// Detects phone-call / communication audio modes for playback gating.
 ///
@@ -10,11 +11,8 @@ import 'package:flutter/foundation.dart';
 /// audio focus interruption handling. This guard is for:
 /// - Blocking new playback while a call is active
 /// - Letting Adhan decide whether to play or notify
+@lazySingleton
 class CallAudioGuard {
-  CallAudioGuard._();
-
-  static final CallAudioGuard instance = CallAudioGuard._();
-
   static const String callBlockedMessage = 'حاول بعد إنهاء المكالمة';
 
   bool _isInCall = false;

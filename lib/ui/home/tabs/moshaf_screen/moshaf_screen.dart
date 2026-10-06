@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_asbab_view.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_colors_sheet.dart';
@@ -31,7 +32,7 @@ class _MoshafScreenState extends State<MoshafScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _allowAllOrientations();
-    _viewModel = MoshafViewModel();
+    _viewModel = getIt<MoshafViewModel>();
     _viewModel.addListener(_onViewModelChanged);
     _viewModel.loadMoshaf(startPage: widget.startPage);
   }

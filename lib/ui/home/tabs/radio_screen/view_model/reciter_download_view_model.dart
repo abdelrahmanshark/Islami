@@ -1,21 +1,23 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:islami/data/quran_download/downloaded_audio_repository.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/services/quran_download_manager.dart';
 
 /// Selection and download UI state for a single reciter's surah list.
+///
+/// [reciter] is a screen argument, so it is passed when resolving:
+/// `getIt<ReciterDownloadViewModel>(param1: reciter)`.
+@injectable
 class ReciterDownloadViewModel extends ChangeNotifier {
-  ReciterDownloadViewModel({
-    required this.reciter,
-    DownloadedAudioRepository? downloadedAudioRepository,
-    QuranDownloadManager? downloadManager,
-  })  : _downloadedAudioRepository =
-            downloadedAudioRepository ?? DownloadedAudioRepositoryImpl(),
-        _downloadManager = downloadManager ?? QuranDownloadManager.instance {
+  ReciterDownloadViewModel(
+    @factoryParam this.reciter,
+    this._downloadedAudioRepository,
+    this._downloadManager,
+  ) {
     _downloadManager.addListener(_onManagerChanged);
     loadDownloadedSuras();
   }

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/models/location_failure.dart';
-import 'package:islami/ui/home/tabs/time_screen/time_view_model.dart';
-import 'package:islami/ui/home/tabs/time_screen/widgets/location_qibla_row.dart';
-import 'package:islami/ui/home/tabs/time_screen/widgets/next_prayer_banner.dart';
-import 'package:islami/ui/home/tabs/time_screen/widgets/pray_time.dart';
-import 'package:islami/ui/home/widgets/no_internet_retry_view.dart';
-import 'package:islami/ui/home/widgets/offline_refresh_header.dart';
-import 'package:islami/ui/widgets/fade_in.dart';
-import 'package:islami/ui/widgets/screen_background.dart';
+import 'package:islami/ui/home/tabs/time_screen/view_model/time_view_model.dart';
+import 'package:islami/ui/home/tabs/time_screen/widget/location_qibla_row.dart';
+import 'package:islami/ui/home/tabs/time_screen/widget/next_prayer_banner.dart';
+import 'package:islami/ui/home/tabs/time_screen/widget/pray_time.dart';
+import 'package:islami/ui/home/widget/no_internet_retry_view.dart';
+import 'package:islami/ui/home/widget/offline_refresh_header.dart';
+import 'package:islami/ui/widget/fade_in.dart';
+import 'package:islami/ui/widget/screen_background.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../utils/app_assets.dart';
+import 'package:islami/utils/app_assets.dart';
 
 class TimeScreen extends StatelessWidget {
   const TimeScreen({super.key});
@@ -19,7 +20,7 @@ class TimeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => TimeViewModel(),
+      create: (context) => getIt<TimeViewModel>(),
       child: ScreenBackground(
         image: AppAssets.timeBg,
         // Rebuilds only when loading/failure changes, not on every

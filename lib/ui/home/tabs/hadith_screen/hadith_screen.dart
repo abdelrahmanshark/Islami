@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/models/riyad_search_type.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/view_model/hadith_view_model.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/widget/riyad_chapter_card.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/widget/riyad_favorites_list.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/widget/riyad_search_type_menu.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/favorite_list_tabs.dart';
-import 'package:islami/ui/home/widgets/sura_search_bar.dart';
-import 'package:islami/ui/widgets/fade_in.dart';
-import 'package:islami/ui/widgets/screen_background.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/favorite_list_tabs.dart';
+import 'package:islami/ui/home/widget/sura_search_bar.dart';
+import 'package:islami/ui/widget/fade_in.dart';
+import 'package:islami/ui/widget/screen_background.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -19,7 +20,7 @@ class HadithScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => HadithViewModel(),
+      create: (context) => getIt<HadithViewModel>(),
       child: ScreenBackground(
         image: AppAssets.hadithBg,
         child: Consumer<HadithViewModel>(

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:islami/data/quran_download/downloaded_audio_repository.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/domain/repositories/downloaded_audio_repository.dart';
 import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/models/downloaded_audio.dart';
@@ -17,11 +17,9 @@ import 'package:just_audio_background/just_audio_background.dart';
 /// State for the Downloads tab (reciters with offline surahs).
 ///
 /// Lives for the whole app; the tab calls [onTabOpened] to load downloads.
+@injectable
 class DownloadsViewModel extends ChangeNotifier {
-  DownloadsViewModel({
-    DownloadedAudioRepository? downloadedAudioRepository,
-  }) : _downloadedAudioRepository =
-            downloadedAudioRepository ?? DownloadedAudioRepositoryImpl() {
+  DownloadsViewModel(this._downloadedAudioRepository, this._audioService) {
     _restorePlaybackState();
     _listenForPlayerState();
     _audioService.addListener(_onActiveAudioChanged);
@@ -29,7 +27,7 @@ class DownloadsViewModel extends ChangeNotifier {
   }
 
   final DownloadedAudioRepository _downloadedAudioRepository;
-  final AudioPlayerService _audioService = AudioPlayerService.instance;
+  final AudioPlayerService _audioService;
   StreamSubscription<PlayerState>? _playerStateSubscription;
 
   List<DownloadedAudio> _allDownloads = <DownloadedAudio>[];

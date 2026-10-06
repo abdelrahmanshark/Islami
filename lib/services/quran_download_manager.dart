@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/services/download_foreground_task.dart';
@@ -20,14 +21,12 @@ import 'package:islami/utils/shared_preferences.dart';
 ///
 /// The downloads themselves run in [DownloadForegroundTaskHandler] (a foreground
 /// service), so the queue keeps going after the app is left or swiped away.
+@lazySingleton
 class QuranDownloadManager extends ChangeNotifier {
-  QuranDownloadManager._({QuranAudioDownloadService? downloadService})
-      : _downloadService = downloadService ?? QuranAudioDownloadService() {
+  QuranDownloadManager(this._downloadService) {
     _registerCancelPort();
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
   }
-
-  static final QuranDownloadManager instance = QuranDownloadManager._();
 
   static const String storagePermissionMessage =
       'يجب السماح بصلاحية التخزين لتحميل السور';
@@ -56,8 +55,8 @@ class QuranDownloadManager extends ChangeNotifier {
   String? downloadErrorMessage;
 
   /// Handles notification action taps on the main isolate.
-  static void onNotificationResponse(NotificationResponse response) {
-    instance.applyNotificationAction(response.actionId);
+  void onNotificationResponse(NotificationResponse response) {
+    applyNotificationAction(response.actionId);
   }
 
   /// Applies a notification action id (also used by the isolate port).

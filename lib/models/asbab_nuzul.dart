@@ -42,6 +42,11 @@ class AsbabEntry {
     required this.reasons,
   });
 
+  /// Map key used to look up the reasons of one ayah, e.g. "2:255".
+  static String ayahKey(int surahNumber, int ayahNumber) {
+    return '$surahNumber:$ayahNumber';
+  }
+
   factory AsbabEntry.fromJson(Map<String, dynamic> json) {
     final rawAyahs = json['ayahs'] as List<dynamic>? ?? [];
     final rawReasons = json['reasons'] as List<dynamic>? ?? [];

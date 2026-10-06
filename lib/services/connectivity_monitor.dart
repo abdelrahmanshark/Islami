@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/utils/network_utils.dart';
 
 /// Polls connectivity and notifies listeners when online/offline changes.
+@lazySingleton
 class ConnectivityMonitor extends ChangeNotifier with WidgetsBindingObserver {
-  ConnectivityMonitor._() {
+  ConnectivityMonitor() {
     WidgetsBinding.instance.addObserver(this);
   }
-
-  static final ConnectivityMonitor instance = ConnectivityMonitor._();
 
   bool isOnline = true;
   Timer? _timer;

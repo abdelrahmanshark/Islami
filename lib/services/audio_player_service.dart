@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/active_audio_type.dart';
 import 'package:islami/services/call_audio_guard.dart';
 import 'package:islami/utils/app_messenger.dart';
@@ -18,12 +19,13 @@ enum PlaybackBlockReason {
 /// lectures pause on phone calls / other apps and resume when focus returns.
 ///
 /// Also notifies listeners when [activeAudioType] changes (drives the mini player).
+@lazySingleton
 class AudioPlayerService extends ChangeNotifier {
-  AudioPlayerService._() {
+  AudioPlayerService(this._callAudioGuard) {
     _debugListenToPlayerState();
   }
 
-  static final AudioPlayerService instance = AudioPlayerService._();
+  final CallAudioGuard _callAudioGuard;
 
   /// just_audio pauses on interruption and resumes when appropriate.
   final AudioPlayer player = AudioPlayer();
@@ -111,7 +113,7 @@ class AudioPlayerService extends ChangeNotifier {
   /// Returns false and shows a snackbar when a phone call is active.
   Future<bool> ensureCanPlay() async {
     lastBlockReason = null;
-    if (await CallAudioGuard.instance.isPhoneCallActive()) {
+    if (await _callAudioGuard.isPhoneCallActive()) {
       lastBlockReason = PlaybackBlockReason.call;
       AppMessenger.showSnackBar(CallAudioGuard.callBlockedMessage);
       return false;

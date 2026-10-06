@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:islami/models/active_audio_type.dart';
-import 'package:islami/ui/home/home_screen_view_model.dart';
-import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/favorite_list_tabs.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/favorite_move_transition.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_card.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/radio_toggle_switch.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/reciter_select_card.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/sermons_list.dart';
-import 'package:islami/ui/home/tabs/radio_screen/widgets/sharawy_list.dart';
-import 'package:islami/ui/home/widgets/active_audio_list_view.dart';
-import 'package:islami/ui/home/widgets/no_internet_retry_view.dart';
-import 'package:islami/ui/home/widgets/offline_refresh_header.dart';
-import 'package:islami/ui/home/widgets/sura_search_bar.dart';
-import 'package:islami/ui/widgets/fade_in.dart';
-import 'package:islami/ui/widgets/screen_background.dart';
+import 'package:islami/ui/home/view_model/home_screen_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/view_model/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/favorite_list_tabs.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/favorite_move_transition.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/radio_card.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/radio_toggle_switch.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/reciter_select_card.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/sermons_list.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/sharawy_list.dart';
+import 'package:islami/ui/home/widget/active_audio_list_view.dart';
+import 'package:islami/ui/home/widget/no_internet_retry_view.dart';
+import 'package:islami/ui/home/widget/offline_refresh_header.dart';
+import 'package:islami/ui/home/widget/sura_search_bar.dart';
+import 'package:islami/ui/widget/fade_in.dart';
+import 'package:islami/ui/widget/screen_background.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/app_styles.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../utils/app_assets.dart';
+import 'package:islami/utils/app_assets.dart';
 
 class RadioScreen extends StatefulWidget {
   const RadioScreen({super.key});

@@ -1,19 +1,19 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:islami/data/riyad_assalihin/riyad_assalihin_repository.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/domain/repositories/riyad_assalihin_repository.dart';
 import 'package:islami/models/riyad_assalihin.dart';
 import 'package:islami/models/riyad_hadith_position.dart';
 import 'package:islami/models/riyad_search_type.dart';
-import 'package:islami/ui/home/tabs/radio_screen/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/view_model/radio_view_model.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/arabic_utils.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
+@injectable
 class HadithViewModel extends ChangeNotifier {
-  HadithViewModel({RiyadAssalihinRepository? repository})
-      : _repository = repository ?? RiyadAssalihinRepositoryImpl() {
+  HadithViewModel(this._repository) {
     loadChapters();
   }
 

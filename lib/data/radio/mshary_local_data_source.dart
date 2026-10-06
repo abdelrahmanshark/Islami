@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/mshary_sura.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/utils/app_assets.dart';
 
 /// Loads مشاري راشد العفاسي from the local JSON asset.
+@lazySingleton
 class MsharyLocalDataSource {
   /// Stable local id so downloads stay linked across app restarts.
   static const int localReciterId = 1008008;

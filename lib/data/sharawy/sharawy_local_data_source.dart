@@ -1,3 +1,4 @@
+import 'package:injectable/injectable.dart';
 import 'package:islami/data/jews_in_quran/jews_in_quran_local_data_source.dart';
 import 'package:islami/data/pillars_of_islam/pillars_of_islam_local_data_source.dart';
 import 'package:islami/data/prophet_seerah/prophet_seerah_local_data_source.dart';
@@ -18,35 +19,18 @@ import 'package:islami/models/stories_of_prophets.dart';
 import 'package:islami/models/women_in_islam.dart';
 
 /// Loads Sha'rawy categories and their lecture lists from local assets.
+@lazySingleton
 class SharawyLocalDataSource {
-  SharawyLocalDataSource({
-    QuranStoriesLocalDataSource? quranStoriesLocalDataSource,
-    ProphetSeerahLocalDataSource? prophetSeerahLocalDataSource,
-    WomenInIslamLocalDataSource? womenInIslamLocalDataSource,
-    ReligionAndLifeProgramLocalDataSource?
-        religionAndLifeProgramLocalDataSource,
-    SharawyLecturesLocalDataSource? sharawyLecturesLocalDataSource,
-    PillarsOfIslamLocalDataSource? pillarsOfIslamLocalDataSource,
-    JewsInQuranLocalDataSource? jewsInQuranLocalDataSource,
-    StoriesOfProphetsLocalDataSource? storiesOfProphetsLocalDataSource,
-  })  : _quranStoriesLocalDataSource =
-            quranStoriesLocalDataSource ?? QuranStoriesLocalDataSource(),
-        _prophetSeerahLocalDataSource =
-            prophetSeerahLocalDataSource ?? ProphetSeerahLocalDataSource(),
-        _womenInIslamLocalDataSource =
-            womenInIslamLocalDataSource ?? WomenInIslamLocalDataSource(),
-        _religionAndLifeProgramLocalDataSource =
-            religionAndLifeProgramLocalDataSource ??
-                ReligionAndLifeProgramLocalDataSource(),
-        _sharawyLecturesLocalDataSource =
-            sharawyLecturesLocalDataSource ?? SharawyLecturesLocalDataSource(),
-        _pillarsOfIslamLocalDataSource =
-            pillarsOfIslamLocalDataSource ?? PillarsOfIslamLocalDataSource(),
-        _jewsInQuranLocalDataSource =
-            jewsInQuranLocalDataSource ?? JewsInQuranLocalDataSource(),
-        _storiesOfProphetsLocalDataSource =
-            storiesOfProphetsLocalDataSource ??
-                StoriesOfProphetsLocalDataSource();
+  SharawyLocalDataSource(
+    this._quranStoriesLocalDataSource,
+    this._prophetSeerahLocalDataSource,
+    this._womenInIslamLocalDataSource,
+    this._religionAndLifeProgramLocalDataSource,
+    this._sharawyLecturesLocalDataSource,
+    this._pillarsOfIslamLocalDataSource,
+    this._jewsInQuranLocalDataSource,
+    this._storiesOfProphetsLocalDataSource,
+  );
 
   final QuranStoriesLocalDataSource _quranStoriesLocalDataSource;
   final ProphetSeerahLocalDataSource _prophetSeerahLocalDataSource;

@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/downloaded_audio.dart';
 import 'package:islami/utils/shared_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persists downloaded Quran audio metadata in SharedPreferences.
+@lazySingleton
 class DownloadedAudioLocalDataSource {
   /// Returns all saved download metadata entries.
   Future<List<DownloadedAudio>> loadAll() async {

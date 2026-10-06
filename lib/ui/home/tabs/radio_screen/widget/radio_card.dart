@@ -1,0 +1,92 @@
+import 'package:flutter/material.dart';
+import 'package:islami/models/radio_response.dart';
+import 'package:islami/ui/home/tabs/radio_screen/view_model/radio_view_model.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/card_play_pause_icon.dart';
+import 'package:islami/ui/home/tabs/radio_screen/widget/favorite_icon_button.dart';
+import 'package:islami/ui/home/widget/playback_failure_snackbar.dart';
+import 'package:islami/utils/app_colors.dart';
+import 'package:islami/utils/app_styles.dart';
+import 'package:provider/provider.dart';
+
+class RadioCard extends StatelessWidget {
+  final Radios radio;
+
+  const RadioCard({super.key, required this.radio});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<RadioViewModel>(
+      builder: (context, provider, child) {
+        final bool isRadioOn =
+            provider.selectedRadioId != null &&
+            provider.selectedRadioId == radio.id;
+        final bool isRadioPlaying = isRadioOn && provider.player.playing;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      radio.name ?? '',
+                      style: AppStyles.blackBold16,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FavoriteIconButton(
+                      isFavorite: provider.isRadioFavorite(radio),
+                      onPressed: () => provider.toggleFavoriteRadio(radio),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isRadioOn)
+                    IconButton(
+                      onPressed: provider.stopRadio,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.stop_rounded,
+                        color: AppColors.blackColor,
+                        size: 32,
+                      ),
+                    ),
+                  IconButton(
+                    onPressed: () async {
+                      final bool played = await provider.playRadio(radio);
+                      if (!played && context.mounted) {
+                        showPlaybackFailureSnackBar(context);
+                      }
+                    },
+                    visualDensity: VisualDensity.compact,
+                    icon: CardPlayPauseIcon(
+                      isLoading: provider.isRadioLoading(radio),
+                      isPlaying: isRadioPlaying,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

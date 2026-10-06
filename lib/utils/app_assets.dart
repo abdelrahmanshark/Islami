@@ -59,8 +59,9 @@ class AppAssets {
   static const String quranCoordinatesFolder =
       'assets/json/quran_coordinates';
   static const String tafserFolder = 'assets/json/tafser';
+
   /// Surah tafsir file names ordered by surah number (1–114).
-  static const List<String> _tafserFileNames = [
+  static const List<String> tafserFileNames = [
     '001_al-fatiha.json',
     '002_al-baqarah.json',
     '003_aal-e-imran.json',
@@ -176,22 +177,4 @@ class AppAssets {
     '113_al-falaq.json',
     '114_an-nas.json',
   ];
-
-  /// Returns the asset path for Mushaf page [pageNumber] (1–604).
-  /// One image per page (black text on transparent), recolored at runtime.
-  static String moshafPageImage(int pageNumber) {
-    final padded = pageNumber.toString().padLeft(3, '0');
-    return '$moshafPagesFolder/page-$padded.webp';
-  }
-
-  /// Returns the ayah-polygon JSON path for Quran page [pageNumber] (1–604).
-  static String quranPageCoordinates(int pageNumber) {
-    final padded = pageNumber.toString().padLeft(3, '0');
-    return '$quranCoordinatesFolder/$padded.json';
-  }
-
-  /// Returns the tafsir JSON path for [surahNumber] (1–114).
-  static String tafserSurah(int surahNumber) {
-    return '$tafserFolder/${_tafserFileNames[surahNumber - 1]}';
-  }
 }

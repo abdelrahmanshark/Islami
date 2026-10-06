@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:http/http.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/radio_response.dart';
 import 'package:islami/models/reciters_response.dart';
 
+@lazySingleton
 class RadioRemoteDataSource {
   static const String _baseUrl = 'https://mp3quran.net';
   static const String _radiosPath = '/api/v3/radios?language=ar';

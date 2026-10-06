@@ -1,15 +1,18 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/data/moshaf/moshaf_local_data_source.dart';
 import 'package:islami/models/hafs_ayah_meta.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_page_search_dialog.dart';
-import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_routes.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 /// Handles Mushaf hub menu actions and saved-page state.
+@injectable
 class MoshafHubViewModel extends ChangeNotifier {
+  MoshafHubViewModel(this._moshafLocalDataSource);
+
+  final MoshafLocalDataSource _moshafLocalDataSource;
+
   int? savedPage;
 
   /// Page the user was on when they last closed the Mushaf.
@@ -97,11 +100,7 @@ class MoshafHubViewModel extends ChangeNotifier {
   Future<List<HafsAyahMeta>> _loadAyahs() async {
     if (_ayahs != null) return _ayahs!;
 
-    final jsonString = await rootBundle.loadString(AppAssets.hafsAyahMetaJson);
-    final list = jsonDecode(jsonString) as List<dynamic>;
-    _ayahs = list
-        .map((e) => HafsAyahMeta.fromJson(e as Map<String, dynamic>))
-        .toList();
+    _ayahs = await _moshafLocalDataSource.fetchAyahMeta();
     return _ayahs!;
   }
 }

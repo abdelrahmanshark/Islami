@@ -2,7 +2,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:islami/ui/home/tabs/hadith_screen/widget/hadith_card.dart';
 import 'package:islami/ui/riyad_chapter_view/view_model/riyad_chapter_view_model.dart';
-import 'package:islami/ui/widgets/screen_background.dart';
+import 'package:islami/ui/widget/screen_background.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';

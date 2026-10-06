@@ -1,16 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
 
 /// Accesses Quran MP3 files in Android shared storage via MediaStore.
 ///
 /// Files live under Music/Islami/Quran/{reciterName}. Does not download audio
 /// itself — only checks, deletes, and inserts MediaStore entries.
+@lazySingleton
 class QuranMediaStoreDataSource {
-  QuranMediaStoreDataSource({MethodChannel? channel})
-      : _channel = channel ??
-            const MethodChannel('com.example.islami/quran_storage');
-
-  final MethodChannel _channel;
+  final MethodChannel _channel =
+      const MethodChannel('com.example.islami/quran_storage');
 
   /// Relative Music path used when inserting MediaStore audio rows.
   static const String quranAudioRelativePath = 'Music/Islami/Quran';

@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:injectable/injectable.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -16,10 +17,9 @@ class WeeklyNotificationIds {
 }
 
 /// Schedules silent weekly local notifications at local midnight.
+@lazySingleton
 class WeeklyNotificationService {
-  WeeklyNotificationService._();
-
-  static final FlutterLocalNotificationsPlugin _plugin =
+  final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   static const String _channelId = 'weekly_silent_reminders_v1';
@@ -35,7 +35,7 @@ class WeeklyNotificationService {
       'أكثر من الصلاة على النبي، ولا تنسى كهف الجمعة';
 
   /// Initializes the plugin, timezone, and permission, then schedules reminders.
-  static Future<void> initAndSchedule({
+  Future<void> initAndSchedule({
     DidReceiveNotificationResponseCallback? onNotificationResponse,
     DidReceiveBackgroundNotificationResponseCallback?
         onBackgroundNotificationResponse,
@@ -54,7 +54,7 @@ class WeeklyNotificationService {
   }
 
   /// Cancels existing weekly IDs then schedules Mon/Thu/Fri at 12:00 AM.
-  static Future<void> scheduleWeeklyReminders() async {
+  Future<void> scheduleWeeklyReminders() async {
     await _cancelWeekly();
 
     await _scheduleOne(
@@ -75,7 +75,7 @@ class WeeklyNotificationService {
   }
 
   /// Sets up flutter_local_notifications for Android and iOS.
-  static Future<void> _initializePlugin({
+  Future<void> _initializePlugin({
     DidReceiveNotificationResponseCallback? onNotificationResponse,
     DidReceiveBackgroundNotificationResponseCallback?
         onBackgroundNotificationResponse,
@@ -104,14 +104,14 @@ class WeeklyNotificationService {
   }
 
   /// Loads IANA zones and sets the device local timezone.
-  static Future<void> _configureLocalTimeZone() async {
+  Future<void> _configureLocalTimeZone() async {
     tz.initializeTimeZones();
     final TimezoneInfo info = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(info.identifier));
   }
 
   /// Asks for notification (and exact-alarm) permissions when needed.
-  static Future<void> _requestPermissions() async {
+  Future<void> _requestPermissions() async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       final AndroidFlutterLocalNotificationsPlugin? android = _plugin
           .resolvePlatformSpecificImplementation<
@@ -130,14 +130,14 @@ class WeeklyNotificationService {
   }
 
   /// Removes only the weekly reminder notifications.
-  static Future<void> _cancelWeekly() async {
+  Future<void> _cancelWeekly() async {
     for (final int id in WeeklyNotificationIds.all) {
       await _plugin.cancel(id: id);
     }
   }
 
   /// Schedules one weekly silent notification at local midnight.
-  static Future<void> _scheduleOne({
+  Future<void> _scheduleOne({
     required int id,
     required int weekday,
     required String body,
@@ -182,7 +182,7 @@ class WeeklyNotificationService {
   }
 
   /// Finds the next occurrence of [weekday] at 00:00 local time.
-  static tz.TZDateTime _nextMidnightOfWeekday(int weekday) {
+  tz.TZDateTime _nextMidnightOfWeekday(int weekday) {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduled = tz.TZDateTime(
       tz.local,

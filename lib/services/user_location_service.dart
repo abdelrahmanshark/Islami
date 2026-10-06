@@ -2,11 +2,13 @@ import 'dart:developer';
 
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:injectable/injectable.dart';
 import 'package:islami/models/location_failure.dart';
 import 'package:islami/models/user_location.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
 /// Resolves the user's coordinates and place names from device GPS.
+@lazySingleton
 class UserLocationService {
   final Geocoding _geocoding = Geocoding();
 

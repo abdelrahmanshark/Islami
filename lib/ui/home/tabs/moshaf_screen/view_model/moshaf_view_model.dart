@@ -1,20 +1,21 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/data/moshaf/moshaf_local_data_source.dart';
 import 'package:islami/models/asbab_nuzul.dart';
 import 'package:islami/models/ayah_coordinate.dart';
 import 'package:islami/models/hafs_ayah_meta.dart';
 import 'package:islami/models/moshaf_page.dart';
-import 'package:islami/models/moshaf_page_marker.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/tafser_surah.dart';
-import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/shared_preferences.dart';
 
+@injectable
 class MoshafViewModel extends ChangeNotifier {
+  MoshafViewModel(this._moshafLocalDataSource);
+
+  final MoshafLocalDataSource _moshafLocalDataSource;
+
   /// Madani coordinate page size used by quran_coordinates JSON.
   static const double coordinatePageWidth = 345;
   static const double coordinatePageHeight = 550;
@@ -107,7 +108,10 @@ class MoshafViewModel extends ChangeNotifier {
   /// Reasons of revelation of the selected ayah (one per source).
   List<AsbabReason> get selectedAsbabReasons {
     if (selectedAyah == null) return const [];
-    final key = _ayahKey(selectedAyah!.surahNumber, selectedAyah!.ayahNumber);
+    final key = AsbabEntry.ayahKey(
+      selectedAyah!.surahNumber,
+      selectedAyah!.ayahNumber,
+    );
     return _asbabByAyah[key] ?? const [];
   }
 
@@ -174,7 +178,7 @@ class MoshafViewModel extends ChangeNotifier {
       isDarkTheme = await getMoshafDarkTheme();
       await _loadColors();
 
-      final markers = await _loadPageMarkers();
+      final markers = await _moshafLocalDataSource.fetchPageMarkers();
       if (markers.isEmpty) {
         throw Exception('empty markers');
       }
@@ -283,15 +287,6 @@ class MoshafViewModel extends ChangeNotifier {
     }
   }
 
-  /// Reads page metadata from quran_with_juz_hizb_rub.json.
-  Future<List<MoshafPageMarker>> _loadPageMarkers() async {
-    final raw = await rootBundle.loadString(AppAssets.quranWithJuzHizbRubJson);
-    final list = jsonDecode(raw) as List<dynamic>;
-    return list
-        .map((e) => MoshafPageMarker.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
   /// Loads ayah polygons for [pageNumber] (uses cache when available).
   Future<void> loadAyahCoordinatesForPage(int pageNumber) async {
     if (_ayahCache.containsKey(pageNumber)) {
@@ -302,12 +297,8 @@ class MoshafViewModel extends ChangeNotifier {
     }
 
     try {
-      final path = AppAssets.quranPageCoordinates(pageNumber);
-      final raw = await rootBundle.loadString(path);
-      final list = jsonDecode(raw) as List<dynamic>;
-      final ayahs = list
-          .map((e) => AyahCoordinate.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final ayahs =
+          await _moshafLocalDataSource.fetchPageCoordinates(pageNumber);
 
       _ayahCache[pageNumber] = ayahs;
 
@@ -429,11 +420,7 @@ class MoshafViewModel extends ChangeNotifier {
     final cached = _tafserCache[surahNumber];
     if (cached != null) return cached;
 
-    final path = AppAssets.tafserSurah(surahNumber);
-    final raw = await rootBundle.loadString(path);
-    final surah = TafserSurah.fromJson(
-      jsonDecode(raw) as Map<String, dynamic>,
-    );
+    final surah = await _moshafLocalDataSource.fetchTafserSurah(surahNumber);
     _tafserCache[surahNumber] = surah;
     return surah;
   }
@@ -458,42 +445,11 @@ class MoshafViewModel extends ChangeNotifier {
   Future<void> _loadAsbab() async {
     if (_asbabByAyah.isNotEmpty) return;
     try {
-      final raw = await rootBundle.loadString(AppAssets.asbabJson);
-      // compute() parses the large file in a background isolate,
-      // so the Mushaf page does not freeze while it loads.
-      _asbabByAyah = await compute(_buildAsbabIndex, raw);
+      _asbabByAyah = await _moshafLocalDataSource.fetchAsbabIndex();
       notifyListeners();
     } catch (_) {
       _asbabByAyah = {};
     }
-  }
-
-  /// Parses asbab.json into a "surah:ayah" → reasons map.
-  static Map<String, List<AsbabReason>> _buildAsbabIndex(String raw) {
-    final list = jsonDecode(raw) as List<dynamic>;
-    final Map<String, List<AsbabReason>> index = {};
-
-    for (final item in list) {
-      final entry = AsbabEntry.fromJson(item as Map<String, dynamic>);
-      for (final ayahNumber in entry.ayahs) {
-        final key = _ayahKey(entry.surah, ayahNumber);
-        final reasons = index.putIfAbsent(key, () => []);
-        for (final reason in entry.reasons) {
-          // Keep الواحدي first so the source tabs always have the same order.
-          if (reason.source == AsbabReason.wahidiSource) {
-            reasons.insert(0, reason);
-          } else {
-            reasons.add(reason);
-          }
-        }
-      }
-    }
-    return index;
-  }
-
-  /// Map key used to look up the asbab of one ayah.
-  static String _ayahKey(int surahNumber, int ayahNumber) {
-    return '$surahNumber:$ayahNumber';
   }
 
   /// Updates the visible page from a PageView index.
@@ -537,11 +493,7 @@ class MoshafViewModel extends ChangeNotifier {
   Future<List<HafsAyahMeta>> loadAyahMeta() async {
     if (_ayahMeta != null) return _ayahMeta!;
 
-    final raw = await rootBundle.loadString(AppAssets.hafsAyahMetaJson);
-    final list = jsonDecode(raw) as List<dynamic>;
-    _ayahMeta = list
-        .map((e) => HafsAyahMeta.fromJson(e as Map<String, dynamic>))
-        .toList();
+    _ayahMeta = await _moshafLocalDataSource.fetchAyahMeta();
     return _ayahMeta!;
   }
 }

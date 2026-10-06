@@ -1,10 +1,12 @@
 import 'dart:convert';
 
-import 'package:islami/ui/home/tabs/time_screen/models/time_response.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/models/time_response.dart';
 import 'package:islami/utils/shared_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Caches the last successful prayer-times API response locally.
+@lazySingleton
 class TimeLocalDataSource {
   /// Saves the raw API JSON so it can be used offline later.
   Future<void> saveRawJson(String rawJson) async {

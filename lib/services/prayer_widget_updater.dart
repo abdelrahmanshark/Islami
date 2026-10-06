@@ -1,19 +1,19 @@
 import 'dart:developer';
 
 import 'package:home_widget/home_widget.dart';
-import 'package:islami/ui/home/tabs/time_screen/helpers/next_prayer_calculator.dart';
-import 'package:islami/ui/home/tabs/time_screen/models/prayer.dart';
+import 'package:injectable/injectable.dart';
+import 'package:islami/models/prayer.dart';
+import 'package:islami/utils/next_prayer_calculator.dart';
 
 /// Pushes prayer times to the Android home screen widget.
+@lazySingleton
 class PrayerWidgetUpdater {
-  PrayerWidgetUpdater._();
-
   static const String androidWidgetName = 'PrayerTimesWidgetProvider';
   static const String qualifiedAndroidName =
       'com.example.islami.PrayerTimesWidgetProvider';
 
   /// Saves salah times and the next prayer's actual DateTime, then refreshes.
-  static Future<void> update({
+  Future<void> update({
     required List<Prayer> prayerTimes,
     required NextPrayerResult? nextResult,
   }) async {

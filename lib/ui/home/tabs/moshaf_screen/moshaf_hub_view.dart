@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/view_model/moshaf_hub_view_model.dart';
 import 'package:islami/ui/home/tabs/moshaf_screen/widget/moshaf_option_card.dart';
-import 'package:islami/ui/widgets/screen_background.dart';
+import 'package:islami/ui/widget/screen_background.dart';
 import 'package:islami/utils/app_assets.dart';
 import 'package:islami/utils/app_colors.dart';
 import 'package:islami/utils/app_styles.dart';
@@ -21,7 +22,7 @@ class _MoshafHubViewState extends State<MoshafHubView> {
   @override
   void initState() {
     super.initState();
-    _viewModel = MoshafHubViewModel();
+    _viewModel = getIt<MoshafHubViewModel>();
     _viewModel.loadSavedPage();
   }
 

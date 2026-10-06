@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:islami/di/injection.dart';
 import 'package:islami/models/quran_resources.dart';
 import 'package:islami/models/reciters_response.dart';
 import 'package:islami/services/download_notification_service.dart';
@@ -33,13 +34,18 @@ class DownloadTaskButtons {
 /// Top-level callback required by flutter_foreground_task.
 @pragma('vm:entry-point')
 void downloadForegroundStartCallback() {
-  FlutterForegroundTask.setTaskHandler(DownloadForegroundTaskHandler());
+  // This runs in a new isolate, so it needs its own dependency registrations.
+  configureDependencies();
+  FlutterForegroundTask.setTaskHandler(
+    DownloadForegroundTaskHandler(getIt<QuranAudioDownloadService>()),
+  );
 }
 
 /// Runs Quran downloads in a foreground-service isolate so they survive app quit.
 class DownloadForegroundTaskHandler extends TaskHandler {
-  final QuranAudioDownloadService _downloadService =
-      QuranAudioDownloadService();
+  DownloadForegroundTaskHandler(this._downloadService);
+
+  final QuranAudioDownloadService _downloadService;
 
   bool _cancelAllRequested = false;
   bool _skipCurrentRequested = false;
