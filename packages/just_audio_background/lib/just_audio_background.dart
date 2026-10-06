@@ -923,7 +923,7 @@ extension AudioSourceExtension on AudioSourceMessage {
       }
       return indices;
     } else if (self is LoopingAudioSourceMessage) {
-      // TODO: This should combine indices of the children, like ConcatenatingAudioSource.
+      
       // Also should be fixed in the plugin frontend.
       return List.generate(self.count, (i) => i);
     } else {
