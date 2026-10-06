@@ -181,7 +181,7 @@ class AppAssets {
   /// One image per page (black text on transparent), recolored at runtime.
   static String moshafPageImage(int pageNumber) {
     final padded = pageNumber.toString().padLeft(3, '0');
-    return '$moshafPagesFolder/page-$padded.png';
+    return '$moshafPagesFolder/page-$padded.webp';
   }
 
   /// Returns the ayah-polygon JSON path for Quran page [pageNumber] (1–604).
